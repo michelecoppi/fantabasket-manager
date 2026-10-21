@@ -17,7 +17,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
 - [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (bozza, **non ancora eseguita**)
 - [ ] Creare progetto Supabase (account dell'utente) e applicare migrazione + seed; testare RLS
-- [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio (16 test verdi)
+- [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (24 test verdi)
 - [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB; import separato del listone Dunkest a ogni stagione (guida: [docs/IMPORT.md](docs/IMPORT.md))
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
 - [ ] Seed giocatori Dunkest e contratti dal foglio
