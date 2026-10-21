@@ -10,13 +10,14 @@ Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da conf
 - [x] Analisi del foglio Excel
 - [x] Sintesi regolamento con ID regola
 - [x] CLAUDE.md, PLAN.md, STACK, DATA-MODEL, OPEN-QUESTIONS
-- [ ] Conferma regolamento ancora valido (Q1) e mappa proprietari↔squadre (Q2)
+- [x] Mappa proprietari↔squadre (Q2), dedotta dal foglio aggiornato
+- [ ] Conferma regolamento ancora valido (Q1): restano floor e luxury tax
 - [ ] Repo GitHub pubblico (dopo conferma utente)
 
 ## Fase 1 — Progetto e dati
 - [ ] Creare progetto Next.js + TS + Tailwind, lint, formattazione
 - [ ] Progetto Supabase, schema SQL in `supabase/migrations/`, RLS admin/viewer
-- [ ] `lib/cap.ts`: monte ingaggi, spazio salariale, riserve, luxury tax, floor — **con test** sui numeri del foglio (es. Amedeo: 240, bonus −2, spazio 8)
+- [ ] `lib/cap.ts`: monte ingaggi, spazio salariale, riserve, luxury tax, floor — **con test** sui numeri del foglio (es. Amedeo, foglio pre-asta: titolari 236.5 + tagli 3.5 = 240, bonus −2, spazio 8: il monte include i tagli)
 - [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB
 - [ ] Seed squadre, stagione 2026, giocatori Dunkest
 
@@ -24,7 +25,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da conf
 - [ ] Login magic link, signup chiuso
 - [ ] **Home lega**: 8 squadre con monte ingaggi, spazio, bonus, stato (sforato / sotto floor)
 - [ ] **Pagina squadra**: titolari per ruolo (5G/5A/3C), riserve, talenti, tagliati, pick possedute
-- [ ] **Draft**: pick 2026-2028 per giro, chi le possiede, ordine rookie draft
+- [ ] **Draft**: pick dei 3 draft successivi (oggi 2027-2029) per giro, chi le possiede, ordine rookie draft
 - [ ] **Giocatori**: listone Dunkest filtrabile (ruolo, squadra NBA, libero/occupato)
 - [ ] Layout mobile-first, tema chiaro/scuro
 
@@ -48,8 +49,9 @@ Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da conf
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Chiudere Q1 e Q2 con l'organizzatore, poi iniziare la Fase 1.
+Chiudere Q1 (floor e luxury tax) con l'organizzatore, poi iniziare la Fase 1.
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
+- 2026-10-21: risposte a OPEN-QUESTIONS #2-#5, #7, #11-#13 dedotte dal foglio aggiornato dopo l'asta; il monte ingaggi include i tagli (1/3 arrotondato a 0.5).

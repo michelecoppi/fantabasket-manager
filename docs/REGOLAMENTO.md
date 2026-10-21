@@ -36,13 +36,13 @@ Tutti i valori numerici sono **parametri di lega** (tabella `league_settings`), 
 - R-31 **5 turni**, 1 scelta per squadra per turno, stesso ordine in tutti i turni.
 - R-32 Ordine: le prime 4 posizioni = lottery tra le ultime 4 della regular season (8ª: 4 chance, 7ª: 3, 6ª: 2, 5ª: 1); posizioni 5-8 in ordine inverso di classifica delle prime 4.
 - R-33 Le pick sono scambiabili prima/durante/dopo; **max 2 pick per giro** per squadra.
-- R-34 Le pick future diventano di proprietà solo **3 anni prima** del draft (nel foglio: DRAFT 2026-2028).
+- R-34 Le pick future diventano di proprietà solo **3 anni prima** del draft (nel foglio: i 3 draft successivi, a ottobre 2026 sono 2027-2029).
 - R-35 I draftati vanno di default in **squadra talenti** (nessuno stipendio). Prelazione solo per la stagione d'esordio NBA e la successiva (chi gioca in leghe minori/estere resta congelato più a lungo). Dopo l'esordio, fino all'apertura della FA estiva dell'anno dopo per firmarlo o liberarlo. Max 2 stagioni in squadra talenti prima dell'obbligo di decisione.
 
 ## Tagli
 - R-40 Prima di ogni asta si può tagliare qualsiasi numero di giocatori.
 - R-41 I tagliati vanno all'**asta dei tagliati** (prima dell'asta principale); l'ex proprietario non può partecipare.
-- R-42 Se nessuno li prende: o taglio definitivo (libera il posto, ma si paga **1/3 dello stipendio** fino a fine contratto) oppure il giocatore rientra in rosa. Foglio: sezione `GIOCATORI TAGLIATI`.
+- R-42 Se nessuno li prende: o taglio definitivo (libera il posto, ma si paga **1/3 dello stipendio** fino a fine contratto) oppure il giocatore rientra in rosa. Foglio: sezione `GIOCATORI TAGLIATI`. Dal foglio: il 1/3 è arrotondato allo 0.5 più vicino (5 → 1.5, 10 → 3.5) e **conta nel monte ingaggi**.
 
 ## Aste
 - R-50 Due aste FA a stagione: una prima della regular season, una subito dopo la chiusura del mercato NBA. Ordine: tagliati → free agent (esclusi i rookie del draft).
