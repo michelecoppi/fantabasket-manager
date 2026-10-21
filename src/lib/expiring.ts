@@ -26,6 +26,7 @@ export function expiringContracts(teams: TeamView[], currentYear: number, f: Exp
   for (const t of teams) {
     if (f.teamId && t.team.id !== f.teamId) continue;
     for (const player of [...t.starters, ...t.reserves]) {
+      if (player.yearsLeft === null) continue; // durata da fissare: nessuna scadenza
       const end = endSeason(currentYear, player.yearsLeft);
       if (f.season !== null && end !== f.season) continue;
       out.push({ teamId: t.team.id, teamName: t.team.name, player, endSeason: end, optionSeason: player.teamOption ? end + 1 : null });

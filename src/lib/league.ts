@@ -89,7 +89,7 @@ export interface RosterPlayer {
   nbaTeam: string | null;
   /** "2", "1+1" come nel foglio */
   contractLabel: string;
-  yearsLeft: number;
+  yearsLeft: number | null; // null = durata da fissare
   teamOption: boolean;
   slot: "starter" | "reserve";
   salary: number;
@@ -163,7 +163,7 @@ export function buildLeague(raw: RawLeague): LeagueView {
     const mine = raw.contracts.filter((c) => c.team_id === team.id);
     const toPlayer = (c: ContractRow): RosterPlayer => ({
       slot: c.slot === "reserve" ? "reserve" : "starter",
-      yearsLeft: Number(c.years_left),
+      yearsLeft: c.years_left === null ? null : Number(c.years_left),
       teamOption: c.team_option,
       id: c.id,
       name: playerName(c.players),
