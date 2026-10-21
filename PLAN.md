@@ -18,17 +18,22 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (bozza, **non ancora eseguita**)
 - [ ] Creare progetto Supabase (account dell'utente) e applicare migrazione + seed; testare RLS
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (24 test verdi)
-- [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB; import separato del listone Dunkest a ogni stagione (guida: [docs/IMPORT.md](docs/IMPORT.md))
+- [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (**scrittura non ancora provata**); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
+- [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
+- [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
+- [ ] UI admin: correggere le pick da confermare (fase 3)
+- [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
-- [ ] Seed giocatori Dunkest e contratti dal foglio
+- [x] Seed giocatori Dunkest e contratti dal foglio (125 giocatori in rosa sono provvisori: solo cognome)
 
 ## Fase 2 — Sola lettura (utenti normali)
-- [ ] Login magic link, signup chiuso
-- [ ] **Home lega**: 8 squadre con monte ingaggi, spazio, bonus, stato (sforato / sotto floor)
-- [ ] **Pagina squadra**: titolari per ruolo (5G/5A/3C), riserve, talenti, tagliati, pick possedute
-- [ ] **Draft**: pick dei 3 draft successivi (oggi 2027-2029) per giro, chi le possiede, ordine rookie draft
+- [x] Login email+password e link via email (`/login`, `proxy.ts` protegge tutte le pagine). Richiede `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`; per il link: aggiungere `http://localhost:3000/auth/callback` (e poi l'URL Vercel) in Supabase → Authentication → URL Configuration
+- [x] **Home lega**: 8 squadre con monte ingaggi, spazio, bonus, stato (sforato / sotto floor)
+- [x] **Pagina squadra**: titolari, riserve, talenti, tagliati, pick possedute e cedute
+- [x] **Draft**: pick scambiate 2026-2028 (con "da confermare") e ordine rookie draft 2026
 - [ ] **Giocatori**: listone Dunkest filtrabile (ruolo, squadra NBA, libero/occupato)
-- [ ] Layout mobile-first, tema chiaro/scuro
+- [x] Layout mobile-first, tema chiaro/scuro automatico
+- [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
 ## Fase 3 — Pannello admin
 - [ ] Ruolo admin + guardia su rotte e RLS
@@ -51,7 +56,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Script di import del foglio (`scripts/import-xlsx`), poi progetto Supabase reale. Aperte solo: soglia di sicurezza, importo quota, qualche suffisso dei talenti (vedi OPEN-QUESTIONS).
+Aggiungere la chiave anon, provare il login e controllare le pagine; poi pagina Giocatori (listone) e deploy su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
@@ -59,3 +64,4 @@ Script di import del foglio (`scripts/import-xlsx`), poi progetto Supabase reale
 - 2026-10-21: `r` = restricted, `u` = unrestricted nei nomi contratto; la classifica finale si registra nell'app.
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
 - 2026-10-21: il monte ingaggi include le quote dei tagliati (verificato sul foglio); la soglia della luxury tax è assunta = cap effettivo.
+- 2026-10-21: Next 16 con `cacheComponents`: i dati per-utente stanno dentro `<Suspense>` (layout del gruppo `(lega)`); `middleware` si chiama `proxy.ts`.

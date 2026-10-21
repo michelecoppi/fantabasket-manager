@@ -18,7 +18,7 @@ Altre sezioni portano roba in più nel nome: i tagliati lo stipendio originale (
 4. Più candidati: scegliere con il **ruolo della riga** (A/C/G contro G/F/C di Dunkest) e poi con le partite giocate; i casi sotto restano da confermare a mano.
 5. Abbreviazioni e refusi: tabella di alias.
 
-Sul foglio del 21/10: 107 nomi si abbinano da soli, 29 vogliono un alias, 5 sono ambigui, 8 non si trovano. I "non trovati" mancano perché la tabella statistiche contiene solo chi ha giocato almeno una partita: per l'abbinamento serve la lista completa dei giocatori (il listone di `Foglio3`), non le statistiche.
+Sul foglio del 21/10: 107 nomi si abbinano da soli, 29 vogliono un alias, 5 sono ambigui, 8 non si trovano. I "non trovati" mancano perché la tabella statistiche contiene solo chi ha giocato almeno una partita: per l'abbinamento serve la lista completa dei giocatori, non le statistiche. `Foglio3` ha solo i free agent, quindi per quelli in rosa serve un export Dunkest completo (vedi PLAN).
 
 ### Alias (nome nel foglio → giocatore)
 | Foglio | Giocatore | | Foglio | Giocatore |

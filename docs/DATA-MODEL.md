@@ -15,7 +15,7 @@
 | Colonne AC-AI | **Ultimo contratto**: data (`2026.09`) dell'ultima volta sotto contratto, giocatore, stipendio, squadra; + coppie "nome prezzo" (da chiarire) | `last_contracts` |
 
 **Foglio2** — ordine rookie draft 2026: 40 righe = 5 giri × 8; colonne squadra | cognome | nome | squadra NBA | note ("Da Spacc." = pick ricevuta).
-**Foglio3** — listone Dunkest: nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted` (squadra ex-proprietaria che può pareggiare l'offerta, `r` se ex-rookie; non c'è una colonna proprietario). Sono i giocatori ancora liberi: prima dell'asta ~440 righe utili, dopo ~360 righe di sole celle con spazi; dopo l'asta del 20/10 ne restano ~370 e nessuno è più restricted, quindi il diritto vale solo per l'asta. Come leggerlo: [IMPORT.md](IMPORT.md).
+**Foglio3** — elenco dei **free agent** (anche allenatori, es. `Head Coach`): nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted` (squadra ex-proprietaria che può pareggiare l'offerta, `r` se ex-rookie; 24 righe prima dell'asta; non c'è una colonna proprietario). **Non contiene i giocatori già in rosa.** Prima dell'asta 443 righe utili, dopo ~360 righe di sole celle con spazi; dopo l'asta del 20/10 ne restano ~370 e nessuno è più restricted, quindi il diritto vale solo per l'asta. Come leggerlo: [IMPORT.md](IMPORT.md).
 
 Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = restricted alla scadenza; `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III". Nel foglio `r` compare solo sui contratti rookie e `u` anche dopo un pareggio (Okongwu): i restricted non-rookie non hanno sigla, si riconoscono da `Restricted` in Foglio3 (vedi `restricted_rights`).
 Ruoli nel foglio: A = Ala, C = Centro, G = Guardia.
@@ -79,3 +79,5 @@ Lo schema è una **bozza**, da rifinire in fase 1.
 
 Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): la validazione deve **avvisare**, non bloccare.
 Lo schema eseguibile è in `supabase/migrations/0001_init.sql` (non ancora testato su un database reale).
+
+Collegamento nome breve → giocatore: l'import collega un giocatore al listone solo se coincidono cognome **e** (proprietario in colonna `Restricted` **oppure** stipendio = crediti). Un cognome uguale non basta: l'elenco contiene solo free agent, quindi un omonimo sarebbe un falso collegamento (es. Jahmir Young al posto di Trae Young). I casi non collegati restano giocatori provvisori con il solo nome del foglio.
