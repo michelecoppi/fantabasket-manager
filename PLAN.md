@@ -35,6 +35,10 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Layout mobile-first, tema chiaro/scuro automatico
 - [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
+## Deploy
+- [ ] Vercel: segui [docs/DEPLOY.md](docs/DEPLOY.md) (account, variabili, URL in Supabase, secret keep-alive)
+- [ ] Creare gli altri 6 utenti (viewer)
+
 ## Fase 3 — Pannello admin
 - [ ] Ruolo admin + guardia su rotte e RLS
 - [ ] CRUD contratti: firma (durata 0.5/1/2/3, team option), modifica, rimozione; validazioni 13+3..6, 5G/5A/3C, max 3 riserve per ruolo
@@ -49,7 +53,8 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 ## Fase 4 — Rifiniture
 - [ ] Storico stagioni e scambi
 - [ ] Export CSV/Excel
-- [ ] Backup periodico + keep-alive Supabase
+- [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`, serve aggiungere i secret su GitHub)
+- [ ] Backup periodico del database
 - [ ] Notifiche (opzionale)
 
 ## Fuori scope per ora

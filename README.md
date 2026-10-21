@@ -13,6 +13,7 @@ Stato: fase di progettazione (regolamento analizzato, vedi docs/REGOLAMENTO.md).
 | [CLAUDE.md](CLAUDE.md) | Istruzioni per le AI che lavorano sul repo |
 | [PLAN.md](PLAN.md) | Piano di lavoro, modificabile (checklist per fasi) |
 | [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md) | Regole di lega in sintesi, con ID R-xx |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Pubblicare il sito su Vercel (gratis) |
 | [docs/STACK.md](docs/STACK.md) | Scelte tecnologiche e hosting gratuito |
 | [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Cosa contiene il foglio Excel e bozza del database |
 | [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | Domande da chiarire con l'organizzatore |
