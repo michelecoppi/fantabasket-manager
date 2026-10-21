@@ -12,3 +12,4 @@ Dunkest.xlsx
 next-env.d.ts
 *.tsbuildinfo
 coverage/
+.vercel
