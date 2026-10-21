@@ -1,8 +1,8 @@
 import type { SimTeam } from "@/components/trade-parts";
-import type { LeagueView } from "./league";
+import type { LeagueView, Versions } from "./league";
 
 /** Squadre nella forma che usano simulatore e scambio admin; con `versions` ogni riga porta la versione vista (concorrenza, migrazione 0006). */
-export function simTeams(league: LeagueView, versions?: { contracts: Record<number, number>; picks: Record<number, number> }): SimTeam[] {
+export function simTeams(league: LeagueView, versions?: Pick<Versions, "contracts" | "picks">): SimTeam[] {
   return league.teams.map((t) => ({
     id: t.team.id,
     name: t.team.name,

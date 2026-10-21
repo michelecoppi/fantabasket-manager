@@ -8,6 +8,9 @@ const tabs = [
   { href: "/admin/scambio", label: "Scambio" },
   { href: "/admin/firma", label: "Firma" },
   { href: "/admin/rose", label: "Rose" },
+  { href: "/admin/pick", label: "Pick" },
+  { href: "/admin/quote", label: "Quote" },
+  { href: "/admin/registro", label: "Registro" },
 ];
 
 export function AdminTabs() {
