@@ -1,9 +1,25 @@
 // Riepilogo di verifica dell'import: confronta quanto letto con i totali scritti nel foglio.
 import { DEFAULT_SETTINGS, rosterWarnings, teamFinance } from "../../src/lib/cap";
 import type { ImportData, PlayerRef } from "./parse";
-import { SHEET_TEAM_ORDER } from "./names";
+import { SHEET_TEAM_ORDER, lettersOnly } from "./names";
 
 const count = <T>(xs: T[], f: (x: T) => boolean) => xs.filter(f).length;
+
+/**
+ * Nomi dei giocatori che compaiono in più contratti. L'import li collegherebbe allo stesso `players.id`
+ * (stessa chiave di import-xlsx.ts) e violerebbe unique (season_id, player_id), migrazione 0003.
+ */
+export function duplicateContractPlayers(contracts: { player: PlayerRef }[]): string[] {
+  const byKey = new Map<string, string[]>();
+  for (const { player: r } of contracts) {
+    const c = r.catalog;
+    const key = c
+      ? `${lettersOnly(c.firstName)}|${lettersOnly(c.lastName)}|${lettersOnly(c.nbaTeam ?? "")}`
+      : `|${lettersOnly(r.rawName)}|`;
+    byKey.set(key, [...(byKey.get(key) ?? []), r.rawName]);
+  }
+  return [...byKey.values()].filter((names) => names.length > 1).map((names) => names[0]);
+}
 
 export function buildReport(d: ImportData): { text: string; problems: number } {
   const lines: string[] = [];
@@ -41,6 +57,12 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
   if (unmatched.length) {
     p("Da verificare (verranno creati come giocatori provvisori):");
     for (const u of unmatched) p(`  [${u.ref.match}] ${u.ref.rawName}  (${u.where})`);
+  }
+  const dups = duplicateContractPlayers(d.contracts);
+  if (dups.length) {
+    problems += dups.length;
+    p("Giocatori con più di un contratto (stesso giocatore nel database, violerebbe unique (season_id, player_id)):");
+    for (const n of dups) p(`  ${n}`);
   }
 
   p("\n== Pick ==");
