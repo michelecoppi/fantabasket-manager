@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 const links = [
   { href: "/", label: "Lega" },
@@ -11,25 +12,30 @@ const links = [
   { href: "/scambio", label: "Scambio" },
 ];
 
-export function MainNav() {
+export function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
+  const active = href === "/" ? pathname === "/" || pathname.startsWith("/squadre") : pathname.startsWith(href);
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`font-display border-b-4 px-3 py-2 text-lg font-bold whitespace-nowrap transition ${
+        active ? "border-brand-red text-white" : "border-transparent text-neutral-400 hover:text-white"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+/** `extra`: voci aggiuntive (es. Admin, solo per chi ne ha il ruolo). */
+export function MainNav({ extra }: { extra?: ReactNode }) {
   return (
     <nav className="-mb-px flex gap-1 overflow-x-auto">
-      {links.map((l) => {
-        const active = l.href === "/" ? pathname === "/" || pathname.startsWith("/squadre") : pathname.startsWith(l.href);
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            aria-current={active ? "page" : undefined}
-            className={`font-display border-b-4 px-3 py-2 text-lg font-bold whitespace-nowrap transition ${
-              active ? "border-brand-red text-white" : "border-transparent text-neutral-400 hover:text-white"
-            }`}
-          >
-            {l.label}
-          </Link>
-        );
-      })}
+      {links.map((l) => (
+        <NavLink key={l.href} {...l} />
+      ))}
+      {extra}
     </nav>
   );
 }

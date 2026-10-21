@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { MainNav } from "@/components/nav";
+import { MainNav, NavLink } from "@/components/nav";
 import { RefreshButton } from "@/components/refresh-button";
 import { loadProfile } from "@/lib/league-server";
 
@@ -14,6 +14,11 @@ async function UserBadge() {
       {profile.role === "admin" && <span className="rounded bg-brand-red px-1.5 py-0.5 text-xs font-bold text-white uppercase">admin</span>}
     </span>
   );
+}
+
+async function AdminTab() {
+  const profile = await loadProfile();
+  return profile?.role === "admin" ? <NavLink href="/admin" label="Admin" /> : null;
 }
 
 // Area per-utente: legge la sessione a ogni richiesta, quindi non può essere "instant" (validazione solo in dev).
@@ -39,7 +44,13 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
         <div className="mx-auto max-w-5xl px-4">
-          <MainNav />
+          <MainNav
+            extra={
+              <Suspense>
+                <AdminTab />
+              </Suspense>
+            }
+          />
         </div>
         <div className="h-1 bg-gradient-to-r from-brand-blue via-brand-blue to-brand-red" />
       </header>

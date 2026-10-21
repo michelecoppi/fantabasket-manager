@@ -25,6 +25,26 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
   );
 }
 
+/** Valore dopo un'operazione, con quello di prima sotto: non va a capo su telefono e mostra la direzione. */
+export function StatChange({ label, before, after, worseWhenLower = false, bad }: { label: string; before: number; after: number; worseWhenLower?: boolean; bad?: boolean }) {
+  const delta = Math.round((after - before) * 10) / 10;
+  const fmt1 = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".", ","));
+  const worse = worseWhenLower ? delta < 0 : false;
+  return (
+    <div className="min-w-0">
+      <div className="text-xs font-medium tracking-wide text-muted uppercase">{label}</div>
+      <div className={`font-display text-3xl leading-tight font-bold tabular-nums ${bad ? "text-brand-red" : ""}`}>{fmt1(after)}</div>
+      <div className="text-xs text-muted tabular-nums">
+        {delta === 0 ? "invariato" : (
+          <>
+            <span className={worse ? "text-brand-red" : delta > 0 && worseWhenLower ? "text-green-700 dark:text-green-400" : ""}>{delta > 0 ? "▲ +" : "▼ −"}{fmt1(Math.abs(delta))}</span> · era {fmt1(before)}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PageTitle({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   return (
     <div className="mb-5">

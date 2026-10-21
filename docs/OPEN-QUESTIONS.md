@@ -53,3 +53,10 @@ Alias usati nel foglio: Farmers, Cosenza/CUS, Bollerz/BOL, Dame/DAME, Atlanto/AT
 - **ASSUNZIONE** R-57: se una squadra è già sopra il cap, lo scambio è accettabile solo se non aumenta il suo monte ingaggi; altrimenti "non deve far sforare" = capienza ≥ 0 dopo lo scambio. Da confermare con il moderatore.
 - **ASSUNZIONE**: un giocatore scambiato mantiene lo slot (titolare/riserva) che aveva; le riserve pesano sul budget riserve, non sul cap.
 - **ASSUNZIONE**: la stagione di scadenza di un contratto è `stagione corrente + ceil(anni residui) - 1` (½ e 1 anno scadono a fine stagione corrente); la team option sposta la scadenza di una stagione.
+
+## ASSUNZIONI del pannello admin (issue #6)
+- **ASSUNZIONE** R-33: il massimo di 2 pick per giro è contato per anno di draft (parametro `max_picks_per_round`); in uno scambio avvisa, non blocca.
+- **ASSUNZIONE** R-20/R-22: durate ammesse = ½ e gli interi fino a `contract_max_years` (3); la team option solo su 1 o 2 anni. La durata può restare "da fissare" (R-51).
+- **ASSUNZIONE** R-10: firmare un contratto che porta sopra il cap avvisa ma non blocca (nel foglio Dame Time è già sforato dopo l'asta). Gli scambi invece bloccano (R-57) salvo eccezione del moderatore con motivazione.
+- **ASSUNZIONE** R-42: il taglio crea una riga `cuts` in stato `pending` (asta dei tagliati); la quota è 1/3 arrotondato a 0,5 (`cutShare`). Taglio definitivo e rientro non sono ancora implementati.
+- Lo scambio registra "approvato da" come testo libero (domanda 2: il moderatore può non essere admin).
