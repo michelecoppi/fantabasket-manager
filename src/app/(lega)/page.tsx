@@ -2,17 +2,39 @@ import Link from "next/link";
 import { Badge, PageTitle, Stat } from "@/components/ui";
 import { fmt } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
+import { listTeams, parseTeamListOptions } from "@/lib/teams-list";
 
-export default async function Home() {
+const control = "rounded border border-line bg-surface px-3 py-2 text-base";
+
+export default async function Home(props: PageProps<"/">) {
+  const options = parseTeamListOptions(await props.searchParams);
   const [league, profile] = await Promise.all([loadLeague(), loadProfile()]);
   const { settings } = league;
+  const teams = listTeams(league.teams, options);
 
   return (
     <>
       <PageTitle sub={<>Cap {fmt(settings.cap)} (più bonus campionato) · floor {fmt(settings.cap - settings.cap / settings.floorDivisor)} · budget riserve {fmt(settings.reserveBudget)}</>}>Lega {league.seasonYear}</PageTitle>
 
+      <form action="/" className="mb-4 grid grid-cols-2 gap-2 sm:flex">
+        <select name="ordina" defaultValue={options.sort} className={control} aria-label="Ordina per">
+          <option value="nome">Per nome</option>
+          <option value="monte">Per monte ingaggi</option>
+          <option value="spazio">Per spazio salariale</option>
+        </select>
+        <select name="mostra" defaultValue={options.filter} className={control} aria-label="Mostra">
+          <option value="tutte">Tutte le squadre</option>
+          <option value="sforate">Solo sforate</option>
+          <option value="floor">Solo sotto floor</option>
+          <option value="incomplete">Solo rose incomplete</option>
+        </select>
+        <button className="font-display rounded bg-brand-red px-4 py-2 text-lg font-bold text-white">Applica</button>
+        <Link href="/" className="font-display rounded border border-line px-4 py-2 text-center text-lg font-bold">Azzera</Link>
+      </form>
+
+      {teams.length === 0 && <p className="text-sm text-muted">Nessuna squadra con questo filtro.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
-        {league.teams.map((t) => {
+        {teams.map((t) => {
           const f = t.finance;
           const mine = profile?.team_id === t.team.id;
           return (

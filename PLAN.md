@@ -35,6 +35,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] **Draft**: pick scambiate 2026-2028 (con "da confermare") e ordine rookie draft 2026
 - [x] **Giocatori**: listone Dunkest filtrabile (nome, ruolo, squadra NBA, libero/occupato, ordine) in `/giocatori`
 - [x] Layout mobile-first, tema chiaro/scuro automatico; grafica ispirata a NBA.com (barra scura, rosso/blu, titoli condensed)
+- [x] Strumenti per gli utenti (issue #13): griglia pick in `/draft`, contratti in scadenza in `/scadenze`, simulatore di scambio in sola lettura in `/scambio` (`tradeImpact` in `lib/cap.ts`, R-57), ordinamento/filtri sulla home, PWA installabile (`manifest.ts`, icone da `scripts/make-icons.mjs`; niente service worker, l'app è sempre online)
 - [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
 ## Deploy
