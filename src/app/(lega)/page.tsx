@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge, Stat } from "@/components/ui";
+import { Badge, PageTitle, Stat } from "@/components/ui";
 import { fmt } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
 
@@ -9,12 +9,9 @@ export default async function Home() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Lega {league.seasonYear}</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Cap {fmt(settings.cap)} (più bonus campionato) · floor {fmt(settings.cap - settings.cap / settings.floorDivisor)} · budget riserve {fmt(settings.reserveBudget)}
-      </p>
+      <PageTitle sub={<>Cap {fmt(settings.cap)} (più bonus campionato) · floor {fmt(settings.cap - settings.cap / settings.floorDivisor)} · budget riserve {fmt(settings.reserveBudget)}</>}>Lega {league.seasonYear}</PageTitle>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {league.teams.map((t) => {
           const f = t.finance;
           const mine = profile?.team_id === t.team.id;
@@ -22,14 +19,14 @@ export default async function Home() {
             <Link
               key={t.team.id}
               href={`/squadre/${t.team.id}`}
-              className={`rounded-xl border p-4 transition hover:border-orange-500 ${
-                mine ? "border-orange-500" : "border-neutral-200 dark:border-neutral-800"
+              className={`rounded-lg border border-t-4 bg-surface p-4 transition hover:border-brand-blue ${
+                mine ? "border-brand-red" : "border-line"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-semibold">{t.team.name}</div>
-                  <div className="text-sm text-neutral-500">{t.team.owner_name}</div>
+                  <div className="font-display text-2xl leading-none font-bold">{t.team.name}</div>
+                  <div className="text-sm text-muted">{t.team.owner_name}</div>
                 </div>
                 {mine && <Badge tone="accent">La tua</Badge>}
               </div>
