@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { MainNav } from "@/components/nav";
+import { RefreshButton } from "@/components/refresh-button";
 import { loadProfile } from "@/lib/league-server";
 
 async function UserBadge() {
@@ -31,6 +32,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
             <Suspense>
               <UserBadge />
             </Suspense>
+            <RefreshButton />
             <form action="/auth/signout" method="post">
               <button className="text-neutral-400 hover:text-white">Esci</button>
             </form>
