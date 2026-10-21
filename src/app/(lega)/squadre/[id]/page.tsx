@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, RestrictionBadge, Section, Stat } from "@/components/ui";
+import { Badge, PageTitle, RestrictionBadge, Section, Stat } from "@/components/ui";
 import { fmt, POS_LABEL } from "@/lib/format";
 import type { RosterPlayer } from "@/lib/league";
 import { loadLeague } from "@/lib/league-server";
 
 function RosterTable({ players }: { players: RosterPlayer[] }) {
-  if (players.length === 0) return <p className="text-sm text-neutral-500">Nessun giocatore.</p>;
+  if (players.length === 0) return <p className="text-sm text-muted">Nessun giocatore.</p>;
   return (
-    <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+    <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
       {players.map((p) => (
         <li key={p.id} className="flex items-center gap-3 px-3 py-2">
-          <span className="w-5 text-center text-xs font-semibold text-neutral-500">{p.pos ?? "?"}</span>
+          <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
           <span className="min-w-0 flex-1 truncate">
             {p.name}
-            {p.nbaTeam && <span className="ml-2 text-xs text-neutral-500">{p.nbaTeam}</span>}
+            {p.nbaTeam && <span className="ml-2 text-xs text-muted">{p.nbaTeam}</span>}
           </span>
           <RestrictionBadge value={p.restriction} />
-          <span className="w-10 text-right text-sm text-neutral-500" title="Anni di contratto (+1 = team option)">{p.contractLabel}</span>
+          <span className="w-10 text-right text-sm text-muted" title="Anni di contratto (+1 = team option)">{p.contractLabel}</span>
           <span className="w-12 text-right font-medium tabular-nums">{fmt(p.salary)}</span>
         </li>
       ))}
@@ -39,14 +39,11 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
   return (
     <>
-      <Link href="/" className="text-sm text-neutral-500 hover:underline">← Lega</Link>
-      <h1 className="mt-2 text-2xl font-bold">{t.team.name}</h1>
-      <p className="text-sm text-neutral-500">
-        {t.team.owner_name}
-        {t.finalRank && ` · ${t.finalRank}° nella scorsa stagione`}
-      </p>
+      <Link href="/" className="text-sm font-semibold text-brand-blue hover:underline">← Lega</Link>
+      <div className="mt-2"><PageTitle sub={<>{t.team.owner_name}
+        {t.finalRank && ` · ${t.finalRank}° nella scorsa stagione`}</>}>{t.team.name}</PageTitle></div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-neutral-200 p-4 sm:grid-cols-4 dark:border-neutral-800">
+      <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-line bg-surface p-4 sm:grid-cols-4">
         <Stat label="Monte ingaggi" value={fmt(f.payroll)} />
         <Stat label={`Cap (${fmt(league.settings.cap)} ${t.bonus >= 0 ? "+" : "−"} ${Math.abs(t.bonus)})`} value={fmt(f.effectiveCap)} />
         <Stat label="Spazio salariale" value={fmt(f.capSpace)} tone={f.overCap ? "bad" : undefined} />
@@ -61,7 +58,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
       <Section title="Titolari" aside={`${t.starters.length}/13`}>
         <RosterTable players={t.starters} />
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-muted">
           {(["G", "A", "C"] as const).map((p) => `${POS_LABEL[p]}: ${t.starters.filter((x) => x.pos === p).length}/${league.settings.starters[p]}`).join(" · ")}
         </p>
       </Section>
@@ -72,13 +69,13 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
       <Section title="Squadra talenti" aside={t.talents.length}>
         {t.talents.length === 0 ? (
-          <p className="text-sm text-neutral-500">Nessun talento.</p>
+          <p className="text-sm text-muted">Nessun talento.</p>
         ) : (
-          <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
             {t.talents.map((x) => (
               <li key={x.id} className="flex items-center gap-3 px-3 py-2">
                 <span className="min-w-0 flex-1 truncate">{x.display_name}</span>
-                {x.draft_year && <span className="text-xs text-neutral-500">draft {x.draft_year}{x.notes ? ` · ${x.notes}` : ""}</span>}
+                {x.draft_year && <span className="text-xs text-muted">draft {x.draft_year}{x.notes ? ` · ${x.notes}` : ""}</span>}
                 {x.entry_credits !== null && <span className="w-12 text-right tabular-nums">{fmt(Number(x.entry_credits))}</span>}
               </li>
             ))}
@@ -88,9 +85,9 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
       <Section title="Giocatori tagliati" aside="paga 1/3 dello stipendio">
         {t.cuts.length === 0 ? (
-          <p className="text-sm text-neutral-500">Nessun taglio.</p>
+          <p className="text-sm text-muted">Nessun taglio.</p>
         ) : (
-          <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
             {t.cuts.map((c) => (
               <li key={c.id} className="flex items-center gap-3 px-3 py-2">
                 <span className="min-w-0 flex-1 truncate">{c.name}</span>
@@ -115,7 +112,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           ))}
         </div>
         {ceded.length > 0 && (
-          <p className="mt-3 text-sm text-neutral-500">
+          <p className="mt-3 text-sm text-muted">
             Cedute: {ceded.map((p) => `${p.year} ${p.round}° → ${name(p.current_team_id)}${p.to_confirm ? " (da confermare)" : ""}`).join(" · ")}
           </p>
         )}

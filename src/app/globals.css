@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f2f4;
+  --foreground: #0d1017;
+  --surface: #ffffff;
+  --line: #dcdfe5;
+  --muted: #5f6673;
+  --nav: #0a0d14;
+  --brand-blue: #1d428a;
+  --brand-red: #c8102e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #07090d;
+    --foreground: #eceef2;
+    --surface: #12151c;
+    --line: #262b36;
+    --muted: #98a0ae;
+    --nav: #000000;
+    --brand-blue: #4f7be0;
+    --brand-red: #ef3a55;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-nav: var(--nav);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-red: var(--brand-red);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Titoli stile broadcast: condensed, maiuscolo, pesante. */
+.font-display {
+  font-family: var(--font-display), Impact, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }

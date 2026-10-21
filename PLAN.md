@@ -32,8 +32,8 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] **Home lega**: 8 squadre con monte ingaggi, spazio, bonus, stato (sforato / sotto floor)
 - [x] **Pagina squadra**: titolari, riserve, talenti, tagliati, pick possedute e cedute
 - [x] **Draft**: pick scambiate 2026-2028 (con "da confermare") e ordine rookie draft 2026
-- [ ] **Giocatori**: listone Dunkest filtrabile (ruolo, squadra NBA, libero/occupato)
-- [x] Layout mobile-first, tema chiaro/scuro automatico
+- [x] **Giocatori**: listone Dunkest filtrabile (nome, ruolo, squadra NBA, libero/occupato, ordine) in `/giocatori`
+- [x] Layout mobile-first, tema chiaro/scuro automatico; grafica ispirata a NBA.com (barra scura, rosso/blu, titoli condensed)
 - [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
 ## Deploy
@@ -62,7 +62,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Aggiungere la chiave anon, provare il login e controllare le pagine; poi pagina Giocatori (listone) e deploy su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
+Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
@@ -71,3 +71,4 @@ Aggiungere la chiave anon, provare il login e controllare le pagine; poi pagina 
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
 - 2026-10-21: il monte ingaggi include le quote dei tagliati (verificato sul foglio); la soglia della luxury tax è assunta = cap effettivo.
 - 2026-10-21: Next 16 con `cacheComponents`: i dati per-utente stanno dentro `<Suspense>` (layout del gruppo `(lega)`); `middleware` si chiama `proxy.ts`.
+- 2026-10-21: grafica ispirata a NBA.com (token colore in `globals.css`, font Barlow Condensed per i titoli); `instantInsights.validationLevel: "manual-warning"` in `next.config.ts` per non far bloccare il dev overlay dalle letture di sessione.
