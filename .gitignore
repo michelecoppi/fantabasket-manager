@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.log
+.DS_Store
+# dati sorgente della lega: tenuti solo in locale finché non decidiamo diversamente
+Dunkest.xlsx
+
+# regolamento originale (solo locale)
+*.docx
