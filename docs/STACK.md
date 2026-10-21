@@ -3,7 +3,7 @@
 ## Scelta consigliata
 | Livello | Scelta | Perché |
 |---|---|---|
-| Frontend | **Next.js (App Router) + TypeScript + Tailwind + shadcn/ui** | Un solo progetto per UI e API, ottimo su mobile, tantissima documentazione (utile per lavorare con le AI) |
+| Frontend | **Next.js (App Router) + TypeScript + Tailwind** | Un solo progetto per UI e API, ottimo su mobile, tantissima documentazione (utile per lavorare con le AI) |
 | Backend / DB | **Supabase** (Postgres + Auth + Row Level Security) | Login pronto (magic link/email), ruoli admin/viewer applicati nel DB, SQL vero per i calcoli di cap, piano free abbondante |
 | Hosting | **Vercel (Hobby)** per l'app + Supabase free per DB | Deploy automatico da GitHub, HTTPS, nessuna carta richiesta |
 

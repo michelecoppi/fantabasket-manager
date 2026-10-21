@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   // La validazione "instant" implicita segnala come errori le letture di sessione dell area per-utente: solo dove richiesto.

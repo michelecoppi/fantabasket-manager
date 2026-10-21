@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { MainNav } from "@/components/nav";
@@ -23,7 +24,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <header className="sticky top-0 z-10 bg-nav text-white shadow-md">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 pt-2">
           <Link href="/" className="font-display flex items-center gap-2 pb-2 text-2xl font-extrabold">
-            <span className="grid h-8 w-8 place-items-center rounded bg-brand-red text-base">🏀</span>
+            <Image src="/logo.png" alt="" width={270} height={360} priority className="h-10 w-auto" />
             Fantabasket
           </Link>
           <div className="ml-auto flex items-center gap-3 pb-2 text-sm">
