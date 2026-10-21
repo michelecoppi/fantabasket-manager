@@ -36,7 +36,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
 ## Deploy
-- [ ] Vercel: segui [docs/DEPLOY.md](docs/DEPLOY.md) (account, variabili, URL in Supabase, secret keep-alive)
+- [x] Vercel: sito online (dominio di produzione verificato: apre `/login`). Guida in [docs/DEPLOY.md](docs/DEPLOY.md). Nota: l'URL del singolo deploy (`...-michelecoppis-projects.vercel.app`) è protetto da Vercel SSO, va condiviso solo il dominio di produzione `fantabasket-manager.vercel.app`
 - [ ] Creare gli altri 6 utenti (viewer)
 
 ## Fase 3 — Pannello admin

@@ -5,7 +5,7 @@ Gestionale per la lega di fantabasket NBA (formato Dunkest, 8 squadre, contratti
 - **Admin**: modifica rose, contratti, tagli, scambi, pick del draft, budget.
 - **Utenti normali**: sola lettura (rose, spazio salariale, pick, storico).
 
-Stato: fase di progettazione (regolamento analizzato, vedi docs/REGOLAMENTO.md).
+Stato: sito online in sola lettura (login, lega, squadre, draft); pannello admin in arrivo. Vedi [PLAN.md](PLAN.md).
 
 ## Documenti
 | File | Contenuto |
