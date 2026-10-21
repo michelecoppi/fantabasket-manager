@@ -24,7 +24,7 @@ export interface CatalogPlayer {
   owner: TeamName | null; // colonna "Restricted" del foglio 3: contiene il proprietario attuale
 }
 
-export type MatchKind = "owner" | "unique" | "salary" | "none" | "ambiguous";
+export type MatchKind = "owner" | "salary" | "none" | "ambiguous";
 export interface PlayerRef {
   rawName: string;
   catalog: CatalogPlayer | null;
@@ -171,7 +171,8 @@ export function matchPlayer(
   if (cands.length === 0) return done(null, "none");
   const mine = team ? cands.filter((p) => p.owner === team) : [];
   if (mine.length === 1) return done(mine[0], "owner");
-  if (cands.length === 1) return done(cands[0], "unique");
+  // Un cognome uguale non basta: il listone contiene solo free agent, quindi un omonimo (es. Jahmir Young
+  // al posto di Trae Young) sarebbe un falso collegamento. Servono proprietario o stipendio coerenti.
   const pool = mine.length > 1 ? mine : cands;
   const bySalary = salary === null ? [] : pool.filter((p) => p.credits === salary);
   if (bySalary.length === 1) return done(bySalary[0], "salary");

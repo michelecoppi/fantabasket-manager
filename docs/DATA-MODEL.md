@@ -61,3 +61,5 @@ Lo schema è una **bozza**, da rifinire in fase 1.
 
 Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): la validazione deve **avvisare**, non bloccare.
 Lo schema eseguibile è in `supabase/migrations/0001_init.sql` (non ancora testato su un database reale).
+
+Collegamento nome breve → giocatore: l'import collega un giocatore al listone solo se coincidono cognome **e** (proprietario in colonna `Restricted` **oppure** stipendio = crediti). Un cognome uguale non basta: l'elenco contiene solo free agent, quindi un omonimo sarebbe un falso collegamento (es. Jahmir Young al posto di Trae Young). I casi non collegati restano giocatori provvisori con il solo nome del foglio.

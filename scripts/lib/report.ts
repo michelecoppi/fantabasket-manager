@@ -35,7 +35,7 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
     ...d.cuts.map((c) => ({ where: `taglio ${c.team}`, ref: c.player })),
     ...d.lastContracts.map((c) => ({ where: `ultimo contratto ${c.team}`, ref: c.player })),
   ];
-  const kinds = ["owner", "unique", "salary", "ambiguous", "none"] as const;
+  const kinds = ["owner", "salary", "ambiguous", "none"] as const;
   p(kinds.map((k) => `${k}: ${count(refs, (r) => r.ref.match === k)}`).join(" · "));
   const unmatched = refs.filter((r) => r.ref.match === "none" || r.ref.match === "ambiguous");
   if (unmatched.length) {
