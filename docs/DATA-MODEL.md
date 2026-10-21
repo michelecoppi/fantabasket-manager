@@ -67,7 +67,7 @@ create table cuts (id serial primary key, season_id int, team_id uuid, player_id
 create table draft_picks (id serial primary key, year int, round int check (round between 1 and 5), original_team uuid, current_team uuid, status text, note text);
 create table rookie_draft (season_id int, pick_no int, team_id uuid, player_id int, note text);
 create table last_contracts (id serial primary key, player_id int, team_id uuid, salary numeric(5,1), ended_on date);
-create table restricted_rights (season_id int, player_id int, team_id uuid, is_rookie bool default false, primary key (season_id, player_id)); -- PROPOSTA (non in 0001_init.sql): colonna Restricted di Foglio3, si svuota dopo l'asta
+create table restricted_rights (season_id int, player_id int, team_id uuid, is_rookie bool default false, primary key (season_id, player_id)); -- PROPOSTA (non in 20261021214000_init.sql): colonna Restricted di Foglio3, si svuota dopo l'asta
 create table team_season (season_id int, team_id uuid, bonus int default 0, entry_fee_paid bool default false, final_rank int, luxury_tax_paid bool default false, primary key(season_id,team_id));
 create table trades (id serial primary key, season_id int, created_at timestamptz default now(), status text, payload jsonb, approved_by uuid);
 create table audit_log (id bigserial primary key, at timestamptz default now(), user_id uuid, action text, table_name text, row_id text, before jsonb, after jsonb);
@@ -78,6 +78,6 @@ Seed squadre (owner → team): Amedeo → Assago Farmers, Lugiu → CUS Cosenza,
 Lo schema è una **bozza**, da rifinire in fase 1.
 
 Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): la validazione deve **avvisare**, non bloccare.
-Lo schema eseguibile è in `supabase/migrations/0001_init.sql` (non ancora testato su un database reale).
+Lo schema eseguibile è in `supabase/migrations/20261021214000_init.sql` (non ancora testato su un database reale).
 
 Collegamento nome breve → giocatore: l'import collega un giocatore al listone solo se coincidono cognome **e** (proprietario in colonna `Restricted` **oppure** stipendio = crediti). Un cognome uguale non basta: l'elenco contiene solo free agent, quindi un omonimo sarebbe un falso collegamento (es. Jahmir Young al posto di Trae Young). I casi non collegati restano giocatori provvisori con il solo nome del foglio.

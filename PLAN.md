@@ -15,7 +15,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 
 ## Fase 1 — Progetto e dati
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
-- [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (eseguiti su Supabase)
+- [x] Schema SQL + RLS in `supabase/migrations/20261021214000_init.sql` e `seed.sql` (eseguiti su Supabase)
 - [x] Progetto Supabase creato, migrazioni 0001-0002 e seed applicati
 - [ ] Testare le policy RLS con un utente viewer
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (40 test verdi in tutto)
@@ -48,9 +48,9 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 
 ## Fase 3 — Pannello admin
 - [x] Ruolo admin + guardia su rotte e RLS (issue #6): `/admin` dà 404 ai viewer, ogni server action ricontrolla il ruolo, le RPC controllano `is_admin()`
-- [x] Scritture atomiche (issue #6): migrazione `0006_admin_rpc.sql` con RPC `admin_sign_contract`, `admin_update_contract`, `admin_cut_player`, `admin_execute_trade` (transazione + `audit_log` + versioni per la concorrenza). Regole in TS (`lib/cap.ts`: `evaluateTrade`, `evaluateSigning`, `cutShare`), server action in `src/app/(lega)/admin/actions.ts`. **Applicata su Supabase** (verificato il 2026-10-22: colonne `version`, 7 funzioni, permessi RPC solo per `authenticated`); aggiunge anche le chiavi `contract_max_years`, `max_picks_per_round` (senza, le pagine non si caricano)
+- [x] Scritture atomiche (issue #6): migrazione `20261021220000_admin_rpc.sql` con RPC `admin_sign_contract`, `admin_update_contract`, `admin_cut_player`, `admin_execute_trade` (transazione + `audit_log` + versioni per la concorrenza). Regole in TS (`lib/cap.ts`: `evaluateTrade`, `evaluateSigning`, `cutShare`), server action in `src/app/(lega)/admin/actions.ts`. **Applicata su Supabase** (verificato il 2026-10-22: colonne `version`, 7 funzioni, permessi RPC solo per `authenticated`); aggiunge anche le chiavi `contract_max_years`, `max_picks_per_round` (senza, le pagine non si caricano)
 - [x] UI admin: `/admin` (panoramica + ultime operazioni), `/admin/scambio` (con eccezione cap motivata), `/admin/firma`, `/admin/rose` (modifica durata/slot, taglio)
-- [x] CRUD contratti (migrazione `0007_admin_completamento.sql`, applicata su Supabase il 2026-10-22): rimozione senza quota (`admin_remove_contract`, ✕ in `/admin/rose`), durate in blocco (`admin_set_durations`), massimi di rosa bloccanti in firma/modifica/rientro (`rosterLimitErrors`: 13 titolari, 5G/5A/3C, 6 riserve, max 3 per ruolo; i minimi restano avvisi)
+- [x] CRUD contratti (migrazione `20261021222924_admin_completamento.sql`, applicata su Supabase il 2026-10-22): rimozione senza quota (`admin_remove_contract`, ✕ in `/admin/rose`), durate in blocco (`admin_set_durations`), massimi di rosa bloccanti in firma/modifica/rientro (`rosterLimitErrors`: 13 titolari, 5G/5A/3C, 6 riserve, max 3 per ruolo; i minimi restano avvisi)
 - [x] Taglio → asta tagliati → definitivo o rientro: `pending` → `cut` (`admin_finalize_cut`), `reinstated` (`admin_reinstate_cut`) o `awarded` (firmandolo in `/admin/firma` per un'altra squadra parte `admin_award_cut`, l'ex proprietario non può, R-41). Sezione «Tagliati» di `/admin/rose`. La migrazione marca come `cut` i tagli già presenti (vengono dal foglio)
 - [ ] Squadra talenti e rookie: firma al valore d'ingresso max 2 stagioni, scadenza prelazione (non fatto: attende la risposta alla domanda 4 di OPEN-QUESTIONS)
 - [x] Scambi: giocatori + pick, **controllo cap** (R-57) con override moderatore motivato
@@ -74,6 +74,7 @@ Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utent
 
 ## Registro decisioni
 - 2026-10-22: completamento pannello admin: stesso schema della 0006 (una RPC per operazione, regole in `lib/cap.ts`). I tagli hanno 4 stati e ricordano i termini del contratto; solo `pending` e `cut` pesano sul monte ingaggi.
+- 2026-10-22: migrazioni rinominate `<timestamp>_nome.sql` e storico remoto allineato (righe 0001, 0002, 0006 inserite in `supabase_migrations.schema_migrations`): il check "Supabase Preview" falliva con "Remote migration versions not found in local migrations directory". Rinominata anche la 0007 (applicata come `20261021222924`).
 - 2026-10-22: meno round-trip verso Supabase: `proxy.ts` e `loadProfile` usano `getClaims()` (JWT ES256 verificato in locale, nessuna chiamata ad Auth; una sessione revocata vale fino alla scadenza del JWT, come già per la RLS); `loadLeague` legge anche `version` e `loadVersions` ne deriva, la stagione corrente si legge una volta per richiesta. Da controllare a mano: regione delle funzioni Vercel (Supabase è in `eu-west-1`).
 - 2026-10-22: issue #6 decisa: una RPC Postgres per operazione (security definer + `is_admin()`), regole di lega solo in `lib/cap.ts`, concorrenza ottimistica con colonna `version`, audit scritto dalle RPC (l'issue #5 potrà passare ai trigger).
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
