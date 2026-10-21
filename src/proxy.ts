@@ -21,9 +21,9 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifica il JWT in locale (chiavi asimmetriche) e rinnova la sessione se scaduta, senza chiamare Auth a ogni pagina.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));

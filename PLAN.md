@@ -73,6 +73,7 @@ Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live 
 Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
+- 2026-10-22: meno round-trip verso Supabase: `proxy.ts` e `loadProfile` usano `getClaims()` (JWT ES256 verificato in locale, nessuna chiamata ad Auth; una sessione revocata vale fino alla scadenza del JWT, come già per la RLS); `loadLeague` legge anche `version` e `loadVersions` ne deriva, la stagione corrente si legge una volta per richiesta. Da controllare a mano: regione delle funzioni Vercel (Supabase è in `eu-west-1`).
 - 2026-10-22: issue #6 decisa: una RPC Postgres per operazione (security definer + `is_admin()`), regole di lega solo in `lib/cap.ts`, concorrenza ottimistica con colonna `version`, audit scritto dalle RPC (l'issue #5 potrà passare ai trigger).
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
 - 2026-10-21: admin dell'app = Scuti e Gabby; Serde (presidente) e Amedeo (moderatore) restano ruoli del regolamento.
