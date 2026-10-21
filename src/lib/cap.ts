@@ -84,6 +84,38 @@ export function teamFinance(
   };
 }
 
+export interface TradeSide {
+  /** `id` identifica il contratto, per poterlo mettere in uscita */
+  roster: (RosterEntry & { id: number })[];
+  cuts: CutEntry[];
+  bonus: number;
+}
+
+export interface TradeImpact {
+  before: TeamFinance;
+  after: TeamFinance;
+  /** R-57: lo scambio fa sforare il cap (o peggiora uno sforamento già in corso). Il floor non conta. */
+  breaksCap: boolean;
+  warnings: string[];
+}
+
+/**
+ * Effetto di uno scambio sulla squadra: escono i contratti `outgoingIds`, entrano `incoming` (nello stesso slot che avevano).
+ * Le pick non incidono sul cap. ASSUNZIONE (docs/OPEN-QUESTIONS.md): se la squadra è già sopra il cap, lo scambio è
+ * ammesso solo se non aumenta il monte ingaggi.
+ */
+export function tradeImpact(side: TradeSide, outgoingIds: ReadonlySet<number>, incoming: RosterEntry[], s: LeagueSettings): TradeImpact {
+  const before = teamFinance(side.roster, side.cuts, side.bonus, s);
+  const roster = [...side.roster.filter((r) => !outgoingIds.has(r.id)), ...incoming];
+  const after = teamFinance(roster, side.cuts, side.bonus, s);
+  return {
+    before,
+    after,
+    breaksCap: after.overCap && after.payroll > before.payroll,
+    warnings: rosterWarnings(roster, s),
+  };
+}
+
 /** Controlli di composizione (R-01..R-03). Restituisce avvisi, non blocca: in estate la rosa può essere incompleta. */
 export function rosterWarnings(roster: RosterEntry[], s: LeagueSettings): string[] {
   const out: string[] = [];

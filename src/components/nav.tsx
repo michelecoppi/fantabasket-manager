@@ -7,6 +7,8 @@ const links = [
   { href: "/", label: "Lega" },
   { href: "/giocatori", label: "Giocatori" },
   { href: "/draft", label: "Draft" },
+  { href: "/scadenze", label: "Scadenze" },
+  { href: "/scambio", label: "Scambio" },
 ];
 
 export function MainNav() {

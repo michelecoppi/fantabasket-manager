@@ -47,3 +47,8 @@ Aggiornato 2026-10-21 dopo le risposte dell'utente.
 Alias usati nel foglio: Farmers, Cosenza/CUS, Bollerz/BOL, Dame/DAME, Atlanto/ATLANTO, Spaccinos/SPACC, OKCC/Thunders (Foglio2), Spurs/ST. ANT (Foglio2 e ultimo contratto). `cckers` in Foglio3 = OKCC. Controllo sui dati: le scelte 2026 in "Squadra talenti" di ogni proprietario coincidono con l'ordine di `Foglio2` per tutte e 8 le squadre.
 
 - Riga ULTIMO CONTRATTO `O.Toppin` → San Antonio (risolta 2026-10-21).
+
+## ASSUNZIONI del simulatore di scambio (issue #13)
+- **ASSUNZIONE** R-57: se una squadra è già sopra il cap, lo scambio è accettabile solo se non aumenta il suo monte ingaggi; altrimenti "non deve far sforare" = capienza ≥ 0 dopo lo scambio. Da confermare con il moderatore.
+- **ASSUNZIONE**: un giocatore scambiato mantiene lo slot (titolare/riserva) che aveva; le riserve pesano sul budget riserve, non sul cap.
+- **ASSUNZIONE**: la stagione di scadenza di un contratto è `stagione corrente + ceil(anni residui) - 1` (½ e 1 anno scadono a fine stagione corrente); la team option sposta la scadenza di una stagione.
