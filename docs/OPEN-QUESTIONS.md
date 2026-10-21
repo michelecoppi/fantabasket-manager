@@ -3,8 +3,10 @@
 Aggiornato 2026-10-21 dopo le risposte dell'utente.
 
 ## Ancora da chiarire
+0. **Sigla `ChS` nelle pick 2026** (Foglio1: giro 1 di Gabby, giro 2 di Amedeo) — quale squadra è? Ipotesi: Spaccinos (nel Foglio2 la pick #8 di Spaccinos è marcata "Da bol"). Inoltre Foglio1 e Foglio2 non coincidono sul draft 2026: Foglio1 dà a Farmers 3 pick al giro 1 (proprie + Serde + CC), Foglio2 ne dà 2 e assegna a Spaccinos "Da Okcc."; nel giro 2 Foglio2 lascia a Farmers la pick propria. Quale foglio è aggiornato? *(blocca l'import delle pick)*
+0b. **Riga 43 "ULTIMO CONTRATTO": `O.Toppin (A)`** senza squadra — da quale squadra? *(import)*
 1. **Soglia di sicurezza** (R-57): è un valore numerico, ma non è ancora stato comunicato. *(fase 3, non blocca le fasi 1-2)*
-2. **Formato dei dati Dunkest da importare**: si importa il "listone" a mano ogni stagione; confermare se il file resta quello di `Foglio3` e cosa significa la colonna `Restricted` lì. *(fase 1)*
+2. **Foglio3**: è la lista dei **free agent** (anche allenatori) e non contiene i giocatori in rosa. La colonna `Restricted` contiene la squadra con diritto di pareggio (es. Durant → Farmers). Conferma? Per i giocatori in rosa servirebbe un export Dunkest completo per avere nome intero, squadra NBA e ruolo. *(fase 1)*
 3. **Admin e ruoli del regolamento**: Scuti e Gabby sono admin dell'app; presidente (Serde) e moderatore (Amedeo) restano ruoli del regolamento. Gli scambi vanno ufficializzati dal moderatore: l'app deve registrare chi li approva anche se non è admin? *(fase 3)*
 4. **Quota di iscrizione**: importo (serve per il campo `QUOTA PAGATA`). *(fase 3)*
 5. **Dettagli dei rookie al bivio**: il significato del suffisso anno (`25`, `26?`) è confermato come anno di draft/esordio; resta da definire come mostrare la scadenza della prelazione. *(fase 3)*

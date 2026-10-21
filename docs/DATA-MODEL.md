@@ -15,7 +15,7 @@
 | Colonne AC-AI | **Ultimo contratto**: data (`2026.09`) dell'ultima volta sotto contratto, giocatore, stipendio, squadra; + coppie "nome prezzo" (da chiarire) | `last_contracts` |
 
 **Foglio2** — ordine rookie draft 2026: 40 righe = 5 giri × 8; colonne squadra | cognome | nome | squadra NBA | note ("Da Spacc." = pick ricevuta).
-**Foglio3** — listone Dunkest: nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted`, proprietario (se in lega). ~440 righe utili su ~800.
+**Foglio3** — elenco dei **free agent** (anche allenatori, es. `Head Coach`): nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted` = squadra con diritto di pareggio (24 righe). 443 righe utili. **Non contiene i giocatori già in rosa.**
 
 Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = restricted alla scadenza; `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III".
 Ruoli nel foglio: A = Ala, C = Centro, G = Guardia.
