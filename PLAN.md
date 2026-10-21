@@ -4,20 +4,20 @@ Documento vivo: spunta `[x]`, aggiungi note, riordina. Le AI devono aggiornarlo 
 Regole di lega: [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md) · Dati: [docs/DATA-MODEL.md](docs/DATA-MODEL.md) · Dubbi: [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) · Stack: [docs/STACK.md](docs/STACK.md)
 
 ## Obiettivo
-Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da confermare) gestiscono tutto e gli **8 proprietari** consultano in sola lettura rose, contratti, spazio salariale, pick e tagli.
+Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono tutto e gli **8 proprietari** consultano in sola lettura rose, contratti, spazio salariale, pick e tagli.
 
 ## Fase 0 — Fondamenta (in corso)
 - [x] Analisi del foglio Excel
 - [x] Sintesi regolamento con ID regola
 - [x] CLAUDE.md, PLAN.md, STACK, DATA-MODEL, OPEN-QUESTIONS
-- [ ] Conferma regolamento ancora valido (Q1) e mappa proprietari↔squadre (Q2)
+- [x] Regolamento confermato valido (28/09/2024) e mappa proprietari↔squadre
 - [ ] Repo GitHub pubblico (dopo conferma utente)
 
 ## Fase 1 — Progetto e dati
 - [ ] Creare progetto Next.js + TS + Tailwind, lint, formattazione
 - [ ] Progetto Supabase, schema SQL in `supabase/migrations/`, RLS admin/viewer
 - [ ] `lib/cap.ts`: monte ingaggi, spazio salariale, riserve, luxury tax, floor — **con test** sui numeri del foglio (es. Amedeo: 240, bonus −2, spazio 8)
-- [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB
+- [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB; import separato del listone Dunkest a ogni stagione
 - [ ] Seed squadre, stagione 2026, giocatori Dunkest
 
 ## Fase 2 — Sola lettura (utenti normali)
@@ -35,7 +35,8 @@ Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da conf
 - [ ] Squadra talenti e rookie: firma al valore d'ingresso max 2 stagioni, scadenza prelazione
 - [ ] Scambi: giocatori + pick, **controllo cap** (R-57) con override moderatore motivato
 - [ ] Gestione pick (max 2 per giro, solo 3 anni avanti)
-- [ ] Chiusura stagione: classifica finale → bonus (R-60), lottery draft (R-32), luxury tax (R-12), nuova stagione con scadenze contratti e stato restricted/unrestricted (R-23/R-24)
+- [ ] Tracciare quota iscrizione pagata e luxury tax pagata per squadra
+- [ ] Chiusura stagione: inserimento classifica finale → bonus (R-60), lottery draft (R-32), luxury tax (R-12), nuova stagione con scadenze contratti e stato restricted/unrestricted (R-23/R-24)
 - [ ] `audit_log` visibile agli admin
 
 ## Fase 4 — Rifiniture
@@ -48,8 +49,10 @@ Sostituire il foglio Excel con un sito dove **admin** (Serde, Amedeo — da conf
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Chiudere Q1 e Q2 con l'organizzatore, poi iniziare la Fase 1.
+Iniziare la Fase 1. Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
+- 2026-10-21: admin dell'app = Scuti e Gabby; Serde (presidente) e Amedeo (moderatore) restano ruoli del regolamento.
+- 2026-10-21: `r` = restricted, `u` = unrestricted nei nomi contratto; la classifica finale si registra nell'app.
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
