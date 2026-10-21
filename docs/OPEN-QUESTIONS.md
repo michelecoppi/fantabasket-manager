@@ -60,3 +60,11 @@ Alias usati nel foglio: Farmers, Cosenza/CUS, Bollerz/BOL, Dame/DAME, Atlanto/AT
 - **ASSUNZIONE** R-10: firmare un contratto che porta sopra il cap avvisa ma non blocca (nel foglio Dame Time è già sforato dopo l'asta). Gli scambi invece bloccano (R-57) salvo eccezione del moderatore con motivazione.
 - **ASSUNZIONE** R-42: il taglio crea una riga `cuts` in stato `pending` (asta dei tagliati); la quota è 1/3 arrotondato a 0,5 (`cutShare`). Taglio definitivo e rientro non sono ancora implementati.
 - Lo scambio registra "approvato da" come testo libero (domanda 2: il moderatore può non essere admin).
+
+## ASSUNZIONI del completamento admin (migrazione 0007)
+- **ASSUNZIONE** R-41/R-42: se un tagliato viene preso da un'altra squadra all'asta dei tagliati, l'ex proprietario **non paga più la quota** (il regolamento prevede il 1/3 solo se nessuno lo prende). Da confermare.
+- **ASSUNZIONE** R-42: finché il taglio è «in asta» (`pending`) la quota conta già nel monte ingaggi, come i tagli definitivi.
+- **ASSUNZIONE** R-41: «ex proprietario non può partecipare» = non può essere la squadra che firma il giocatore tagliato in attesa.
+- **ASSUNZIONE** R-01..R-03: i massimi di rosa (13 titolari, 5G/5A/3C, 6 riserve, 3 per ruolo) bloccano firma, modifica e rientro solo se l'operazione li fa superare; i minimi restano avvisi perché in estate la rosa può essere incompleta. Giocatori senza ruolo noto contano solo nei totali.
+- **ASSUNZIONE** R-34: si possono aprire le pick dei prossimi `pick_horizon_years` draft (3) dopo la stagione corrente; `draft_rounds` = 5 (R-31).
+- Un rientro dal taglio ricorda lo stipendio di partenza; i tagli importati dal foglio no, e lo stipendio si inserisce a mano.

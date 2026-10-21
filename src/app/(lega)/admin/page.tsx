@@ -1,21 +1,17 @@
 import Link from "next/link";
+import { auditLabel, type AuditRow } from "@/lib/audit";
 import { Card, PageTitle, Section } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 
 const tools = [
   { href: "/admin/scambio", title: "Scambio", text: "Giocatori e pick tra due squadre, con controllo del cap (R-57) ed eccezione del moderatore.", icon: "M7 7h11l-3-3M17 17H6l3 3" },
   { href: "/admin/firma", title: "Firma", text: "Porta un giocatore libero in una rosa: stipendio, durata, team option.", icon: "M12 5v14M5 12h14" },
-  { href: "/admin/rose", title: "Rose", text: "Completa le durate, sposta titolari e riserve, taglia un giocatore.", icon: "M4 6h16M4 12h16M4 18h10" },
+  { href: "/admin/rose", title: "Rose", text: "Fissa le durate, sposta titolari e riserve, taglia o rimuovi e chiudi i tagli dopo l'asta.", icon: "M4 6h16M4 12h16M4 18h10" },
+  { href: "/admin/pick", title: "Pick", text: "Correggi i proprietari, risolvi i «da confermare» e apri i nuovi draft.", icon: "M5 4h14v16H5zM9 9h6M9 13h6" },
+  { href: "/admin/quote", title: "Quote", text: "Quota di iscrizione e luxury tax: chi ha pagato e quanto si deve.", icon: "M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5" },
+  { href: "/admin/registro", title: "Registro", text: "Lo storico completo delle operazioni, con filtro per tipo.", icon: "M6 3h12v18H6zM9 8h6M9 12h6M9 16h4" },
 ];
 
-interface AuditRow {
-  id: number;
-  at: string;
-  action: string;
-  after: { summary?: string; cap_override_reason?: string | null } | null;
-}
-
-const ACTION: Record<string, string> = { sign: "Firma", update: "Modifica", cut: "Taglio", trade: "Scambio" };
 const when = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
 async function RecentOperations() {
@@ -34,7 +30,7 @@ async function RecentOperations() {
     <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
       {rows.map((r) => (
         <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2.5">
-          <span className="font-display w-20 text-sm font-bold text-brand-red">{ACTION[r.action] ?? r.action}</span>
+          <span className="font-display w-32 text-sm font-bold text-brand-red">{auditLabel(r.action)}</span>
           <span className="min-w-0 flex-1 basis-48 text-sm">
             {r.after?.summary}
             {r.after?.cap_override_reason && <span className="block text-xs text-muted">Eccezione cap: {r.after.cap_override_reason}</span>}
@@ -65,6 +61,7 @@ export default function AdminHome() {
       </div>
       <Section title="Ultime operazioni">
         <RecentOperations />
+        <p className="mt-2 text-right text-sm"><Link className="font-semibold text-brand-blue" href="/admin/registro">Tutto il registro →</Link></p>
       </Section>
     </>
   );

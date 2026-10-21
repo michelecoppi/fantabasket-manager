@@ -8,7 +8,17 @@ export default async function AdminRosterPage() {
     id: t.team.id,
     name: t.team.name,
     bonus: t.bonus,
-    cuts: t.cuts.map((c) => ({ name: c.name, paid: c.paid })),
+    cuts: t.cuts.map((c) => ({
+      id: c.id,
+      version: versions.cuts[c.id] ?? 0,
+      name: c.name,
+      status: c.status,
+      paid: c.paid,
+      years: c.yearsLeft,
+      teamOption: c.teamOption,
+      originalSalary: c.originalSalary,
+      originalSlot: c.originalSlot,
+    })),
     players: [...t.starters, ...t.reserves].map((p) => ({
       id: p.id,
       version: versions.contracts[p.id] ?? 0,
@@ -24,7 +34,7 @@ export default async function AdminRosterPage() {
   }));
   return (
     <>
-      <PageTitle sub="Completa la durata dei contratti, cambia titolare/riserva o taglia un giocatore (paga un terzo dello stipendio, R-42).">
+      <PageTitle sub="Completa le durate, cambia titolare/riserva, taglia o rimuovi un contratto e chiudi i tagli dopo l'asta dei tagliati (R-41, R-42).">
         Rose e contratti
       </PageTitle>
       <RoseDesk teams={teams} settings={league.settings} />

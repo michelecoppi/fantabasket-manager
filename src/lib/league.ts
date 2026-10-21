@@ -31,11 +31,18 @@ export interface ContractRow {
   is_rookie: boolean;
   players: PlayerJoin | null;
 }
+/** R-41/R-42: 'pending' = in attesa dell'asta dei tagliati, 'cut' = taglio definitivo. Rientrati e assegnati non si caricano più. */
+export type CutStatus = "pending" | "cut";
 export interface CutRow {
   id: number;
   team_id: string;
+  player_id: number;
+  status: CutStatus;
   paid_salary: number;
   years_left: number | null;
+  original_salary: number | null;
+  original_slot: "starter" | "reserve" | "talent" | null;
+  team_option: boolean;
   players: PlayerJoin | null;
 }
 export interface TalentRow {
@@ -72,6 +79,13 @@ export interface RookieDraftRow {
   note: string | null;
 }
 
+/** Versioni delle righe modificabili dagli admin (migrazioni 0006-0007), per la concorrenza ottimistica delle RPC. */
+export interface Versions {
+  contracts: Record<number, number>;
+  picks: Record<number, number>;
+  cuts: Record<number, number>;
+}
+
 export interface RawLeague {
   seasonYear: number;
   teams: TeamRow[];
@@ -98,12 +112,25 @@ export interface RosterPlayer {
   restriction: ContractRow["restriction"];
   rookie: boolean;
 }
+export interface TeamCut {
+  id: number;
+  playerId: number;
+  name: string;
+  pos: Position | null;
+  status: CutStatus;
+  paid: number;
+  yearsLeft: number | null;
+  /** termini del contratto prima del taglio, per farlo rientrare (null per i tagli importati dal foglio) */
+  originalSalary: number | null;
+  originalSlot: "starter" | "reserve" | null;
+  teamOption: boolean;
+}
 export interface TeamView {
   team: TeamRow;
   starters: RosterPlayer[];
   reserves: RosterPlayer[];
   talents: TalentRow[];
-  cuts: { id: number; name: string; paid: number; yearsLeft: number | null }[];
+  cuts: TeamCut[];
   finance: TeamFinance;
   warnings: string[];
   bonus: number;
@@ -147,6 +174,8 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     reserveMaxPerPosition: get("reserve_max_per_pos"),
     contractMaxYears: get("contract_max_years"),
     maxPicksPerRound: get("max_picks_per_round"),
+    pickHorizonYears: get("pick_horizon_years"),
+    draftRounds: get("draft_rounds"),
   };
 }
 
@@ -182,7 +211,18 @@ export function buildLeague(raw: RawLeague): LeagueView {
     const reserves = mine.filter((c) => c.slot === "reserve").map(toPlayer).sort(byPosThenSalary);
     const cuts = raw.cuts
       .filter((c) => c.team_id === team.id)
-      .map((c) => ({ id: c.id, name: playerName(c.players), paid: Number(c.paid_salary), yearsLeft: c.years_left }));
+      .map<TeamCut>((c) => ({
+        id: c.id,
+        playerId: c.player_id,
+        name: playerName(c.players),
+        pos: c.players?.pos ?? null,
+        status: c.status,
+        paid: Number(c.paid_salary),
+        yearsLeft: c.years_left === null ? null : Number(c.years_left),
+        originalSalary: c.original_salary === null ? null : Number(c.original_salary),
+        originalSlot: c.original_slot === "starter" || c.original_slot === "reserve" ? c.original_slot : null,
+        teamOption: c.team_option,
+      }));
     const ts = season.get(team.id);
     const roster = [...starters.map((p) => ({ p, slot: "starter" as const })), ...reserves.map((p) => ({ p, slot: "reserve" as const }))].map(
       ({ p, slot }) => ({ position: p.pos, slot, salary: p.salary }),

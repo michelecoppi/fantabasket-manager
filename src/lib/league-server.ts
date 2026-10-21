@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { PlayerListItem } from "./players";
-import { buildLeague, type ContractRow, type CutRow, type RawLeague, type LeagueView } from "./league";
+import { buildLeague, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
 
@@ -32,7 +32,7 @@ const loadSeason = cache(async (): Promise<{ id: number; year: number }> => {
 
 /**
  * Lega della stagione corrente come l'utente loggato (le policy RLS decidono cosa vede), più le versioni delle righe
- * modificabili dagli admin (migrazione 0006) per la concorrenza ottimistica delle RPC: stesse righe, una sola lettura.
+ * modificabili dagli admin (migrazioni 0006-0007) per la concorrenza ottimistica delle RPC: stesse righe, una sola lettura.
  */
 const loadLeagueData = cache(async () => {
   const db = await createClient();
@@ -43,7 +43,11 @@ const loadLeagueData = cache(async () => {
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
     db.from("contracts").select(`id,version,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
-    db.from("cuts").select(`id,team_id,paid_salary,years_left,${playerCols}`).eq("season_id", sid),
+    db
+      .from("cuts")
+      .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,team_option,${playerCols}`)
+      .eq("season_id", sid)
+      .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
     db.from("draft_picks").select("id,version,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
     db.from("team_season").select("team_id,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
@@ -65,11 +69,12 @@ const loadLeagueData = cache(async () => {
     rookieDraft: rookie.data ?? [],
   };
   const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
-  return { league: buildLeague(raw), versions: { contracts: toMap(contracts.data), picks: toMap(picks.data) } };
+  const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data) };
+  return { league: buildLeague(raw), versions };
 });
 
 export const loadLeague = async (): Promise<LeagueView> => (await loadLeagueData()).league;
-export const loadVersions = async () => (await loadLeagueData()).versions;
+export const loadVersions = async (): Promise<Versions> => (await loadLeagueData()).versions;
 
 /** Profilo dell'utente loggato (ruolo e squadra). */
 export const loadProfile = cache(async () => {
@@ -96,7 +101,7 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const [players, contracts, cuts] = await Promise.all([
     fetchAllPlayers(db),
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
-    db.from("cuts").select("player_id,team_id").eq("season_id", sid),
+    db.from("cuts").select("player_id,team_id").eq("season_id", sid).in("status", ["pending", "cut"]),
   ]);
   for (const r of [contracts, cuts]) if (r.error) throw new Error(r.error.message);
 

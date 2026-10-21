@@ -24,6 +24,10 @@ export interface LeagueSettings {
   contractMaxYears: number;
   /** R-33: massimo di pick per giro per squadra (ASSUNZIONE: contate per anno di draft) */
   maxPicksPerRound: number;
+  /** R-34: le pick diventano di proprietà solo questi anni prima del draft */
+  pickHorizonYears: number;
+  /** R-31: giri del draft */
+  draftRounds: number;
 }
 
 export interface RosterEntry {
@@ -135,6 +139,25 @@ export interface TradeParty {
   gives: { contracts: ReadonlySet<number>; picks: ReadonlySet<number> };
 }
 
+/** R-33: avvisi per le squadre che hanno più di `maxPicksPerRound` pick dello stesso giro e anno di draft. */
+export function pickLimitWarnings(teamName: string, picks: Pick<PickInfo, "year" | "round">[], s: LeagueSettings): string[] {
+  const perRound = new Map<string, number>();
+  for (const p of picks) perRound.set(`${p.year}/${p.round}`, (perRound.get(`${p.year}/${p.round}`) ?? 0) + 1);
+  const out: string[] = [];
+  for (const [key, n] of perRound) {
+    if (n > s.maxPicksPerRound) {
+      const [year, round] = key.split("/");
+      out.push(`${teamName}: ${n} pick del ${round}° giro ${year} (max ${s.maxPicksPerRound}, R-33)`);
+    }
+  }
+  return out;
+}
+
+/** R-34: i draft di cui si possono possedere le pick sono quelli dei prossimi `pickHorizonYears` anni (a ottobre 2026: 2027-2029). */
+export function pickYearAllowed(year: number, seasonYear: number, s: LeagueSettings): boolean {
+  return Number.isInteger(year) && year > seasonYear && year <= seasonYear + s.pickHorizonYears;
+}
+
 export interface TradeEvaluation {
   /** nello stesso ordine di (a, b) */
   impacts: [TradeImpact, TradeImpact];
@@ -168,14 +191,7 @@ export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): 
     const impact = tradeImpact(me.side, me.gives.contracts, incoming, s);
 
     const picksAfter = [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...other.picks.filter((p) => other.gives.picks.has(p.id))];
-    const perRound = new Map<string, number>();
-    for (const p of picksAfter) perRound.set(`${p.year}/${p.round}`, (perRound.get(`${p.year}/${p.round}`) ?? 0) + 1);
-    for (const [key, n] of perRound) {
-      if (n > s.maxPicksPerRound) {
-        const [year, round] = key.split("/");
-        warnings.push(`${me.name}: ${n} pick del ${round}° giro ${year} (max ${s.maxPicksPerRound}, R-33)`);
-      }
-    }
+    warnings.push(...pickLimitWarnings(me.name, picksAfter, s));
     return impact;
   }) as [TradeImpact, TradeImpact];
 
@@ -228,19 +244,60 @@ export function contractTermsErrors(t: ContractTerms, s: LeagueSettings): string
 }
 
 /**
+ * Errori bloccanti sui massimi di rosa (R-01..R-03): titolari per ruolo e in tutto, riserve per ruolo e in tutto.
+ * Blocca solo se l'operazione fa salire una categoria oltre il massimo: se la rosa era già oltre (dati importati dal foglio),
+ * le modifiche che non peggiorano la situazione restano possibili. I minimi (13 titolari, 3 riserve...) sono solo avvisi,
+ * perché in estate la rosa può essere incompleta (`rosterWarnings`).
+ */
+export function rosterLimitErrors(before: RosterEntry[], after: RosterEntry[], s: LeagueSettings): string[] {
+  const count = (roster: RosterEntry[], slot: Slot, pos?: Position) => roster.filter((r) => r.slot === slot && (!pos || r.position === pos)).length;
+  const out: string[] = [];
+  const check = (label: string, slot: Slot, max: number, pos?: Position) => {
+    const n = count(after, slot, pos);
+    if (n > max && n > count(before, slot, pos)) out.push(`${label}: ${n} (max ${max}).`);
+  };
+  const startersMax = s.starters.G + s.starters.A + s.starters.C;
+  check("Titolari", "starter", startersMax);
+  check("Riserve", "reserve", s.reserveMax);
+  for (const pos of ["G", "A", "C"] as const) {
+    check(`Titolari ${pos}`, "starter", s.starters[pos], pos);
+    check(`Riserve ${pos}`, "reserve", s.reserveMaxPerPosition, pos);
+  }
+  return out;
+}
+
+/**
  * Effetto di una firma sulla squadra. Il cap in firma avvisa soltanto (ASSUNZIONE, docs/OPEN-QUESTIONS.md):
- * nel foglio c'è già chi supera il cap dopo l'asta, quindi non è un blocco.
+ * nel foglio c'è già chi supera il cap dopo l'asta, quindi non è un blocco. I massimi di rosa invece bloccano.
  */
 export function evaluateSigning(
   side: TradeSide,
   terms: ContractTerms & { position: Position | null },
   s: LeagueSettings,
 ): { errors: string[]; warnings: string[]; impact: TradeImpact } {
-  const impact = tradeImpact(side, new Set(), [{ position: terms.position, slot: terms.slot, salary: terms.salary }], s);
+  const incoming = { position: terms.position, slot: terms.slot, salary: terms.salary };
+  const impact = tradeImpact(side, new Set(), [incoming], s);
   const warnings = [...impact.warnings];
   if (terms.slot === "starter" && impact.after.overCap) warnings.unshift("Dopo la firma il monte ingaggi supera il cap (R-10).");
   if (terms.slot === "reserve" && impact.after.reserveSpace < 0) warnings.unshift("Dopo la firma le riserve superano il budget (R-03).");
-  return { errors: contractTermsErrors(terms, s), warnings, impact };
+  const errors = [...contractTermsErrors(terms, s), ...rosterLimitErrors(side.roster, [...side.roster, incoming], s)];
+  return { errors, warnings, impact };
+}
+
+/** Effetto della modifica di un contratto esistente (`contractId` = id nella rosa di `side`): stessi controlli della firma. */
+export function evaluateContractEdit(
+  side: TradeSide,
+  contractId: number,
+  terms: ContractTerms & { position: Position | null },
+  s: LeagueSettings,
+): { errors: string[]; warnings: string[]; impact: TradeImpact } {
+  const incoming = { position: terms.position, slot: terms.slot, salary: terms.salary };
+  const impact = tradeImpact(side, new Set([contractId]), [incoming], s);
+  const warnings = [...impact.warnings];
+  if (terms.slot === "starter" && impact.after.overCap && !impact.before.overCap) warnings.unshift("Dopo la modifica il monte ingaggi supera il cap (R-10).");
+  if (terms.slot === "reserve" && impact.after.reserveSpace < 0 && impact.before.reserveSpace >= 0) warnings.unshift("Dopo la modifica le riserve superano il budget (R-03).");
+  const after = [...side.roster.filter((r) => r.id !== contractId), incoming];
+  return { errors: [...contractTermsErrors(terms, s), ...rosterLimitErrors(side.roster, after, s)], warnings, impact };
 }
 
 /** Controlli di composizione (R-01..R-03). Restituisce avvisi, non blocca: in estate la rosa può essere incompleta. */
@@ -275,4 +332,6 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   reserveMaxPerPosition: 3,
   contractMaxYears: 3,
   maxPicksPerRound: 2,
+  pickHorizonYears: 3,
+  draftRounds: 5,
 };
