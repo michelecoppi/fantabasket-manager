@@ -3,7 +3,7 @@
 Aggiornato 2026-10-21 dopo le risposte dell'utente.
 
 ## Ancora da chiarire
-0. **Pick 2026 con sigla `ChS`** (pick cedute, destinatario non scritto) — la pick di Gabby al giro 1 è assegnata a Spaccinos in base al Foglio2 ("Da bol"). Restano da chiarire: (a) a chi è stata ceduta la pick di Amedeo al giro 2; (b) la pick di CC al giro 1: Foglio1 dice Farmers, Foglio2 dice Spaccinos ("Da Okcc."). Le correzioni vanno in `scripts/lib/overrides.ts`. *(blocca l'import delle pick)*
+0. **Pick 2026 da confermare** (decisione: si importano con `to_confirm = true` e si correggono dopo): giro 1 di Gabby (→ Spaccinos, dedotto dal Foglio2), giro 1 di CC (Foglio1: Farmers, Foglio2: Spaccinos), giro 2 di Amedeo (`ChS`, destinatario sconosciuto, proprietario vuoto). Quando si sanno, correggere dall'admin (fase 3) o in `scripts/lib/overrides.ts`. *(non blocca)*
 1. **Soglia di sicurezza** (R-57): è un valore numerico, ma non è ancora stato comunicato. *(fase 3, non blocca le fasi 1-2)*
 2. **Foglio3**: è la lista dei **free agent** (anche allenatori) e non contiene i giocatori in rosa. La colonna `Restricted` contiene la squadra con diritto di pareggio (es. Durant → Farmers). Conferma? Per i giocatori in rosa servirebbe un export Dunkest completo per avere nome intero, squadra NBA e ruolo. *(fase 1)*
 3. **Admin e ruoli del regolamento**: Scuti e Gabby sono admin dell'app; presidente (Serde) e moderatore (Amedeo) restano ruoli del regolamento. Gli scambi vanno ufficializzati dal moderatore: l'app deve registrare chi li approva anche se non è admin? *(fase 3)*

@@ -47,7 +47,12 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
   const swapped = d.picks.filter((x) => x.current && x.current !== x.original);
   p(`ruotate: ${swapped.length}`);
   for (const s of swapped) p(`  ${s.year} giro ${s.round}: ${s.original} → ${s.current}  (${s.rawStatus})`);
-  const unknown = d.picks.filter((x) => !x.current);
+  const toConfirm = d.picks.filter((x) => x.toConfirm);
+  if (toConfirm.length) {
+    p("Da confermare (importate con to_confirm = true):");
+    for (const u of toConfirm) p(`  ${u.year} giro ${u.round} di ${u.original}: ${u.current ?? "proprietario sconosciuto"}  (foglio: ${u.rawStatus})`);
+  }
+  const unknown = d.picks.filter((x) => !x.current && !x.toConfirm);
   if (unknown.length) {
     problems += unknown.length;
     p("Alias squadra non riconosciuti:");
@@ -60,8 +65,9 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
     const fromPicks = d.picks.filter((x) => x.year === 2026 && x.round === round).map((x) => x.current ?? `?${x.rawStatus}`).sort();
     const fromDraft = d.rookieDraft.slice((round - 1) * 8, round * 8).map((x) => x.team).sort();
     const same = fromPicks.join("|") === fromDraft.join("|");
-    if (!same) problems++;
-    p(`giro ${round}: ${same ? "coincide" : "DIVERSO"}`);
+    const pending = d.picks.some((x) => x.year === 2026 && x.round === round && x.toConfirm);
+    if (!same && !pending) problems++;
+    p(`giro ${round}: ${same ? "coincide" : pending ? "diverso, ma include pick da confermare" : "DIVERSO"}`);
     if (!same) {
       p(`   Foglio1: ${fromPicks.join(", ")}`);
       p(`   Foglio2: ${fromDraft.join(", ")}`);

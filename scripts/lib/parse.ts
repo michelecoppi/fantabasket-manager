@@ -1,6 +1,6 @@
 // Legge Dunkest.xlsx e restituisce dati strutturati + avvisi. Nessuna scrittura: vedi scripts/import-xlsx.ts.
 import ExcelJS from "exceljs";
-import { PICK_OVERRIDES } from "./overrides";
+import { PICKS_TO_CONFIRM, PICK_OVERRIDES } from "./overrides";
 import {
   SHEET_TEAM_ORDER,
   lettersOnly,
@@ -65,6 +65,7 @@ export interface PickRow {
   original: TeamName;
   current: TeamName | null;
   rawStatus: string;
+  toConfirm: boolean;
 }
 export interface RookieDraftRow {
   pickNo: number;
@@ -285,8 +286,9 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
           const swap = /^S\((.+)\)$/i.exec(status);
           const override = PICK_OVERRIDES[`${ym[1]}-${round}-${owner}`];
           const current = override ?? (swap ? resolveTeam(swap[1]) : status.toUpperCase() === "T" ? owner : null);
-          if (!current) warnings.push(`Pick ${ym[1]} giro ${round} di ${owner}: stato non riconosciuto "${status}"`);
-          picks.push({ year: Number(ym[1]), round, original: owner, current, rawStatus: status });
+          const toConfirm = PICKS_TO_CONFIRM.has(`${ym[1]}-${round}-${owner}`);
+          if (!current && !toConfirm) warnings.push(`Pick ${ym[1]} giro ${round} di ${owner}: stato non riconosciuto "${status}"`);
+          picks.push({ year: Number(ym[1]), round, original: owner, current, rawStatus: status, toConfirm });
         }
       }
     });

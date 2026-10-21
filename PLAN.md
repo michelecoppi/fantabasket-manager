@@ -19,7 +19,9 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [ ] Creare progetto Supabase (account dell'utente) e applicare migrazione + seed; testare RLS
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio (16 test verdi)
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (**scrittura non ancora provata**)
-- [ ] Risolvere `ChS`/discordanze pick (OPEN-QUESTIONS 0) e lanciare `--apply`
+- [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
+- [ ] Applicare migrazione 0002, creare `.env.local` e lanciare `--apply`
+- [ ] UI admin: correggere le pick da confermare (fase 3)
 - [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
 - [ ] Seed giocatori Dunkest e contratti dal foglio
@@ -53,7 +55,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Chiarire `ChS`, creare `.env.local`, lanciare l'import con `--apply`, poi login e pagine di sola lettura (Fase 2). Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
+Applicare la migrazione 0002, creare `.env.local`, lanciare l'import con `--apply`, poi login e pagine di sola lettura (Fase 2). Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
