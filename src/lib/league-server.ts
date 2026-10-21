@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { PlayerListItem } from "./players";
-import { buildLeague, type ContractRow, type CutRow, type RawLeague, type LeagueView } from "./league";
+import { buildLeague, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
 
@@ -33,7 +33,11 @@ export const loadLeague = cache(async (): Promise<LeagueView> => {
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
     db.from("contracts").select(`id,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
-    db.from("cuts").select(`id,team_id,paid_salary,years_left,${playerCols}`).eq("season_id", sid),
+    db
+      .from("cuts")
+      .select(`id,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,team_option,${playerCols}`)
+      .eq("season_id", sid)
+      .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
     db.from("draft_picks").select("id,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
     db.from("team_season").select("team_id,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
@@ -80,7 +84,7 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const [players, contracts, cuts] = await Promise.all([
     fetchAllPlayers(db),
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
-    db.from("cuts").select("player_id,team_id").eq("season_id", sid),
+    db.from("cuts").select("player_id,team_id").eq("season_id", sid).in("status", ["pending", "cut"]),
   ]);
   for (const r of [contracts, cuts]) if (r.error) throw new Error(r.error.message);
 
@@ -101,15 +105,16 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
  * Versioni delle righe modificabili dagli admin (migrazione 0006), per la concorrenza ottimistica delle RPC.
  * Separate da `loadLeague` così le pagine di sola lettura non dipendono dalla migrazione.
  */
-export const loadVersions = cache(async (): Promise<{ contracts: Record<number, number>; picks: Record<number, number> }> => {
+export const loadVersions = cache(async (): Promise<Versions> => {
   const db = await createClient();
   const season = await db.from("seasons").select("id").eq("is_current", true).maybeSingle<{ id: number }>();
   if (season.error || !season.data) throw new Error("Stagione corrente non trovata");
-  const [contracts, picks] = await Promise.all([
+  const [contracts, picks, cuts] = await Promise.all([
     db.from("contracts").select("id,version").eq("season_id", season.data.id),
     db.from("draft_picks").select("id,version"),
+    db.from("cuts").select("id,version").eq("season_id", season.data.id),
   ]);
-  for (const r of [contracts, picks]) if (r.error) throw new Error(r.error.message);
+  for (const r of [contracts, picks, cuts]) if (r.error) throw new Error(r.error.message);
   const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
-  return { contracts: toMap(contracts.data), picks: toMap(picks.data) };
+  return { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data) };
 });

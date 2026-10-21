@@ -65,6 +65,7 @@ export default async function Home(props: PageProps<"/">) {
                 {f.belowFloor && <Badge tone="warn" title={`Sotto il salary floor (${fmt(f.floor)})`}>sotto floor</Badge>}
                 {t.warnings.length > 0 && <Badge title={t.warnings.join(" · ")}>rosa incompleta</Badge>}
                 <Badge tone={t.entryFeePaid ? "good" : "neutral"}>quota {t.entryFeePaid ? "pagata" : "da pagare"}</Badge>
+                {f.luxuryTaxEur > 0 && <Badge tone={t.luxuryTaxPaid ? "good" : "bad"} title="Luxury tax (R-12)">luxury tax {fmt(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}</Badge>}
               </div>
             </Link>
           );

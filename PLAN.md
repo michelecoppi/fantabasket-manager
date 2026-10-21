@@ -50,14 +50,14 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Ruolo admin + guardia su rotte e RLS (issue #6): `/admin` dà 404 ai viewer, ogni server action ricontrolla il ruolo, le RPC controllano `is_admin()`
 - [x] Scritture atomiche (issue #6): migrazione `0006_admin_rpc.sql` con RPC `admin_sign_contract`, `admin_update_contract`, `admin_cut_player`, `admin_execute_trade` (transazione + `audit_log` + versioni per la concorrenza). Regole in TS (`lib/cap.ts`: `evaluateTrade`, `evaluateSigning`, `cutShare`), server action in `src/app/(lega)/admin/actions.ts`. **Applicata su Supabase** (verificato il 2026-10-22: colonne `version`, 7 funzioni, permessi RPC solo per `authenticated`); aggiunge anche le chiavi `contract_max_years`, `max_picks_per_round` (senza, le pagine non si caricano)
 - [x] UI admin: `/admin` (panoramica + ultime operazioni), `/admin/scambio` (con eccezione cap motivata), `/admin/firma`, `/admin/rose` (modifica durata/slot, taglio)
-- [ ] CRUD contratti: restano la rimozione e le validazioni complete (firma e modifica fatte, vedi sopra); validazioni 13+3..6, 5G/5A/3C, max 3 riserve per ruolo
-- [ ] Taglio giocatore → asta tagliati → taglio definitivo (1/3 stipendio) o rientro (il primo passo, taglio in stato `pending`, è fatto in `/admin/rose`; mancano asta, taglio definitivo e rientro)
-- [ ] Squadra talenti e rookie: firma al valore d'ingresso max 2 stagioni, scadenza prelazione
-- [ ] Scambi: giocatori + pick, **controllo cap** (R-57) con override moderatore motivato
-- [ ] Gestione pick (max 2 per giro, solo 3 anni avanti)
-- [ ] Tracciare quota iscrizione pagata e luxury tax pagata per squadra
+- [x] CRUD contratti (migrazione `0007_admin_completamento.sql`, applicata su Supabase il 2026-10-22): rimozione senza quota (`admin_remove_contract`, ✕ in `/admin/rose`), durate in blocco (`admin_set_durations`), massimi di rosa bloccanti in firma/modifica/rientro (`rosterLimitErrors`: 13 titolari, 5G/5A/3C, 6 riserve, max 3 per ruolo; i minimi restano avvisi)
+- [x] Taglio → asta tagliati → definitivo o rientro: `pending` → `cut` (`admin_finalize_cut`), `reinstated` (`admin_reinstate_cut`) o `awarded` (firmandolo in `/admin/firma` per un'altra squadra parte `admin_award_cut`, l'ex proprietario non può, R-41). Sezione «Tagliati» di `/admin/rose`. La migrazione marca come `cut` i tagli già presenti (vengono dal foglio)
+- [ ] Squadra talenti e rookie: firma al valore d'ingresso max 2 stagioni, scadenza prelazione (non fatto: attende la risposta alla domanda 4 di OPEN-QUESTIONS)
+- [x] Scambi: giocatori + pick, **controllo cap** (R-57) con override moderatore motivato
+- [x] Gestione pick: `/admin/pick` (proprietario, «da confermare», apertura di un nuovo draft entro 3 anni; max 2 per giro come avviso). Parametri `pick_horizon_years` e `draft_rounds` in `league_settings`
+- [x] Quota iscrizione e luxury tax pagate per squadra: `/admin/quote` (importo della quota ancora da definire, vedi OPEN-QUESTIONS); badge luxury tax nella home
 - [ ] Chiusura stagione: inserimento classifica finale → bonus (R-60), lottery draft (R-32), luxury tax (R-12), nuova stagione con scadenze contratti e stato restricted/unrestricted (R-23/R-24)
-- [~] `audit_log` visibile agli admin: ultime operazioni in `/admin`; storico completo da fare
+- [x] `audit_log` visibile agli admin: ultime operazioni in `/admin` e storico completo con filtro e paginazione in `/admin/registro`
 
 ## Fase 4 — Rifiniture
 - [ ] Storico stagioni e scambi
@@ -73,6 +73,7 @@ Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live 
 Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
+- 2026-10-22: completamento pannello admin: stesso schema della 0006 (una RPC per operazione, regole in `lib/cap.ts`). I tagli hanno 4 stati e ricordano i termini del contratto; solo `pending` e `cut` pesano sul monte ingaggi.
 - 2026-10-22: issue #6 decisa: una RPC Postgres per operazione (security definer + `is_admin()`), regole di lega solo in `lib/cap.ts`, concorrenza ottimistica con colonna `version`, audit scritto dalle RPC (l'issue #5 potrà passare ai trigger).
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
 - 2026-10-21: admin dell'app = Scuti e Gabby; Serde (presidente) e Amedeo (moderatore) restano ruoli del regolamento.

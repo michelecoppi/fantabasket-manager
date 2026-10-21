@@ -4,6 +4,10 @@ import {
   contractDurations,
   contractTermsErrors,
   cutShare,
+  pickLimitWarnings,
+  pickYearAllowed,
+  rosterLimitErrors,
+  evaluateContractEdit,
   evaluateSigning,
   evaluateTrade,
   teamOptionAllowed,
@@ -120,5 +124,77 @@ describe("evaluateTrade (R-57, R-33)", () => {
   it("avvisa se una pick ceduta è da confermare", () => {
     const a = party("A", side(0, []), [{ id: 1, year: 2026, round: 1, toConfirm: true }], { picks: [1] });
     expect(evaluateTrade(a, party("B", side(0, [])), S).warnings.some((w) => w.includes("da confermare"))).toBe(true);
+  });
+});
+
+const entry = (slot: "starter" | "reserve", position: "G" | "A" | "C" | null, salary = 5) => ({ position, slot, salary });
+const many = (n: number, slot: "starter" | "reserve", position: "G" | "A" | "C") => Array.from({ length: n }, () => entry(slot, position));
+
+describe("rosterLimitErrors (R-01..R-03)", () => {
+  it("blocca il 6° titolare di un ruolo e il 4° riserva dello stesso ruolo", () => {
+    const g5 = many(5, "starter", "G");
+    expect(rosterLimitErrors(g5, [...g5, entry("starter", "G")], S)).toEqual(["Titolari G: 6 (max 5)."]);
+    const r3 = many(3, "reserve", "A");
+    expect(rosterLimitErrors(r3, [...r3, entry("reserve", "A")], S)).toEqual(["Riserve A: 4 (max 3)."]);
+  });
+
+  it("blocca il 14° titolare e la 7ª riserva in totale", () => {
+    const starters = [...many(5, "starter", "G"), ...many(5, "starter", "A"), ...many(3, "starter", "C")];
+    expect(rosterLimitErrors(starters, [...starters, entry("starter", null)], S)).toEqual(["Titolari: 14 (max 13)."]);
+    const reserves = [...many(2, "reserve", "G"), ...many(2, "reserve", "A"), ...many(2, "reserve", "C")];
+    expect(rosterLimitErrors(reserves, [...reserves, entry("reserve", null)], S)).toEqual(["Riserve: 7 (max 6)."]);
+  });
+
+  it("non blocca se la rosa era già oltre il massimo e l'operazione non peggiora", () => {
+    const over = many(6, "starter", "G"); // dato importato dal foglio
+    expect(rosterLimitErrors(over, over, S)).toEqual([]);
+    expect(rosterLimitErrors(over, [...over, entry("starter", "G")], S)).toHaveLength(1);
+  });
+
+  it("i minimi (rosa incompleta) non sono errori", () => {
+    expect(rosterLimitErrors([], [entry("starter", "G")], S)).toEqual([]);
+  });
+});
+
+describe("evaluateSigning con i massimi di rosa", () => {
+  it("un 6° portiere titolare è un errore, non solo un avviso", () => {
+    const roster = many(5, "starter", "G").map((e, i) => ({ ...e, id: i + 1 }));
+    const r = evaluateSigning(side(0, roster), { position: "G", slot: "starter", years: 1, teamOption: false, salary: 5 }, S);
+    expect(r.errors).toEqual(["Titolari G: 6 (max 5)."]);
+  });
+});
+
+describe("evaluateContractEdit", () => {
+  const roster = [...many(5, "starter", "G"), ...many(3, "reserve", "A")].map((e, i) => ({ ...e, id: i + 1 }));
+
+  it("cambiare solo lo stipendio non è bloccato nemmeno su una rosa già piena", () => {
+    const r = evaluateContractEdit(side(0, roster), 1, { position: "G", slot: "starter", years: 2, teamOption: false, salary: 9 }, S);
+    expect(r.errors).toEqual([]);
+    expect(r.impact.after.payroll).toBe(29);
+  });
+
+  it("spostare un titolare in riserva dove ci sono già 3 riserve dello stesso ruolo è un errore", () => {
+    const r = evaluateContractEdit(side(0, [...roster, { id: 99, position: "A", slot: "starter" as const, salary: 4 }]), 99, { position: "A", slot: "reserve", years: 1, teamOption: false, salary: 4 }, S);
+    expect(r.errors).toEqual(["Riserve A: 4 (max 3)."]);
+  });
+
+  it("segnala anche gli errori sui termini del contratto", () => {
+    const r = evaluateContractEdit(side(0, roster), 1, { position: "G", slot: "starter", years: 4, teamOption: false, salary: 5 }, S);
+    expect(r.errors).toHaveLength(1);
+  });
+});
+
+describe("pick (R-33, R-34)", () => {
+  it("si possono possedere solo i draft dei prossimi 3 anni", () => {
+    expect([2026, 2027, 2029, 2030].map((y) => pickYearAllowed(y, 2026, S))).toEqual([false, true, true, false]);
+    expect(pickYearAllowed(2027.5, 2026, S)).toBe(false);
+    expect(pickYearAllowed(2028, 2026, { ...S, pickHorizonYears: 1 })).toBe(false);
+  });
+
+  it("avvisa oltre 2 pick per giro, contate per anno", () => {
+    const p = (round: number, year = 2027) => ({ year, round });
+    expect(pickLimitWarnings("A", [p(1), p(1), p(2)], S)).toEqual([]);
+    expect(pickLimitWarnings("A", [p(1), p(1), p(1)], S)).toEqual(["A: 3 pick del 1° giro 2027 (max 2, R-33)"]);
+    expect(pickLimitWarnings("A", [p(1, 2027), p(1, 2028), p(1, 2029)], S)).toEqual([]);
   });
 });

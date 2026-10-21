@@ -1,9 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { contractTermsErrors, cutShare, evaluateSigning, evaluateTrade, type TradeParty } from "@/lib/cap";
+import {
+  contractTermsErrors,
+  cutShare,
+  evaluateContractEdit,
+  evaluateSigning,
+  evaluateTrade,
+  pickLimitWarnings,
+  pickYearAllowed,
+  type TradeParty,
+} from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
-import { loadLeague, loadProfile } from "@/lib/league-server";
+import { loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true; message: string; warnings: string[] } | { ok: false; error: string };
@@ -57,6 +66,31 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
   const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary };
   const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
+  const name = [player.data.first_name, player.data.last_name].join(" ").trim();
+
+  // Asta dei tagliati (R-41): se il giocatore è tagliato e ancora in attesa, la firma chiude anche il taglio nella stessa transazione.
+  const pendingCut = league.teams.flatMap((t) => t.cuts.map((c) => ({ c, team: t }))).find((x) => x.c.playerId === input.playerId && x.c.status === "pending");
+  if (pendingCut) {
+    if (pendingCut.team.team.id === input.teamId) {
+      return fail(`${name} è stato tagliato da ${team.team.name}: l'ex proprietario non può partecipare all'asta dei tagliati (R-41). Per farlo rientrare usa Rose → Tagliati.`);
+    }
+    const versions = await loadVersions();
+    const { error } = await db.rpc("admin_award_cut", {
+      p_cut_id: pendingCut.c.id,
+      p_version: versions.cuts[pendingCut.c.id] ?? 0,
+      p_team_id: input.teamId,
+      p_slot: input.slot,
+      p_years: input.years,
+      p_team_option: input.teamOption,
+      p_salary: input.salary,
+      p_is_rookie: input.isRookie,
+      p_restriction: input.unrestricted ? "unrestricted" : null,
+      p_notes: input.notes,
+    });
+    if (error) return rpcError(error.message);
+    refresh();
+    return done(`${name} preso da ${team.team.name} all'asta dei tagliati: ${pendingCut.team.team.name} non paga più la quota.`, ev.warnings);
+  }
 
   const { error } = await db.rpc("admin_sign_contract", {
     p_player_id: input.playerId,
@@ -71,7 +105,7 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
   });
   if (error) return rpcError(error.message);
   refresh();
-  return done(`${[player.data.first_name, player.data.last_name].join(" ").trim()} firmato da ${team.team.name}.`, ev.warnings);
+  return done(`${name} firmato da ${team.team.name}.`, ev.warnings);
 }
 
 // ---------- Modifica contratto ----------
@@ -89,8 +123,11 @@ export async function updateContract(input: UpdateInput): Promise<ActionResult> 
   if (denied) return fail(denied);
   if (!isNum(input.contractId) || !isNum(input.version)) return fail("Dati non validi.");
   const league = await loadLeague();
-  const errors = contractTermsErrors(input, league.settings);
-  if (errors.length) return fail(errors.join(" "));
+  const owner = league.teams.find((t) => [...t.starters, ...t.reserves].some((p) => p.id === input.contractId));
+  const current = owner && [...owner.starters, ...owner.reserves].find((p) => p.id === input.contractId);
+  if (!owner || !current) return fail("Contratto non trovato: forse è stato tagliato o scambiato. Aggiorna la pagina.");
+  const ev = evaluateContractEdit(teamSide(owner), input.contractId, { ...input, position: current.pos }, league.settings);
+  if (ev.errors.length) return fail(ev.errors.join(" "));
 
   const db = await createClient();
   const { error } = await db.rpc("admin_update_contract", {
@@ -103,7 +140,7 @@ export async function updateContract(input: UpdateInput): Promise<ActionResult> 
   });
   if (error) return rpcError(error.message);
   refresh();
-  return done("Contratto aggiornato.");
+  return done("Contratto aggiornato.", ev.warnings);
 }
 
 // ---------- Taglio ----------
@@ -169,4 +206,166 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   if (error) return rpcError(error.message);
   refresh();
   return done(`Scambio registrato tra ${ta.team.name} e ${tb.team.name}.`, ev.warnings);
+}
+
+// ---------- Rimozione (correzione di un errore, senza quota di taglio) ----------
+export async function removeContract(input: { contractId: number; version: number; reason: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.contractId) || !isNum(input.version)) return fail("Dati non validi.");
+  const league = await loadLeague();
+  const found = league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => ({ p, team: t.team.name }))).find((x) => x.p.id === input.contractId);
+  if (!found) return fail("Contratto non trovato: forse è già stato tagliato o scambiato. Aggiorna la pagina.");
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_remove_contract", { p_contract_id: input.contractId, p_version: input.version, p_reason: input.reason });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Contratto di ${found.p.name} (${found.team}) rimosso. Nessuna quota da pagare.`);
+}
+
+// ---------- Durate in blocco ----------
+export async function setDurations(items: { contractId: number; version: number; years: number | null; teamOption: boolean }[]): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!Array.isArray(items) || items.length === 0) return fail("Nessuna durata da salvare.");
+  const league = await loadLeague();
+  const byId = new Map(league.teams.flatMap((t) => [...t.starters, ...t.reserves]).map((p) => [p.id, p]));
+  for (const it of items) {
+    if (!isNum(it.contractId) || !isNum(it.version)) return fail("Dati non validi.");
+    const p = byId.get(it.contractId);
+    if (!p) return fail("Un contratto non esiste più: aggiorna la pagina.");
+    const errors = contractTermsErrors({ slot: p.slot, years: it.years, teamOption: it.teamOption, salary: p.salary }, league.settings);
+    if (errors.length) return fail(`${p.name}: ${errors.join(" ")}`);
+  }
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_set_durations", {
+    p_items: items.map((it) => ({ id: it.contractId, version: it.version, years: it.years, team_option: it.teamOption })),
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(items.length === 1 ? "Durata salvata." : `Durata salvata per ${items.length} contratti.`);
+}
+
+// ---------- Ciclo del taglio (R-41, R-42) ----------
+function findCut(league: Awaited<ReturnType<typeof loadLeague>>, cutId: number) {
+  for (const t of league.teams) {
+    const c = t.cuts.find((x) => x.id === cutId);
+    if (c) return { cut: c, team: t };
+  }
+  return null;
+}
+
+/** Nessuno lo ha preso all'asta e la squadra rinuncia al giocatore: libera il posto, la quota resta fino a fine contratto. */
+export async function finalizeCut(input: { cutId: number; version: number }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.cutId) || !isNum(input.version)) return fail("Dati non validi.");
+  const found = findCut(await loadLeague(), input.cutId);
+  if (!found || found.cut.status !== "pending") return fail("Taglio non trovato o già risolto. Aggiorna la pagina.");
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_finalize_cut", { p_cut_id: input.cutId, p_version: input.version });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Taglio di ${found.cut.name} reso definitivo: ${found.team.team.name} continua a pagare ${found.cut.paid} crediti.`);
+}
+
+/** Il giocatore rientra nella squadra che lo aveva tagliato (la quota non si paga più). */
+export async function reinstateCut(input: {
+  cutId: number;
+  version: number;
+  slot: "starter" | "reserve";
+  /** serve solo per i tagli importati dal foglio, che non ricordano lo stipendio di partenza */
+  salary: number | null;
+  years: number | null;
+  teamOption: boolean;
+}): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.cutId) || !isNum(input.version) || (input.slot !== "starter" && input.slot !== "reserve")) return fail("Dati non validi.");
+  const league = await loadLeague();
+  const found = findCut(league, input.cutId);
+  if (!found || found.cut.status !== "pending") return fail("Taglio non trovato o già risolto. Aggiorna la pagina.");
+
+  const salary = found.cut.originalSalary ?? input.salary;
+  if (salary === null || !isNum(salary)) return fail("Indica lo stipendio con cui rientra: il taglio non lo ricorda.");
+  // Rientrando, la quota del taglio sparisce dal monte ingaggi e lo stipendio pieno torna al suo posto.
+  const side = { ...teamSide(found.team), cuts: found.team.cuts.filter((c) => c.id !== input.cutId).map((c) => ({ salary: c.paid })) };
+  const ev = evaluateSigning(side, { slot: input.slot, years: input.years, teamOption: input.teamOption, salary, position: found.cut.pos }, league.settings);
+  if (ev.errors.length) return fail(ev.errors.join(" "));
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_reinstate_cut", {
+    p_cut_id: input.cutId,
+    p_version: input.version,
+    p_slot: input.slot,
+    p_salary: salary,
+    p_years: input.years,
+    p_team_option: input.teamOption,
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`${found.cut.name} rientra in rosa a ${found.team.team.name} con ${salary} crediti.`, ev.warnings);
+}
+
+// ---------- Pick (R-33, R-34) ----------
+export async function setPick(input: { pickId: number; version: number; teamId: string | null; toConfirm: boolean; note: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.pickId) || !isNum(input.version)) return fail("Dati non validi.");
+  const league = await loadLeague();
+  const pick = league.picks.find((p) => p.id === input.pickId);
+  if (!pick) return fail("Pick non trovata. Aggiorna la pagina.");
+  if (input.teamId === null && !input.toConfirm) return fail("Una pick senza proprietario deve restare «da confermare».");
+  if (input.teamId !== null && !league.teamNames.has(input.teamId)) return fail("Squadra non trovata.");
+
+  const warnings = input.teamId
+    ? pickLimitWarnings(
+        league.teamNames.get(input.teamId) ?? "?",
+        [...league.picks.filter((p) => p.id !== pick.id && p.current_team_id === input.teamId), pick],
+        league.settings,
+      )
+    : [];
+  const db = await createClient();
+  const { error } = await db.rpc("admin_set_pick", {
+    p_pick_id: input.pickId,
+    p_version: input.version,
+    p_current_team_id: input.teamId,
+    p_to_confirm: input.toConfirm,
+    p_note: input.note,
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Pick ${pick.year} ${pick.round}° giro aggiornata.`, warnings);
+}
+
+/** R-34: si aprono solo i draft entro l'orizzonte di lega (a ottobre 2026: 2027-2029). */
+export async function openPickYear(input: { year: number }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  const league = await loadLeague();
+  if (!pickYearAllowed(input.year, league.seasonYear, league.settings)) {
+    return fail(`Si possono aprire solo i draft dal ${league.seasonYear + 1} al ${league.seasonYear + league.settings.pickHorizonYears} (R-34).`);
+  }
+  const db = await createClient();
+  const { error } = await db.rpc("admin_open_pick_year", { p_year: input.year, p_rounds: league.settings.draftRounds });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Pick del draft ${input.year} aperte: ${league.settings.draftRounds} giri per squadra, ognuna alla sua squadra.`);
+}
+
+// ---------- Quota di iscrizione e luxury tax ----------
+export async function setTeamSeason(input: { teamId: string; entryFeePaid: boolean; luxuryTaxPaid: boolean }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  const league = await loadLeague();
+  const team = league.teams.find((t) => t.team.id === input.teamId);
+  if (!team) return fail("Squadra non trovata.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_set_team_season", { p_team_id: input.teamId, p_entry_fee_paid: input.entryFeePaid, p_luxury_tax_paid: input.luxuryTaxPaid });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`${team.team.name} aggiornata.`);
 }
