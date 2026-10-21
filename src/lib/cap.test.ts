@@ -43,6 +43,35 @@ describe("teamFinance riproduce il foglio Excel", () => {
   });
 });
 
+// Foglio1 del 21/10/2026, dopo l'asta (docs/DATA-MODEL.md, "Numeri di riferimento"). Dame Time è l'unico sforato.
+const SHEET_POST_AUCTION = [
+  { team: "Assago Farmers", starters: 210.5, cuts: 3.5, reserves: 80, bonus: -2, monte: 214, spazio: 34, spazioRis: 0, tax: 0 },
+  { team: "CUS Cosenza", starters: 234, cuts: 10.5, reserves: 55.5, bonus: -3, monte: 244.5, spazio: 2.5, spazioRis: 24.5, tax: 0 },
+  { team: "Bol Bollerz", starters: 242, cuts: 0, reserves: 68.5, bonus: 5, monte: 242, spazio: 13, spazioRis: 11.5, tax: 0 },
+  { team: "Dame Time", starters: 256.5, cuts: 3.5, reserves: 52, bonus: -1, monte: 260, spazio: -11, spazioRis: 28, tax: 2.75 },
+  { team: "Atlanto Non Vinco", starters: 248, cuts: 1.5, reserves: 51.5, bonus: 3, monte: 249.5, spazio: 3.5, spazioRis: 28.5, tax: 0 },
+  { team: "Spaccinos", starters: 240.5, cuts: 0, reserves: 64.5, bonus: 2, monte: 240.5, spazio: 11.5, spazioRis: 15.5, tax: 0 },
+  { team: "OKCC", starters: 246, cuts: 0, reserves: 67.5, bonus: 4, monte: 246, spazio: 8, spazioRis: 12.5, tax: 0 },
+  { team: "San Antonio", starters: 248, cuts: 1.5, reserves: 65, bonus: 0, monte: 249.5, spazio: 0.5, spazioRis: 15, tax: 0 },
+];
+
+describe("teamFinance sul foglio dopo l'asta", () => {
+  it.each(SHEET_POST_AUCTION)("$team", (t) => {
+    const f = teamFinance(
+      [entry("starter", t.starters), entry("reserve", t.reserves)],
+      [{ salary: t.cuts }],
+      t.bonus,
+      S,
+    );
+    expect(f.payroll).toBe(t.monte);
+    expect(f.capSpace).toBe(t.spazio);
+    expect(f.reserveSpace).toBe(t.spazioRis);
+    expect(f.overCap).toBe(t.team === "Dame Time"); // "BUDGET SFORATO" = SI solo per Dame Time
+    expect(f.belowFloor).toBe(false);
+    expect(f.luxuryTaxEur).toBe(t.tax); // R-12 con soglia = cap effettivo: (260 - 249) / 4 = 2.75
+  });
+});
+
 describe("regole", () => {
   it("floor = 200 con cap 250 (R-13)", () => expect(salaryFloor(S)).toBe(200));
 

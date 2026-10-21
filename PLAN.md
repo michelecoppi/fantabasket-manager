@@ -15,10 +15,11 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 
 ## Fase 1 — Progetto e dati
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
-- [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (bozza, **non ancora eseguita**)
-- [ ] Creare progetto Supabase (account dell'utente) e applicare migrazione + seed; testare RLS
-- [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio (16 test verdi)
-- [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (**scrittura non ancora provata**)
+- [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (eseguiti su Supabase)
+- [x] Progetto Supabase creato, migrazioni 0001-0002 e seed applicati
+- [ ] Testare le policy RLS con un utente viewer
+- [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (40 test verdi in tutto)
+- [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
 - [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
 - [ ] UI admin: correggere le pick da confermare (fase 3)
@@ -35,6 +36,10 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Layout mobile-first, tema chiaro/scuro automatico
 - [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
 
+## Deploy
+- [x] Vercel: sito online (dominio di produzione verificato: apre `/login`). Guida in [docs/DEPLOY.md](docs/DEPLOY.md). Nota: l'URL del singolo deploy (`...-michelecoppis-projects.vercel.app`) è protetto da Vercel SSO, va condiviso solo il dominio di produzione `fantabasket-manager.vercel.app`
+- [ ] Creare gli altri 6 utenti (viewer)
+
 ## Fase 3 — Pannello admin
 - [ ] Ruolo admin + guardia su rotte e RLS
 - [ ] CRUD contratti: firma (durata 0.5/1/2/3, team option), modifica, rimozione; validazioni 13+3..6, 5G/5A/3C, max 3 riserve per ruolo
@@ -49,14 +54,15 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 ## Fase 4 — Rifiniture
 - [ ] Storico stagioni e scambi
 - [ ] Export CSV/Excel
-- [ ] Backup periodico + keep-alive Supabase
+- [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`, serve aggiungere i secret su GitHub)
+- [ ] Backup periodico del database
 - [ ] Notifiche (opzionale)
 
 ## Fuori scope per ora
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Aggiungere la chiave anon, provare il login e controllare le pagine; poi pagina Giocatori (listone) e deploy su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
+Aggiungere la chiave anon, provare il login e controllare le pagine; poi pagina Giocatori (listone) e deploy su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
