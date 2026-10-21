@@ -22,24 +22,34 @@ async function fetchAllPlayers(db: Awaited<ReturnType<typeof createClient>>) {
   }
 }
 
-/** Carica la lega della stagione corrente come l'utente loggato (le policy RLS decidono cosa vede). */
-export const loadLeague = cache(async (): Promise<LeagueView> => {
+/** Stagione corrente: una sola query per richiesta, condivisa da tutti i loader. */
+const loadSeason = cache(async (): Promise<{ id: number; year: number }> => {
   const db = await createClient();
   const season = await db.from("seasons").select("id,year").eq("is_current", true).maybeSingle<{ id: number; year: number }>();
   if (season.error || !season.data) throw new Error("Stagione corrente non trovata");
-  const sid = season.data.id;
+  return season.data;
+});
+
+/**
+ * Lega della stagione corrente come l'utente loggato (le policy RLS decidono cosa vede), più le versioni delle righe
+ * modificabili dagli admin (migrazioni 0006-0007) per la concorrenza ottimistica delle RPC: stesse righe, una sola lettura.
+ */
+const loadLeagueData = cache(async () => {
+  const db = await createClient();
+  const season = await loadSeason();
+  const sid = season.id;
 
   const [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie] = await Promise.all([
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
-    db.from("contracts").select(`id,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
+    db.from("contracts").select(`id,version,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
     db
       .from("cuts")
-      .select(`id,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,team_option,${playerCols}`)
+      .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,team_option,${playerCols}`)
       .eq("season_id", sid)
       .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
-    db.from("draft_picks").select("id,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
+    db.from("draft_picks").select("id,version,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
     db.from("team_season").select("team_id,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
     db.from("rookie_draft").select("pick_no,team_id,note").eq("season_id", sid),
   ]);
@@ -48,7 +58,7 @@ export const loadLeague = cache(async (): Promise<LeagueView> => {
   }
 
   const raw: RawLeague = {
-    seasonYear: season.data.year,
+    seasonYear: season.year,
     teams: teams.data ?? [],
     settings: settings.data ?? [],
     contracts: (contracts.data ?? []) as unknown as ContractRow[],
@@ -58,28 +68,35 @@ export const loadLeague = cache(async (): Promise<LeagueView> => {
     teamSeason: teamSeason.data ?? [],
     rookieDraft: rookie.data ?? [],
   };
-  return buildLeague(raw);
+  const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
+  const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data) };
+  return { league: buildLeague(raw), versions };
 });
+
+export const loadLeague = async (): Promise<LeagueView> => (await loadLeagueData()).league;
+export const loadVersions = async (): Promise<Versions> => (await loadLeagueData()).versions;
 
 /** Profilo dell'utente loggato (ruolo e squadra). */
 export const loadProfile = cache(async () => {
   const db = await createClient();
-  const { data: auth } = await db.auth.getUser();
-  if (!auth.user) return null;
+  // getClaims verifica il JWT in locale (chiavi asimmetriche ES256): niente giro di rete verso Auth. L'identità conta solo qui;
+  // i permessi veri restano nel database (RLS e is_admin() leggono lo stesso JWT).
+  const { data: auth } = await db.auth.getClaims();
+  const claims = auth?.claims;
+  if (!claims) return null;
+  const email = typeof claims.email === "string" ? claims.email : "";
   const { data } = await db
     .from("profiles")
     .select("display_name,role,team_id")
-    .eq("id", auth.user.id)
+    .eq("id", claims.sub)
     .maybeSingle<{ display_name: string; role: "admin" | "viewer"; team_id: string | null }>();
-  return { email: auth.user.email ?? "", ...(data ?? { display_name: auth.user.email ?? "", role: "viewer" as const, team_id: null }) };
+  return { email, ...(data ?? { display_name: email, role: "viewer" as const, team_id: null }) };
 });
 
 /** Listone Dunkest con l'eventuale proprietario nella stagione corrente. */
 export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const db = await createClient();
-  const season = await db.from("seasons").select("id").eq("is_current", true).maybeSingle<{ id: number }>();
-  if (season.error || !season.data) throw new Error("Stagione corrente non trovata");
-  const sid = season.data.id;
+  const sid = (await loadSeason()).id;
 
   const [players, contracts, cuts] = await Promise.all([
     fetchAllPlayers(db),
@@ -99,22 +116,4 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     ownerTeamId: owner.get(p.id as number) ?? null,
     cutByTeamId: cutBy.get(p.id as number) ?? null,
   }));
-});
-
-/**
- * Versioni delle righe modificabili dagli admin (migrazione 0006), per la concorrenza ottimistica delle RPC.
- * Separate da `loadLeague` così le pagine di sola lettura non dipendono dalla migrazione.
- */
-export const loadVersions = cache(async (): Promise<Versions> => {
-  const db = await createClient();
-  const season = await db.from("seasons").select("id").eq("is_current", true).maybeSingle<{ id: number }>();
-  if (season.error || !season.data) throw new Error("Stagione corrente non trovata");
-  const [contracts, picks, cuts] = await Promise.all([
-    db.from("contracts").select("id,version").eq("season_id", season.data.id),
-    db.from("draft_picks").select("id,version"),
-    db.from("cuts").select("id,version").eq("season_id", season.data.id),
-  ]);
-  for (const r of [contracts, picks, cuts]) if (r.error) throw new Error(r.error.message);
-  const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
-  return { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data) };
 });
