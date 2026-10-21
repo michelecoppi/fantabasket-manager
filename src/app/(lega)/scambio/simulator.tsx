@@ -1,102 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Card, Stat } from "@/components/ui";
-import { tradeImpact, type LeagueSettings, type Position, type Slot } from "@/lib/cap";
-import { fmt } from "@/lib/format";
+import { Card } from "@/components/ui";
+import { emptyGive, ImpactCard, TradePicker, type Give, type SimTeam } from "@/components/trade-parts";
+import { evaluateTrade, type LeagueSettings, type TradeParty } from "@/lib/cap";
 
-export interface SimTeam {
-  id: string;
-  name: string;
-  bonus: number;
-  cuts: { salary: number }[];
-  players: { id: number; name: string; pos: Position | null; slot: Slot; salary: number }[];
-  picks: { id: number; label: string }[];
-}
+export type { SimTeam };
 
 const control = "w-full rounded border border-line bg-surface px-3 py-2 text-base";
 
-function toggle(set: Set<number>, id: number): Set<number> {
-  const next = new Set(set);
-  if (!next.delete(id)) next.add(id);
-  return next;
-}
-
-/** Cosa cede una squadra: giocatori (per id contratto) e pick (per id). */
-interface Give {
-  players: Set<number>;
-  picks: Set<number>;
-}
-const empty = (): Give => ({ players: new Set(), picks: new Set() });
-
-function Picker({ team, give, onChange }: { team: SimTeam; give: Give; onChange: (g: Give) => void }) {
-  return (
-    <Card className="p-3">
-      <h3 className="font-display text-xl font-bold">{team.name} cede</h3>
-      <ul className="mt-2 divide-y divide-line">
-        {team.players.map((p) => (
-          <li key={p.id}>
-            <label className="flex cursor-pointer items-center gap-3 py-1.5">
-              <input type="checkbox" className="h-4 w-4" checked={give.players.has(p.id)} onChange={() => onChange({ ...give, players: toggle(give.players, p.id) })} />
-              <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
-              <span className="min-w-0 flex-1 truncate">{p.name}</span>
-              <span className="text-xs text-muted">{p.slot === "reserve" ? "riserva" : "titolare"}</span>
-              <span className="w-10 text-right font-medium tabular-nums">{fmt(p.salary)}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
-      {team.picks.length > 0 && (
-        <>
-          <h4 className="mt-3 text-xs font-medium tracking-wide text-muted uppercase">Pick</h4>
-          <ul className="divide-y divide-line">
-            {team.picks.map((p) => (
-              <li key={p.id}>
-                <label className="flex cursor-pointer items-center gap-3 py-1.5">
-                  <input type="checkbox" className="h-4 w-4" checked={give.picks.has(p.id)} onChange={() => onChange({ ...give, picks: toggle(give.picks, p.id) })} />
-                  <span className="text-sm">{p.label}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </Card>
-  );
-}
-
-function Result({ team, other, give, receive, settings }: { team: SimTeam; other: SimTeam; give: Give; receive: Give; settings: LeagueSettings }) {
-  const incoming = other.players.filter((p) => receive.players.has(p.id)).map((p) => ({ position: p.pos, slot: p.slot, salary: p.salary }));
-  const roster = team.players.map((p) => ({ id: p.id, position: p.pos, slot: p.slot, salary: p.salary }));
-  const r = tradeImpact({ roster, cuts: team.cuts, bonus: team.bonus }, give.players, incoming, settings);
-  const delta = Math.round((r.after.payroll - r.before.payroll) * 10) / 10;
-  return (
-    <Card className={`border-t-4 p-4 ${r.breaksCap ? "border-t-brand-red" : "border-t-brand-blue"}`}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-display text-2xl leading-none font-bold">{team.name}</h3>
-        {r.breaksCap ? <Badge tone="bad">fa sforare il cap</Badge> : <Badge tone="good">cap rispettato</Badge>}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <Stat label="Monte ingaggi" value={`${fmt(r.before.payroll)} → ${fmt(r.after.payroll)}`} />
-        <Stat label="Spazio" value={`${fmt(r.before.capSpace)} → ${fmt(r.after.capSpace)}`} tone={r.after.overCap ? "bad" : undefined} />
-        <Stat label="Riserve" value={`${fmt(r.before.reserveSpace)} → ${fmt(r.after.reserveSpace)}`} />
-      </div>
-      <p className="mt-2 text-xs text-muted">
-        Monte ingaggi {delta > 0 ? "+" : ""}{fmt(delta)} · pick {receive.picks.size} in entrata, {give.picks.size} in uscita
-      </p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {r.after.belowFloor && <Badge tone="warn" title="Il floor non blocca lo scambio (R-57)">sotto floor ({fmt(r.after.floor)})</Badge>}
-        {r.warnings.map((w) => <Badge key={w} title="Composizione della rosa dopo lo scambio">{w}</Badge>)}
-      </div>
-    </Card>
-  );
+export function toParty(t: SimTeam, give: Give): TradeParty {
+  return {
+    name: t.name,
+    side: { roster: t.players.map((p) => ({ id: p.id, position: p.pos, slot: p.slot, salary: p.salary })), cuts: t.cuts, bonus: t.bonus },
+    picks: t.picks.map((p) => ({ id: p.id, year: p.year, round: p.round, toConfirm: p.toConfirm })),
+    gives: { contracts: give.players, picks: give.picks },
+  };
 }
 
 export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings: LeagueSettings }) {
   const [aId, setAId] = useState(teams[0]?.id ?? "");
   const [bId, setBId] = useState(teams[1]?.id ?? "");
-  const [giveA, setGiveA] = useState(empty);
-  const [giveB, setGiveB] = useState(empty);
+  const [giveA, setGiveA] = useState(emptyGive);
+  const [giveB, setGiveB] = useState(emptyGive);
   const a = teams.find((t) => t.id === aId);
   const b = teams.find((t) => t.id === bId);
   if (!a || !b) return <p className="text-sm text-muted">Servono almeno due squadre.</p>;
@@ -106,14 +32,15 @@ export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings
     const mine = side === "a" ? { set: setAId, give: setGiveA } : { set: setBId, give: setGiveB };
     const other = side === "a" ? { id: bId, set: setBId, give: setGiveB } : { id: aId, set: setAId, give: setGiveA };
     mine.set(id);
-    mine.give(empty());
+    mine.give(emptyGive());
     if (id === other.id) {
       other.set(teams.find((t) => t.id !== id)?.id ?? "");
-      other.give(empty());
+      other.give(emptyGive());
     }
   };
 
   const nothing = giveA.players.size + giveA.picks.size + giveB.players.size + giveB.picks.size === 0;
+  const ev = evaluateTrade(toParty(a, giveA), toParty(b, giveB), settings);
   return (
     <>
       <Card className="p-3">
@@ -128,8 +55,8 @@ export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings
       </Card>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Picker team={a} give={giveA} onChange={setGiveA} />
-        <Picker team={b} give={giveB} onChange={setGiveB} />
+        <TradePicker team={a} give={giveA} onChange={setGiveA} />
+        <TradePicker team={b} give={giveB} onChange={setGiveB} />
       </div>
 
       <h2 className="font-display mt-8 mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">Effetto sul cap</h2>
@@ -137,8 +64,8 @@ export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings
         <p className="text-sm text-muted">Seleziona giocatori o pick da scambiare.</p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          <Result team={a} other={b} give={giveA} receive={giveB} settings={settings} />
-          <Result team={b} other={a} give={giveB} receive={giveA} settings={settings} />
+          <ImpactCard name={a.name} impact={ev.impacts[0]} give={giveA} receive={giveB} />
+          <ImpactCard name={b.name} impact={ev.impacts[1]} give={giveB} receive={giveA} />
         </div>
       )}
       <p className="mt-4 text-xs text-muted">

@@ -96,3 +96,20 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     cutByTeamId: cutBy.get(p.id as number) ?? null,
   }));
 });
+
+/**
+ * Versioni delle righe modificabili dagli admin (migrazione 0006), per la concorrenza ottimistica delle RPC.
+ * Separate da `loadLeague` così le pagine di sola lettura non dipendono dalla migrazione.
+ */
+export const loadVersions = cache(async (): Promise<{ contracts: Record<number, number>; picks: Record<number, number> }> => {
+  const db = await createClient();
+  const season = await db.from("seasons").select("id").eq("is_current", true).maybeSingle<{ id: number }>();
+  if (season.error || !season.data) throw new Error("Stagione corrente non trovata");
+  const [contracts, picks] = await Promise.all([
+    db.from("contracts").select("id,version").eq("season_id", season.data.id),
+    db.from("draft_picks").select("id,version"),
+  ]);
+  for (const r of [contracts, picks]) if (r.error) throw new Error(r.error.message);
+  const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
+  return { contracts: toMap(contracts.data), picks: toMap(picks.data) };
+});

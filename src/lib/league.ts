@@ -3,8 +3,10 @@ import {
   rosterWarnings,
   teamFinance,
   type LeagueSettings,
+  type PickInfo,
   type Position,
   type TeamFinance,
+  type TradeSide,
 } from "./cap";
 
 export interface TeamRow {
@@ -143,6 +145,8 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     reserveMin: get("reserve_min"),
     reserveMax: get("reserve_max"),
     reserveMaxPerPosition: get("reserve_max_per_pos"),
+    contractMaxYears: get("contract_max_years"),
+    maxPicksPerRound: get("max_picks_per_round"),
   };
 }
 
@@ -207,4 +211,20 @@ export function buildLeague(raw: RawLeague): LeagueView {
     rookieDraft: [...raw.rookieDraft].sort((a, b) => a.pick_no - b.pick_no),
     teamNames: new Map(raw.teams.map((t) => [t.id, t.name])),
   };
+}
+
+/** La squadra come la vedono i calcoli di scambio/firma (`id` = id del contratto). */
+export function teamSide(t: TeamView): TradeSide {
+  return {
+    roster: [...t.starters, ...t.reserves].map((p) => ({ id: p.id, position: p.pos, slot: p.slot, salary: p.salary })),
+    cuts: t.cuts.map((c) => ({ salary: c.paid })),
+    bonus: t.bonus,
+  };
+}
+
+/** Pick attualmente possedute dalla squadra. */
+export function teamPicks(league: LeagueView, teamId: string): PickInfo[] {
+  return league.picks
+    .filter((p) => p.current_team_id === teamId)
+    .map((p) => ({ id: p.id, year: p.year, round: p.round, toConfirm: p.to_confirm }));
 }

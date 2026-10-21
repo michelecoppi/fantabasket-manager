@@ -20,6 +20,10 @@ export interface LeagueSettings {
   reserveMin: number;
   reserveMax: number;
   reserveMaxPerPosition: number;
+  /** R-20 / R-22: durata massima di un contratto, team option compresa */
+  contractMaxYears: number;
+  /** R-33: massimo di pick per giro per squadra (ASSUNZIONE: contate per anno di draft) */
+  maxPicksPerRound: number;
 }
 
 export interface RosterEntry {
@@ -116,6 +120,129 @@ export function tradeImpact(side: TradeSide, outgoingIds: ReadonlySet<number>, i
   };
 }
 
+export interface PickInfo {
+  id: number;
+  year: number;
+  round: number;
+  toConfirm: boolean;
+}
+
+/** Una delle due squadre di uno scambio, con ciò che cede (id contratto / id pick). */
+export interface TradeParty {
+  name: string;
+  side: TradeSide;
+  picks: PickInfo[];
+  gives: { contracts: ReadonlySet<number>; picks: ReadonlySet<number> };
+}
+
+export interface TradeEvaluation {
+  /** nello stesso ordine di (a, b) */
+  impacts: [TradeImpact, TradeImpact];
+  /** impediscono di registrare lo scambio */
+  errors: string[];
+  /** da mostrare ma non bloccanti */
+  warnings: string[];
+  /** squadre che con lo scambio sforano il cap: serve l'eccezione del moderatore con motivazione (R-57) */
+  capBreakers: string[];
+}
+
+/**
+ * Valutazione completa di uno scambio, condivisa da simulatore (sola lettura) e server action (che poi chiama la RPC).
+ * R-57 (cap) è bloccante a meno di eccezione del moderatore; composizione della rosa, floor e limite di pick per giro (R-33) avvisano soltanto.
+ */
+export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): TradeEvaluation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const parties = [
+    { me: a, other: b },
+    { me: b, other: a },
+  ] as const;
+
+  const impacts = parties.map(({ me, other }) => {
+    const owned = new Set(me.side.roster.map((r) => r.id));
+    for (const id of me.gives.contracts) if (!owned.has(id)) errors.push(`Un giocatore ceduto non appartiene a ${me.name}.`);
+    const ownedPicks = new Set(me.picks.map((p) => p.id));
+    for (const id of me.gives.picks) if (!ownedPicks.has(id)) errors.push(`Una pick ceduta non appartiene a ${me.name}.`);
+
+    const incoming = other.side.roster.filter((r) => other.gives.contracts.has(r.id)).map(({ position, slot, salary }) => ({ position, slot, salary }));
+    const impact = tradeImpact(me.side, me.gives.contracts, incoming, s);
+
+    const picksAfter = [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...other.picks.filter((p) => other.gives.picks.has(p.id))];
+    const perRound = new Map<string, number>();
+    for (const p of picksAfter) perRound.set(`${p.year}/${p.round}`, (perRound.get(`${p.year}/${p.round}`) ?? 0) + 1);
+    for (const [key, n] of perRound) {
+      if (n > s.maxPicksPerRound) {
+        const [year, round] = key.split("/");
+        warnings.push(`${me.name}: ${n} pick del ${round}° giro ${year} (max ${s.maxPicksPerRound}, R-33)`);
+      }
+    }
+    return impact;
+  }) as [TradeImpact, TradeImpact];
+
+  const giveCount = (p: TradeParty) => p.gives.contracts.size + p.gives.picks.size;
+  if (giveCount(a) + giveCount(b) === 0) errors.push("Lo scambio è vuoto.");
+  for (const p of [a, b]) {
+    if (p.picks.some((x) => p.gives.picks.has(x.id) && x.toConfirm)) warnings.push(`${p.name} cede una pick con proprietà da confermare.`);
+  }
+
+  return {
+    impacts,
+    errors: [...new Set(errors)],
+    warnings,
+    capBreakers: [a, b].filter((_, i) => impacts[i].breaksCap).map((p) => p.name),
+  };
+}
+
+export interface ContractTerms {
+  slot: Slot;
+  /** null = durata ancora da fissare (R-51: si sceglie dopo l'asta) */
+  years: number | null;
+  teamOption: boolean;
+  salary: number;
+}
+
+/** R-42: quota pagata per un taglio = 1/3 dello stipendio arrotondato allo 0.5 più vicino (5 → 1.5, 10 → 3.5). */
+export function cutShare(salary: number): number {
+  return Math.round((salary / 3) * 2) / 2;
+}
+
+/** R-20: durate ammesse alla firma = mezza stagione e gli interi fino al massimo di lega. */
+export function contractDurations(s: LeagueSettings): number[] {
+  return [0.5, ...Array.from({ length: Math.floor(s.contractMaxYears) }, (_, i) => i + 1)];
+}
+
+/** R-22: team option solo su contratti da 1 o 2 stagioni (durata totale con l'option entro il massimo). */
+export function teamOptionAllowed(years: number | null, s: LeagueSettings): boolean {
+  return years !== null && Number.isInteger(years) && years >= 1 && years + 1 <= s.contractMaxYears;
+}
+
+/** Errori bloccanti sui termini di un contratto (integrità dei dati, durate e option del regolamento). */
+export function contractTermsErrors(t: ContractTerms, s: LeagueSettings): string[] {
+  const out: string[] = [];
+  if (t.slot === "talent") out.push("La squadra talenti si gestisce a parte.");
+  if (!Number.isFinite(t.salary) || t.salary <= 0) out.push("Lo stipendio deve essere maggiore di zero.");
+  else if (Math.round(t.salary * 10) / 10 !== t.salary) out.push("Lo stipendio ammette al massimo un decimale (mezzi crediti).");
+  if (t.years !== null && !contractDurations(s).includes(t.years)) out.push(`Durata non ammessa (R-20): ${t.years}.`);
+  if (t.teamOption && !teamOptionAllowed(t.years, s)) out.push("La team option è ammessa solo su contratti da 1 o 2 stagioni (R-22).");
+  return out;
+}
+
+/**
+ * Effetto di una firma sulla squadra. Il cap in firma avvisa soltanto (ASSUNZIONE, docs/OPEN-QUESTIONS.md):
+ * nel foglio c'è già chi supera il cap dopo l'asta, quindi non è un blocco.
+ */
+export function evaluateSigning(
+  side: TradeSide,
+  terms: ContractTerms & { position: Position | null },
+  s: LeagueSettings,
+): { errors: string[]; warnings: string[]; impact: TradeImpact } {
+  const impact = tradeImpact(side, new Set(), [{ position: terms.position, slot: terms.slot, salary: terms.salary }], s);
+  const warnings = [...impact.warnings];
+  if (terms.slot === "starter" && impact.after.overCap) warnings.unshift("Dopo la firma il monte ingaggi supera il cap (R-10).");
+  if (terms.slot === "reserve" && impact.after.reserveSpace < 0) warnings.unshift("Dopo la firma le riserve superano il budget (R-03).");
+  return { errors: contractTermsErrors(terms, s), warnings, impact };
+}
+
 /** Controlli di composizione (R-01..R-03). Restituisce avvisi, non blocca: in estate la rosa può essere incompleta. */
 export function rosterWarnings(roster: RosterEntry[], s: LeagueSettings): string[] {
   const out: string[] = [];
@@ -146,4 +273,6 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   reserveMin: 3,
   reserveMax: 6,
   reserveMaxPerPosition: 3,
+  contractMaxYears: 3,
+  maxPicksPerRound: 2,
 };
