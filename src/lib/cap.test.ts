@@ -115,6 +115,12 @@ describe("rosterWarnings", () => {
     expect(w).toContain("Riserve: 1 (min 3)");
   });
 
+  it("ruolo sconosciuto non conta come guardia", () => {
+    const w = rosterWarnings([entry("starter", 1, null), entry("reserve", 1, null)], S);
+    expect(w).toContain("Titolari G: 0/5");
+    expect(w).not.toContain("Riserve G: 1 (max 3)");
+  });
+
   it("max 3 riserve per ruolo (R-03)", () => {
     const roster = Array.from({ length: 4 }, () => entry("reserve", 1, "A"));
     expect(rosterWarnings(roster, S)).toContain("Riserve A: 4 (max 3)");

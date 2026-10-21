@@ -5,6 +5,23 @@ import { buildLeague, type ContractRow, type CutRow, type RawLeague, type League
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
 
+const PAGE = 1000; // PostgREST (Supabase) taglia a max_rows = 1000 per richiesta, anche con .limit(2000)
+
+async function fetchAllPlayers(db: Awaited<ReturnType<typeof createClient>>) {
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const r = await db
+      .from("players")
+      .select("id,first_name,last_name,pos,nba_team,dunkest_credits")
+      .order("last_name")
+      .order("id") // ordine stabile tra una pagina e l'altra
+      .range(from, from + PAGE - 1);
+    if (r.error) throw new Error(r.error.message);
+    rows.push(...r.data);
+    if (r.data.length < PAGE) return rows;
+  }
+}
+
 /** Carica la lega della stagione corrente come l'utente loggato (le policy RLS decidono cosa vede). */
 export const loadLeague = cache(async (): Promise<LeagueView> => {
   const db = await createClient();
@@ -61,15 +78,15 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const sid = season.data.id;
 
   const [players, contracts, cuts] = await Promise.all([
-    db.from("players").select("id,first_name,last_name,pos,nba_team,dunkest_credits").order("last_name").limit(2000),
+    fetchAllPlayers(db),
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
     db.from("cuts").select("player_id,team_id").eq("season_id", sid),
   ]);
-  for (const r of [players, contracts, cuts]) if (r.error) throw new Error(r.error.message);
+  for (const r of [contracts, cuts]) if (r.error) throw new Error(r.error.message);
 
   const owner = new Map((contracts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
   const cutBy = new Map((cuts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
-  return (players.data ?? []).map((p) => ({
+  return players.map((p) => ({
     id: p.id as number,
     name: `${p.first_name ?? ""} ${p.last_name}`.trim(),
     pos: p.pos as PlayerListItem["pos"],
