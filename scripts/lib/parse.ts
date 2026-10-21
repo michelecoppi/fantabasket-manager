@@ -1,5 +1,6 @@
 // Legge Dunkest.xlsx e restituisce dati strutturati + avvisi. Nessuna scrittura: vedi scripts/import-xlsx.ts.
 import ExcelJS from "exceljs";
+import { PICK_OVERRIDES } from "./overrides";
 import {
   SHEET_TEAM_ORDER,
   lettersOnly,
@@ -282,7 +283,8 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
           const status = str(f1, b.firstRound + round - 1, yc + 1);
           if (!status) continue;
           const swap = /^S\((.+)\)$/i.exec(status);
-          const current = swap ? resolveTeam(swap[1]) : status.toUpperCase() === "T" ? owner : null;
+          const override = PICK_OVERRIDES[`${ym[1]}-${round}-${owner}`];
+          const current = override ?? (swap ? resolveTeam(swap[1]) : status.toUpperCase() === "T" ? owner : null);
           if (!current) warnings.push(`Pick ${ym[1]} giro ${round} di ${owner}: stato non riconosciuto "${status}"`);
           picks.push({ year: Number(ym[1]), round, original: owner, current, rawStatus: status });
         }
@@ -309,13 +311,19 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
   // ---- ultimo contratto (colonne AC-AF, righe 4+)
   const lastContracts: LastContractRow[] = [];
   let date: string | null = null;
+  let lastTeam: TeamName | null = null;
   for (let r = 4; r <= f1.rowCount; r++) {
     const d = cellValue(f1, r, 29);
-    if (d !== null) date = parseSheetDate(d) ?? date;
+    if (d !== null) {
+      date = parseSheetDate(d) ?? date;
+      lastTeam = null; // nuovo gruppo di date: la squadra si eredita solo dentro lo stesso gruppo
+    }
     const raw = str(f1, r, 30);
     const sal = num(f1, r, 31);
-    const team = resolveTeam(str(f1, r, 32));
+    // squadra vuota = stessa del gruppo (es. O.Toppin sotto Porter e Thor → San Antonio)
+    const team: TeamName | null = resolveTeam(str(f1, r, 32)) ?? lastTeam;
     if (!raw || sal === null) continue;
+    lastTeam = team;
     if (!team || !date) {
       warnings.push(`Ultimo contratto riga ${r}: squadra o data non riconosciuta (${raw})`);
       continue;
