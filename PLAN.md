@@ -22,6 +22,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
 - [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
+- [ ] Applicare su Supabase la migrazione 0003 (`unique (season_id, player_id)` su `contracts`): al 2026-10-21 il database non ha duplicati. L'import ora segnala come problema un giocatore in più contratti
 - [ ] UI admin: correggere le pick da confermare (fase 3)
 - [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
