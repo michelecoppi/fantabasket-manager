@@ -63,13 +63,14 @@ export interface ParsedContractName {
   years: number | null;
   teamOption: boolean;
   name: string;
-  restriction: "restricted" | "unrestricted" | null;
+  restriction: "unrestricted" | null; // sigla `u`
+  rookie: boolean; // sigla `r`: contratto rookie
   position: "G" | "A" | "C" | null;
   /** numero finale (solo nei tagliati: stipendio originale) */
   trailingNumber: number | null;
 }
 
-/** "1+1 F.Wagner u" → anni 1, option, "F.Wagner", unrestricted. `r` = restricted, `u` = unrestricted. */
+/** "1+1 F.Wagner u" → anni 1, option, "F.Wagner", unrestricted. `r` = rookie, `u` = unrestricted. */
 export function parseContractName(raw: string, opts: { trailingNumber?: boolean } = {}): ParsedContractName {
   let s = raw.replace(/ /g, " ").replace(/\s+/g, " ").trim();
   let years: number | null = null;
@@ -95,12 +96,14 @@ export function parseContractName(raw: string, opts: { trailingNumber?: boolean 
     }
   }
   let restriction: ParsedContractName["restriction"] = null;
+  let rookie = false;
   const flag = /\s+([ur])$/i.exec(s);
   if (flag) {
-    restriction = flag[1].toLowerCase() === "u" ? "unrestricted" : "restricted";
+    if (flag[1].toLowerCase() === "u") restriction = "unrestricted";
+    else rookie = true;
     s = s.slice(0, flag.index).trim();
   }
-  return { years, teamOption, name: s, restriction, position, trailingNumber };
+  return { years, teamOption, name: s, restriction, rookie, position, trailingNumber };
 }
 
 /** "Ja.Williams" → { prefix: "ja", last: "williams" }; "Murphy III" → { prefix: "", last: "murphyiii" }. */

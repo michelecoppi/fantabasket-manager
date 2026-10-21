@@ -30,6 +30,8 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
   p(
     `giocatori listone ${d.catalog.length} · contratti ${d.contracts.length} (titolari ${count(d.contracts, (c) => c.slot === "starter")}, riserve ${count(d.contracts, (c) => c.slot === "reserve")})`,
   );
+  const noYears = d.contracts.filter((c) => c.years === null);
+  if (noYears.length) p(`senza durata (da fissare): ${noYears.length}: ${noYears.map((c) => c.player.rawName).join(", ")}`);
   p(`tagliati ${d.cuts.length} · talenti ${d.talents.length} · pick ${d.picks.length} · rookie draft ${d.rookieDraft.length} · ultimi contratti ${d.lastContracts.length}`);
 
   p("\n== Quadratura con i totali del foglio (monte ingaggi, spazio salariale, spazio riserve) ==");
@@ -37,10 +39,12 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
     const roster = d.contracts.filter((c) => c.team === st.team).map((c) => ({ position: c.role, slot: c.slot, salary: c.salary }));
     const cuts = d.cuts.filter((c) => c.team === st.team).map((c) => ({ salary: c.paidSalary }));
     const f = teamFinance(roster, cuts, st.bonus, DEFAULT_SETTINGS);
-    const ok = f.payroll === st.monte && f.capSpace === st.spazio && f.reserveSpace === st.spazioRiserve;
+    // cella senza risultato in cache (formula mai ricalcolata, es. Assago "80-SUM(D18:D23)"): non confrontabile
+    const same = (mine: number, sheet: number) => Number.isNaN(sheet) || mine === sheet;
+    const ok = same(f.payroll, st.monte) && same(f.capSpace, st.spazio) && same(f.reserveSpace, st.spazioRiserve);
     if (!ok) problems++;
     p(
-      `${ok ? "OK " : "KO "} ${st.team.padEnd(18)} monte ${f.payroll}/${st.monte}  spazio ${f.capSpace}/${st.spazio}  riserve ${f.reserveSpace}/${st.spazioRiserve}`,
+      `${ok ? "OK " : "KO "} ${st.team.padEnd(18)} monte ${f.payroll}/${st.monte}  spazio ${f.capSpace}/${st.spazio}  riserve ${f.reserveSpace}/${Number.isNaN(st.spazioRiserve) ? "n/d" : st.spazioRiserve}`,
     );
     for (const w of rosterWarnings(roster, DEFAULT_SETTINGS)) p(`      avviso rosa: ${w}`);
   }
@@ -83,7 +87,9 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
 
   // controllo incrociato 2026: proprietari per giro secondo Foglio1 vs ordine del rookie draft (Foglio2)
   p("\n== Controllo incrociato draft 2026 (Foglio1 pick ↔ Foglio2 ordine) ==");
-  for (let round = 1; round <= 5; round++) {
+  const draftPicksLeft = d.picks.some((x) => x.year === 2026);
+  if (!draftPicksLeft) p("saltato: Foglio1 non ha più pick 2026 (draft già fatto)");
+  for (let round = 1; draftPicksLeft && round <= 5; round++) {
     const fromPicks = d.picks.filter((x) => x.year === 2026 && x.round === round).map((x) => x.current ?? `?${x.rawStatus}`).sort();
     const fromDraft = d.rookieDraft.slice((round - 1) * 8, round * 8).map((x) => x.team).sort();
     const same = fromPicks.join("|") === fromDraft.join("|");

@@ -50,12 +50,12 @@ export function Section({ title, children, aside }: { title: string; children: R
   );
 }
 
-/** "r" = restricted, "u" = unrestricted alla scadenza (R-23/R-24). */
-export function RestrictionBadge({ value }: { value: "restricted" | "unrestricted" | null }) {
-  if (!value) return null;
-  return value === "restricted" ? (
-    <Badge tone="accent" title="Restricted: l'ultimo proprietario può pareggiare l'offerta">r</Badge>
-  ) : (
-    <Badge title="Unrestricted: a fine contratto va libero">u</Badge>
+/** "r" = contratto rookie (R-26), "u" = unrestricted alla scadenza (R-23/R-24). */
+export function RestrictionBadge({ rookie, restriction }: { rookie: boolean; restriction: "unrestricted" | null }) {
+  return (
+    <>
+      {rookie && <Badge tone="accent" title="Contratto rookie">r</Badge>}
+      {restriction === "unrestricted" && <Badge title="Unrestricted: a fine contratto va libero">u</Badge>}
+    </>
   );
 }

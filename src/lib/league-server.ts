@@ -32,7 +32,7 @@ export const loadLeague = cache(async (): Promise<LeagueView> => {
   const [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie] = await Promise.all([
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
-    db.from("contracts").select(`id,team_id,slot,years_left,team_option,salary,restriction,${playerCols}`).eq("season_id", sid),
+    db.from("contracts").select(`id,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
     db.from("cuts").select(`id,team_id,paid_salary,years_left,${playerCols}`).eq("season_id", sid),
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
     db.from("draft_picks").select("id,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),

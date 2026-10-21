@@ -11,8 +11,8 @@ describe("parseContractName", () => {
     });
   });
 
-  it("restricted e spazi doppi", () => {
-    expect(parseContractName("2  Buzelis r")).toMatchObject({ years: 2, name: "Buzelis", restriction: "restricted" });
+  it("rookie e spazi doppi", () => {
+    expect(parseContractName("2  Buzelis r")).toMatchObject({ years: 2, name: "Buzelis", rookie: true, restriction: null });
   });
 
   it("il numero nel nome non è una sigla: 'Murphy III' resta il nome", () => {
@@ -23,14 +23,14 @@ describe("parseContractName", () => {
     expect(parseContractName("1 Kr.Murray r 6", { trailingNumber: true })).toMatchObject({
       years: 1,
       name: "Kr.Murray",
-      restriction: "restricted",
+      rookie: true,
       trailingNumber: 6,
     });
   });
 
   it("ultimo contratto: ruolo tra parentesi e flag", () => {
     expect(parseContractName("Suggs (G) u")).toMatchObject({ name: "Suggs", position: "G", restriction: "unrestricted" });
-    expect(parseContractName("T.Hendricks r  (A)")).toMatchObject({ name: "T.Hendricks", position: "A", restriction: "restricted" });
+    expect(parseContractName("T.Hendricks r  (A)")).toMatchObject({ name: "T.Hendricks", position: "A", rookie: true });
   });
 });
 

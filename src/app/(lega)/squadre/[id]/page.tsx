@@ -16,8 +16,8 @@ function RosterTable({ players }: { players: RosterPlayer[] }) {
             {p.name}
             {p.nbaTeam && <span className="ml-2 text-xs text-muted">{p.nbaTeam}</span>}
           </span>
-          <RestrictionBadge value={p.restriction} />
-          <span className="w-10 text-right text-sm text-muted" title="Anni di contratto (+1 = team option)">{p.contractLabel}</span>
+          <RestrictionBadge rookie={p.rookie} restriction={p.restriction} />
+          <span className="w-10 text-right text-sm text-muted" title="Anni di contratto (+1 = team option, ? = durata da fissare)">{p.contractLabel}</span>
           <span className="w-12 text-right font-medium tabular-nums">{fmt(p.salary)}</span>
         </li>
       ))}

@@ -17,7 +17,7 @@
 **Foglio2** — ordine rookie draft 2026: 40 righe = 5 giri × 8; colonne squadra | cognome | nome | squadra NBA | note ("Da Spacc." = pick ricevuta).
 **Foglio3** — elenco dei **free agent** (anche allenatori, es. `Head Coach`): nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted` (squadra ex-proprietaria che può pareggiare l'offerta, `r` se ex-rookie; 24 righe prima dell'asta; non c'è una colonna proprietario). **Non contiene i giocatori già in rosa.** Prima dell'asta 443 righe utili, dopo ~360 righe di sole celle con spazi; dopo l'asta del 20/10 ne restano ~370 e nessuno è più restricted, quindi il diritto vale solo per l'asta. Come leggerlo: [IMPORT.md](IMPORT.md).
 
-Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = restricted alla scadenza; `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III". Nel foglio `r` compare solo sui contratti rookie e `u` anche dopo un pareggio (Okongwu): i restricted non-rookie non hanno sigla, si riconoscono da `Restricted` in Foglio3 (vedi `restricted_rights`).
+Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = **rookie** (R-26, confermato dall'utente); `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III". Nel DB: `contracts.is_rookie` per `r`, `contracts.restriction = 'unrestricted'` per `u` (anche dopo un pareggio, es. Okongwu). Chi non ha sigla non è né rookie né unrestricted: i restricted non-rookie si riconoscono da `Restricted` in Foglio3 (vedi `restricted_rights`).
 Ruoli nel foglio: A = Ala, C = Centro, G = Guardia.
 
 ## Formule da riprodurre (verificate sul foglio)
@@ -60,8 +60,8 @@ create table teams (id uuid primary key default gen_random_uuid(), name text uni
 create table players (id serial primary key, first_name text, last_name text, pos pos, nba_team text, dunkest_credits numeric(5,1), unique(first_name,last_name,nba_team));
 create table contracts (
   id serial primary key, season_id int references seasons, team_id uuid references teams, player_id int references players,
-  slot roster_slot not null, years_left numeric(2,1) not null, team_option bool default false,
-  salary numeric(5,1) not null, restriction text check (restriction in ('restricted','unrestricted')), notes text
+  slot roster_slot not null, years_left numeric(2,1), /* null = durata da decidere (migrazione 0004) */ team_option bool default false,
+  salary numeric(5,1) not null, restriction text check (restriction in ('restricted','unrestricted')), is_rookie bool not null default false, notes text
 );
 create table cuts (id serial primary key, season_id int, team_id uuid, player_id int, salary numeric(5,1), years_left int, status text); -- paga 1/3
 create table draft_picks (id serial primary key, year int, round int check (round between 1 and 5), original_team uuid, current_team uuid, status text, note text);
