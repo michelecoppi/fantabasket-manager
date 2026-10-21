@@ -98,6 +98,7 @@ async function write(d: ImportData) {
         team_option: c.teamOption,
         salary: c.salary,
         restriction: c.restriction,
+        is_rookie: c.rookie,
       })),
     ),
     "insert contracts",

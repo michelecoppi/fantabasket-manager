@@ -15,10 +15,10 @@ const raw: RawLeague = {
   ],
   settings: SETTING_ROWS,
   contracts: [
-    { id: 1, team_id: "t1", slot: "starter", years_left: 2, team_option: false, salary: 30, restriction: "restricted", players: { first_name: "", last_name: "Flagg", pos: "A", nba_team: null } },
-    { id: 2, team_id: "t1", slot: "starter", years_left: 1, team_option: true, salary: 10.5, restriction: "unrestricted", players: { first_name: "Nikola", last_name: "Jokic", pos: "C", nba_team: "DEN" } },
-    { id: 3, team_id: "t1", slot: "reserve", years_left: 1, team_option: false, salary: 6, restriction: null, players: { first_name: "", last_name: "Camara", pos: "A", nba_team: null } },
-    { id: 4, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 260, restriction: null, players: null },
+    { id: 1, team_id: "t1", slot: "starter", years_left: 2, team_option: false, salary: 30, restriction: null, is_rookie: true, players: { first_name: "", last_name: "Flagg", pos: "A", nba_team: null } },
+    { id: 2, team_id: "t1", slot: "starter", years_left: 1, team_option: true, salary: 10.5, restriction: "unrestricted", is_rookie: false, players: { first_name: "Nikola", last_name: "Jokic", pos: "C", nba_team: "DEN" } },
+    { id: 3, team_id: "t1", slot: "reserve", years_left: 1, team_option: false, salary: 6, restriction: null, is_rookie: false, players: { first_name: "", last_name: "Camara", pos: "A", nba_team: null } },
+    { id: 4, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 260, restriction: null, is_rookie: false, players: null },
   ],
   cuts: [{ id: 1, team_id: "t1", paid_salary: 3.5, years_left: 1, players: { first_name: "", last_name: "J.Collins", pos: "A", nba_team: null } }],
   talents: [],
@@ -58,6 +58,7 @@ describe("helper", () => {
     expect(contractLabel(1, true)).toBe("1+1");
     expect(contractLabel(2, false)).toBe("2");
     expect(contractLabel(0.5, false)).toBe("½");
+    expect(contractLabel(null, false)).toBe("?"); // durata ancora da decidere
   });
 
   it("nome giocatore: provvisori hanno solo il cognome", () => {

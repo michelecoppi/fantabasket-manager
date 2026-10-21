@@ -22,7 +22,9 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
 - [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
-- [ ] Applicare su Supabase la migrazione 0003 (`unique (season_id, player_id)` su `contracts`): al 2026-10-21 il database non ha duplicati. L'import ora segnala come problema un giocatore in più contratti
+- [x] Migrazioni 0003 (`unique (season_id, player_id)` su `contracts`) e 0004 (`years_left` nullable) applicate su Supabase il 2026-10-21 via MCP. L'import segnala come problema un giocatore in più contratti
+- [ ] Migrazione 0005 (`contracts.is_rookie`, `r` = rookie) applicata il 2026-10-21; resta da rilanciare `--apply` con il foglio ufficiale più recente (post-asta: 149 contratti, 7 tagliati, 51 talenti, pick 2027-2029; il database ha ancora lo snapshot pre-asta con 123 contratti). Il report sul nuovo foglio quadra su 8 squadre su 8, 0 problemi. Serve `.env.local` con la chiave service_role
+- [ ] Durata dei 17 ingaggi d'asta senza prefisso (es. Durant, Siakam): la lega non l'ha ancora decisa, import con `years_left = null` (si vede `?`); da impostare dall'admin (fase 3) o con un nuovo import
 - [ ] UI admin: correggere le pick da confermare (fase 3)
 - [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
@@ -71,7 +73,7 @@ Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utent
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
 - 2026-10-21: admin dell'app = Scuti e Gabby; Serde (presidente) e Amedeo (moderatore) restano ruoli del regolamento.
-- 2026-10-21: `r` = restricted, `u` = unrestricted nei nomi contratto; la classifica finale si registra nell'app.
+- 2026-10-21: `r` = rookie, `u` = unrestricted nei nomi contratto (corretto dall'utente: prima era `r` = restricted; colonna `contracts.is_rookie`, migrazione 0005); la classifica finale si registra nell'app.
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
 - 2026-10-21: il monte ingaggi include le quote dei tagliati (verificato sul foglio); la soglia della luxury tax è assunta = cap effettivo.
 - 2026-10-21: Next 16 con `cacheComponents`: i dati per-utente stanno dentro `<Suspense>` (layout del gruppo `(lega)`); `middleware` si chiama `proxy.ts`.

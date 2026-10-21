@@ -18,10 +18,11 @@ const raw: RawLeague = {
   ],
   settings: SETTING_ROWS,
   contracts: [
-    { id: 1, team_id: "t1", slot: "starter", years_left: 0.5, team_option: false, salary: 20, restriction: null, players: pl("Mezzo") },
-    { id: 2, team_id: "t1", slot: "starter", years_left: 2, team_option: true, salary: 30, restriction: null, players: pl("Due") },
-    { id: 3, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 255, restriction: null, players: pl("Ricco") },
-    { id: 4, team_id: "t2", slot: "reserve", years_left: 3, team_option: false, salary: 5, restriction: null, players: pl("Riserva") },
+    { id: 1, team_id: "t1", slot: "starter", years_left: 0.5, team_option: false, salary: 20, restriction: null, is_rookie: false, players: pl("Mezzo") },
+    { id: 2, team_id: "t1", slot: "starter", years_left: 2, team_option: true, salary: 30, restriction: null, is_rookie: false, players: pl("Due") },
+    { id: 3, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 255, restriction: null, is_rookie: false, players: pl("Ricco") },
+    { id: 4, team_id: "t2", slot: "reserve", years_left: 3, team_option: false, salary: 5, restriction: null, is_rookie: false, players: pl("Riserva") },
+    { id: 5, team_id: "t2", slot: "starter", years_left: null, team_option: false, salary: 4, restriction: null, is_rookie: false, players: pl("SenzaDurata") },
   ],
   cuts: [], talents: [], picks: [], teamSeason: [], rookieDraft: [],
 };
@@ -38,6 +39,9 @@ describe("contratti in scadenza", () => {
     expect(all.map((c) => c.player.name)).toEqual(["Mezzo", "Ricco", "Due", "Riserva"]);
     expect(all.find((c) => c.player.name === "Due")?.optionSeason).toBe(2028);
     expect(expiringContracts(league.teams, 2026, { teamId: "t1", season: 2026 }).map((c) => c.player.name)).toEqual(["Mezzo"]);
+  });
+  it("salta i contratti senza durata", () => {
+    expect(expiringContracts(league.teams, 2026, { teamId: "t2", season: null }).map((c) => c.player.name)).toEqual(["Ricco", "Riserva"]);
   });
   it("legge i filtri dall'URL", () => {
     expect(parseExpiringFilters({ squadra: "t1", stagione: "2027" })).toEqual({ teamId: "t1", season: 2027 });

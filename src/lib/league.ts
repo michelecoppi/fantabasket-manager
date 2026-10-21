@@ -22,10 +22,11 @@ export interface ContractRow {
   id: number;
   team_id: string;
   slot: "starter" | "reserve" | "talent";
-  years_left: number;
+  years_left: number | null; // null = durata da fissare
   team_option: boolean;
   salary: number;
-  restriction: "restricted" | "unrestricted" | null;
+  restriction: "unrestricted" | null;
+  is_rookie: boolean;
   players: PlayerJoin | null;
 }
 export interface CutRow {
@@ -88,11 +89,12 @@ export interface RosterPlayer {
   nbaTeam: string | null;
   /** "2", "1+1" come nel foglio */
   contractLabel: string;
-  yearsLeft: number;
+  yearsLeft: number | null; // null = durata da fissare
   teamOption: boolean;
   slot: "starter" | "reserve";
   salary: number;
   restriction: ContractRow["restriction"];
+  rookie: boolean;
 }
 export interface TeamView {
   team: TeamRow;
@@ -144,7 +146,8 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
   };
 }
 
-export function contractLabel(years: number, teamOption: boolean): string {
+export function contractLabel(years: number | null, teamOption: boolean): string {
+  if (years === null) return "?";
   const y = years === 0.5 ? "½" : String(years);
   return teamOption ? `${y}+1` : y;
 }
@@ -160,15 +163,16 @@ export function buildLeague(raw: RawLeague): LeagueView {
     const mine = raw.contracts.filter((c) => c.team_id === team.id);
     const toPlayer = (c: ContractRow): RosterPlayer => ({
       slot: c.slot === "reserve" ? "reserve" : "starter",
-      yearsLeft: Number(c.years_left),
+      yearsLeft: c.years_left === null ? null : Number(c.years_left),
       teamOption: c.team_option,
       id: c.id,
       name: playerName(c.players),
       pos: c.players?.pos ?? null,
       nbaTeam: c.players?.nba_team ?? null,
-      contractLabel: contractLabel(Number(c.years_left), c.team_option),
+      contractLabel: contractLabel(c.years_left === null ? null : Number(c.years_left), c.team_option),
       salary: Number(c.salary),
       restriction: c.restriction,
+      rookie: c.is_rookie,
     });
     const starters = mine.filter((c) => c.slot === "starter").map(toPlayer).sort(byPosThenSalary);
     const reserves = mine.filter((c) => c.slot === "reserve").map(toPlayer).sort(byPosThenSalary);

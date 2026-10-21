@@ -36,9 +36,10 @@ export interface ContractRow {
   team: TeamName;
   slot: "starter" | "reserve";
   role: Pos;
-  years: number;
+  years: number | null; // null = durata ancora da decidere (ingaggi d'asta senza prefisso, vedi OPEN-QUESTIONS)
   teamOption: boolean;
-  restriction: "restricted" | "unrestricted" | null;
+  restriction: "unrestricted" | null;
+  rookie: boolean;
   salary: number;
   player: PlayerRef;
 }
@@ -79,7 +80,8 @@ export interface LastContractRow {
   date: string;
   team: TeamName;
   salary: number;
-  restriction: "restricted" | "unrestricted" | null;
+  restriction: "unrestricted" | null;
+  rookie: boolean;
   pos: Pos | null;
   player: PlayerRef;
 }
@@ -206,7 +208,8 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
         const role = positionFromRole(str(f1, r, c));
         const salary = num(f1, r, c + 2);
         const p = parseContractName(raw);
-        if (!role || salary === null || p.years === null) {
+        // senza prefisso la durata è null (ancora da decidere); un prefisso storpiato ("1+ Foo") finirebbe nel nome
+        if (!role || salary === null || (p.years === null && /^\d/.test(p.name))) {
           warnings.push(`${team} riga ${r}: contratto non leggibile (${raw})`);
           continue;
         }
@@ -217,6 +220,7 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
           years: p.years,
           teamOption: p.teamOption,
           restriction: p.restriction,
+          rookie: p.rookie,
           salary,
           player: matchPlayer(p.name, team, salary, catalog, role),
         });
@@ -337,6 +341,7 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
       team,
       salary: sal,
       restriction: p.restriction,
+      rookie: p.rookie,
       pos: p.position,
       player: matchPlayer(p.name, null, sal, catalog, p.position),
     });

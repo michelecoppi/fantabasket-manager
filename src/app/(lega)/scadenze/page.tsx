@@ -9,7 +9,8 @@ const control = "w-full rounded border border-line bg-surface px-3 py-2 text-bas
 export default async function ExpiringPage(props: PageProps<"/scadenze">) {
   const filters = parseExpiringFilters(await props.searchParams);
   const league = await loadLeague();
-  const maxYears = Math.max(1, ...league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => p.yearsLeft)));
+  const maxYears = Math.max(1, ...league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => p.yearsLeft ?? 0)));
+  const noYears = league.teams.reduce((n, t) => n + [...t.starters, ...t.reserves].filter((p) => p.yearsLeft === null).length, 0);
   const seasons = Array.from({ length: endSeason(league.seasonYear, maxYears) - league.seasonYear + 1 }, (_, i) => league.seasonYear + i);
   const rows = expiringContracts(league.teams, league.seasonYear, filters);
   const groups = seasons.map((y) => ({ year: y, rows: rows.filter((r) => r.endSeason === y) })).filter((g) => g.rows.length > 0);
@@ -35,6 +36,7 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
         </form>
       </Card>
 
+      {noYears > 0 && <p className="mt-4 text-sm text-muted">{noYears} contratti senza durata (da fissare) non sono in elenco.</p>}
       {groups.length === 0 && <p className="mt-6 text-sm text-muted">Nessun contratto con questi filtri.</p>}
       {groups.map((g) => (
         <Section key={g.year} title={g.year === league.seasonYear ? `Scadono a fine ${g.year} (stagione corrente)` : `Scadono a fine ${g.year}`} aside={`${g.rows.length} contratti`}>
@@ -48,7 +50,7 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
                     {r.teamName} · {r.player.slot === "reserve" ? "riserva" : "titolare"}
                   </Link>
                 </span>
-                <RestrictionBadge value={r.player.restriction} />
+                <RestrictionBadge rookie={r.player.rookie} restriction={r.player.restriction} />
                 <span className="w-10 text-right text-sm text-muted" title={r.optionSeason ? `Team option fino al ${r.optionSeason}` : undefined}>
                   {r.player.contractLabel}
                 </span>
