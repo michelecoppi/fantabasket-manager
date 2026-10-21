@@ -7,9 +7,9 @@ async function UserBadge() {
   const profile = await loadProfile();
   if (!profile) return null;
   return (
-    <span className="hidden text-neutral-400 sm:inline">
-      {profile.display_name}
-      {profile.role === "admin" && <span className="ml-2 rounded bg-brand-red px-1.5 py-0.5 text-xs font-bold text-white uppercase">admin</span>}
+    <span className="flex min-w-0 items-center gap-2 text-neutral-400">
+      <span className="max-w-28 truncate">{profile.display_name}</span>
+      {profile.role === "admin" && <span className="rounded bg-brand-red px-1.5 py-0.5 text-xs font-bold text-white uppercase">admin</span>}
     </span>
   );
 }

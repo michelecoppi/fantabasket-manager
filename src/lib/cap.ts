@@ -23,7 +23,8 @@ export interface LeagueSettings {
 }
 
 export interface RosterEntry {
-  position: Position;
+  /** null = ruolo sconosciuto (giocatore provvisorio): non conta per nessun ruolo */
+  position: Position | null;
   slot: Slot;
   salary: number;
 }

@@ -1,6 +1,5 @@
 // Costruisce la vista della lega (rose, finanze, pick) a partire dalle righe del database.
 import {
-  DEFAULT_SETTINGS,
   rosterWarnings,
   teamFinance,
   type LeagueSettings,
@@ -121,24 +120,24 @@ export function playerName(p: PlayerJoin | null): string {
   return p.first_name ? `${p.first_name} ${p.last_name}` : p.last_name;
 }
 
+/** Tutte le chiavi sono obbligatorie: una chiave mancante è un errore, non un default silenzioso (regola d'oro del CLAUDE.md). */
 export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
   const m = new Map(rows.map((r) => [r.key, Number(r.value)]));
-  const d = DEFAULT_SETTINGS;
-  const get = (k: string, fallback: number) => m.get(k) ?? fallback;
+  const get = (k: string) => {
+    const v = m.get(k);
+    if (v === undefined) throw new Error(`league_settings: manca la chiave "${k}"`);
+    return v;
+  };
   return {
-    cap: get("cap", d.cap),
-    reserveBudget: get("reserve_budget", d.reserveBudget),
-    floorDivisor: get("floor_divisor", d.floorDivisor),
-    taxCreditsPerEuro: get("tax_credits_per_euro", d.taxCreditsPerEuro),
-    taxMaxOver: get("tax_max_over", d.taxMaxOver),
-    starters: {
-      G: get("starters_g", d.starters.G),
-      A: get("starters_a", d.starters.A),
-      C: get("starters_c", d.starters.C),
-    },
-    reserveMin: get("reserve_min", d.reserveMin),
-    reserveMax: get("reserve_max", d.reserveMax),
-    reserveMaxPerPosition: get("reserve_max_per_pos", d.reserveMaxPerPosition),
+    cap: get("cap"),
+    reserveBudget: get("reserve_budget"),
+    floorDivisor: get("floor_divisor"),
+    taxCreditsPerEuro: get("tax_credits_per_euro"),
+    taxMaxOver: get("tax_max_over"),
+    starters: { G: get("starters_g"), A: get("starters_a"), C: get("starters_c") },
+    reserveMin: get("reserve_min"),
+    reserveMax: get("reserve_max"),
+    reserveMaxPerPosition: get("reserve_max_per_pos"),
   };
 }
 
@@ -172,7 +171,7 @@ export function buildLeague(raw: RawLeague): LeagueView {
       .map((c) => ({ id: c.id, name: playerName(c.players), paid: Number(c.paid_salary), yearsLeft: c.years_left }));
     const ts = season.get(team.id);
     const roster = [...starters.map((p) => ({ p, slot: "starter" as const })), ...reserves.map((p) => ({ p, slot: "reserve" as const }))].map(
-      ({ p, slot }) => ({ position: (p.pos ?? "G") as Position, slot, salary: p.salary }),
+      ({ p, slot }) => ({ position: p.pos, slot, salary: p.salary }),
     );
     const finance = teamFinance(roster, cuts.map((c) => ({ salary: c.paid })), ts?.bonus ?? 0, settings);
     return {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildLeague, contractLabel, playerName, settingsFromRows, type RawLeague } from "./league";
+import { buildLeague, contractLabel, playerName, settingsFromRows, type RawLeague, type SettingRow } from "./league";
+
+// Stesse chiavi e valori di supabase/seed.sql: ogni chiave è obbligatoria.
+const SETTING_ROWS: SettingRow[] = Object.entries({
+  cap: 250, reserve_budget: 80, floor_divisor: 5, tax_credits_per_euro: 4, tax_max_over: 20,
+  starters_g: 5, starters_a: 5, starters_c: 3, reserve_min: 3, reserve_max: 6, reserve_max_per_pos: 3,
+}).map(([key, value]) => ({ key, value }));
 
 const raw: RawLeague = {
   seasonYear: 2026,
@@ -7,7 +13,7 @@ const raw: RawLeague = {
     { id: "t1", name: "Alfa", owner_name: "A" },
     { id: "t2", name: "Beta", owner_name: "B" },
   ],
-  settings: [{ key: "cap", value: 250 }],
+  settings: SETTING_ROWS,
   contracts: [
     { id: 1, team_id: "t1", slot: "starter", years_left: 2, team_option: false, salary: 30, restriction: "restricted", players: { first_name: "", last_name: "Flagg", pos: "A", nba_team: null } },
     { id: 2, team_id: "t1", slot: "starter", years_left: 1, team_option: true, salary: 10.5, restriction: "unrestricted", players: { first_name: "Nikola", last_name: "Jokic", pos: "C", nba_team: "DEN" } },
@@ -36,7 +42,7 @@ describe("buildLeague", () => {
     expect(alfa.starters.map((p) => p.name)).toEqual(["Flagg", "Nikola Jokic"]);
   });
 
-  it("segnala lo sforamento del cap e usa i default per i parametri mancanti", () => {
+  it("segnala lo sforamento del cap e legge i parametri da league_settings", () => {
     expect(beta.finance.overCap).toBe(true);
     expect(league.settings.reserveBudget).toBe(80);
   });
@@ -59,6 +65,11 @@ describe("helper", () => {
   });
 
   it("settings da righe", () => {
-    expect(settingsFromRows([{ key: "starters_c", value: 4 }]).starters.C).toBe(4);
+    const rows = SETTING_ROWS.map((r) => (r.key === "starters_c" ? { ...r, value: 4 } : r));
+    expect(settingsFromRows(rows).starters.C).toBe(4);
+  });
+
+  it("settings: una chiave mancante è un errore, non un default", () => {
+    expect(() => settingsFromRows([{ key: "cap", value: 250 }])).toThrow(/reserve_budget/);
   });
 });

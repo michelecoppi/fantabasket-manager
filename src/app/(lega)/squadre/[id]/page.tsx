@@ -31,7 +31,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const t = league.teams.find((x) => x.team.id === id);
   if (!t) notFound();
   const f = t.finance;
-  const name = (teamId: string | null) => (teamId ? league.teamNames.get(teamId) ?? "?" : "da definire");
+  const startersTotal = Object.values(league.settings.starters).reduce((a, b) => a + b, 0);
+  const name =(teamId: string | null) => (teamId ? league.teamNames.get(teamId) ?? "?" : "da definire");
 
   const ownPicks = league.picks.filter((p) => p.current_team_id === id);
   const ceded = league.picks.filter((p) => p.original_team_id === id && p.current_team_id !== id);
@@ -56,7 +57,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         <Badge tone={t.entryFeePaid ? "good" : "neutral"}>quota {t.entryFeePaid ? "pagata" : "da pagare"}</Badge>
       </div>
 
-      <Section title="Titolari" aside={`${t.starters.length}/13`}>
+      <Section title="Titolari" aside={`${t.starters.length}/${startersTotal}`}>
         <RosterTable players={t.starters} />
         <p className="mt-1 text-xs text-muted">
           {(["G", "A", "C"] as const).map((p) => `${POS_LABEL[p]}: ${t.starters.filter((x) => x.pos === p).length}/${league.settings.starters[p]}`).join(" · ")}
