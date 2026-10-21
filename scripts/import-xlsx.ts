@@ -35,7 +35,7 @@ async function write(d: ImportData) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Mancano NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY in .env.local");
-  const db = createClient(url, key, { auth: { persistSession: false } });
+  const db = createClient(new URL(url).origin, key, { auth: { persistSession: false } });
 
   const teams = must(await db.from("teams").select("id,name"), "teams");
   const teamId = new Map(teams.map((t) => [t.name as string, t.id as string]));

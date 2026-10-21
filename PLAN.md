@@ -20,11 +20,11 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio (16 test verdi)
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (**scrittura non ancora provata**)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
-- [ ] Applicare migrazione 0002, creare `.env.local` e lanciare `--apply`
+- [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
 - [ ] UI admin: correggere le pick da confermare (fase 3)
 - [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
-- [ ] Seed giocatori Dunkest e contratti dal foglio
+- [x] Seed giocatori Dunkest e contratti dal foglio (125 giocatori in rosa sono provvisori: solo cognome)
 
 ## Fase 2 — Sola lettura (utenti normali)
 - [ ] Login magic link, signup chiuso
@@ -55,7 +55,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Applicare la migrazione 0002, creare `.env.local`, lanciare l'import con `--apply`, poi login e pagine di sola lettura (Fase 2). Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
+Fase 2: login Supabase, home lega e pagina squadra in sola lettura. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
