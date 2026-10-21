@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import { sendMagicLink, signInWithPassword, type LoginState } from "./actions";
 
@@ -18,8 +19,9 @@ export default function LoginPage() {
       <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
       <div className="h-2 bg-gradient-to-r from-brand-blue to-brand-red" />
       <div className="flex flex-col gap-6 p-6">
-      <div>
-        <h1 className="font-display text-4xl leading-none font-extrabold">🏀 Fantabasket <span className="text-brand-red">Manager</span></h1>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <Image src="/logo.png" alt="" width={270} height={360} priority className="h-32 w-auto" />
+        <h1 className="font-display text-4xl leading-none font-extrabold">Fantabasket <span className="text-brand-red">Manager</span></h1>
         <p className="text-sm text-muted">Accedi per vedere la lega.</p>
       </div>
 

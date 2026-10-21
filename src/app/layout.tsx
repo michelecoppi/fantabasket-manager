@@ -21,9 +21,11 @@ const display = Barlow_Condensed({
 export const metadata: Metadata = {
   title: "Fantabasket Manager",
   description: "Gestionale della lega di fantabasket: rose, contratti, salary cap e draft.",
+  icons: { apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Fantabasket", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0a0d14" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
