@@ -31,6 +31,22 @@ luxury_tax_eur  = min(max(monte − cap_effettivo, 0), 20) / 4       // R-12, pa
 ```
 Questa logica vive in un solo file (`lib/cap.ts`) con test.
 
+### Numeri di riferimento per i test
+Foglio del 21/10/2026, dopo l'asta (titolari 13 per squadra). `monte = titolari + tagli`, `spazio = 250 + bonus − monte`, `spazio riserve = 80 − riserve`.
+
+| Proprietario | Titolari | Tagli | Monte | Bonus | Spazio | Sforato | Riserve (n) | Somma riserve | Spazio riserve |
+|---|---|---|---|---|---|---|---|---|---|
+| AMEDEO | 210.5 | 3.5 | 214 | −2 | 34 | no | 6 | 80 | 0 |
+| LUGIU | 234 | 10.5 | 244.5 | −3 | 2.5 | no | 5 | 55.5 | 24.5 |
+| GABBY | 242 | 0 | 242 | +5 | 13 | no | 6 | 68.5 | 11.5 |
+| DAMIANO | 256.5 | 3.5 | 260 | −1 | **−11** | **sì** | 6 | 52 | 28 |
+| SCUTI | 248 | 1.5 | 249.5 | +3 | 3.5 | no | 5 | 51.5 | 28.5 |
+| SERDE | 240.5 | 0 | 240.5 | +2 | 11.5 | no | 5 | 64.5 | 15.5 |
+| CC | 246 | 0 | 246 | +4 | 8 | no | 6 | 67.5 | 12.5 |
+| ENTONY | 248 | 1.5 | 249.5 | 0 | 0.5 | no | 6 | 65 | 15 |
+
+Casi utili: AMEDEO ha le riserve al limite (spazio 0), DAMIANO è l'unico sforato (luxury tax teorica da R-12: `min(11, 20) / 4 = 2.75 €`, nel foglio non risulta incassata), ENTONY ha 0.5 di spazio. Tagli arrotondati allo 0.5 (5 → 1.5). Il foglio pre-asta (20/10) dà monti 240 / 240.5 / 241 / 235.5 / 232 / 185.5 / 247 / 249.5 (stesso ordine della tabella, con tagli già inclusi).
+
 ## Bozza schema Postgres (Supabase)
 ```sql
 create type app_role as enum ('admin','viewer');

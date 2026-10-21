@@ -15,4 +15,5 @@ Stato: fase di progettazione (regolamento analizzato, vedi docs/REGOLAMENTO.md).
 | [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md) | Regole di lega in sintesi, con ID R-xx |
 | [docs/STACK.md](docs/STACK.md) | Scelte tecnologiche e hosting gratuito |
 | [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Cosa contiene il foglio Excel e bozza del database |
+| [docs/IMPORT.md](docs/IMPORT.md) | Come leggere il foglio: nomi, alias, fonte dati Dunkest |
 | [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | Domande da chiarire con l'organizzatore |
