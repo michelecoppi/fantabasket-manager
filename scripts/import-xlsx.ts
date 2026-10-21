@@ -39,9 +39,9 @@ async function write(d: ImportData) {
 
   const teams = must(await db.from("teams").select("id,name"), "teams");
   const teamId = new Map(teams.map((t) => [t.name as string, t.id as string]));
-  const seasonRow = must(await db.from("seasons").select("id").eq("year", season).single(), "season");
+  const seasonRow = must(await db.from("seasons").select("id").eq("year", season).maybeSingle<{ id: number }>(), "season");
   if (!seasonRow) throw new Error(`Stagione ${season} non trovata: esegui seed.sql`);
-  const seasonId = seasonRow.id as number;
+  const seasonId = seasonRow.id;
 
   // svuota i dati importati (ordine: prima chi dipende da players)
   for (const t of ["contracts", "cuts", "talents", "last_contracts", "draft_picks", "rookie_draft", "team_season"]) {
