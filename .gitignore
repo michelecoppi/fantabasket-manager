@@ -9,3 +9,6 @@ Dunkest.xlsx
 
 # regolamento originale (solo locale)
 *.docx
+next-env.d.ts
+*.tsbuildinfo
+coverage/
