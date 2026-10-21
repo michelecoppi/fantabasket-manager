@@ -6,10 +6,14 @@ Gestionale web per una lega privata di fantabasket NBA (8 squadre). Lingua di UI
 Fase di progettazione. Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note).
 
 ## Regole di lega
-Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 e va riconfermato (vedi [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md)).
+Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 ed è stato confermato ancora valido (2026-10-21). Dubbi aperti in [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md).
 
 ## Regola d'oro: non inventare regole
 Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury tax, premi...) vanno in **`league_settings`/configurazione**, mai hardcodati. Se una regola è dedotta dal foglio Excel e non dal regolamento, marcala come `ASSUNZIONE` in OPEN-QUESTIONS.md. In caso di ambiguità chiedi all'utente invece di scegliere.
+
+## Comandi
+`npm run dev` · `npm test` (vitest) · `npm run typecheck` · `npm run lint` · `npm run build`. Prima di dire "fatto" esegui test, typecheck e lint.
+Next.js è una versione recente con breaking changes: leggi `node_modules/next/dist/docs/` e [AGENTS.md](AGENTS.md) prima di scrivere codice Next.
 
 ## Stack (vedi docs/STACK.md)
 Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres + Auth + RLS), deploy su Vercel. Tutto su piani gratuiti, max ~8 utenti contemporanei.

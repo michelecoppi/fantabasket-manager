@@ -6,19 +6,21 @@ Regole di lega: [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md) · Dati: [docs/DATA-M
 ## Obiettivo
 Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono tutto e gli **8 proprietari** consultano in sola lettura rose, contratti, spazio salariale, pick e tagli.
 
-## Fase 0 — Fondamenta (in corso)
+## Fase 0 — Fondamenta (fatta)
 - [x] Analisi del foglio Excel
 - [x] Sintesi regolamento con ID regola
 - [x] CLAUDE.md, PLAN.md, STACK, DATA-MODEL, OPEN-QUESTIONS
 - [x] Regolamento confermato valido (28/09/2024) e mappa proprietari↔squadre
-- [ ] Repo GitHub pubblico (dopo conferma utente)
+- [x] Repo GitHub pubblico
 
 ## Fase 1 — Progetto e dati
-- [ ] Creare progetto Next.js + TS + Tailwind, lint, formattazione
-- [ ] Progetto Supabase, schema SQL in `supabase/migrations/`, RLS admin/viewer
-- [ ] `lib/cap.ts`: monte ingaggi, spazio salariale, riserve, luxury tax, floor — **con test** sui numeri del foglio (es. Amedeo: 240, bonus −2, spazio 8)
+- [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
+- [x] Schema SQL + RLS in `supabase/migrations/0001_init.sql` e `seed.sql` (bozza, **non ancora eseguita**)
+- [ ] Creare progetto Supabase (account dell'utente) e applicare migrazione + seed; testare RLS
+- [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio (16 test verdi)
 - [ ] Script `scripts/import-xlsx` (ripetibile, normalizza encoding) → seed DB; import separato del listone Dunkest a ogni stagione
-- [ ] Seed squadre, stagione 2026, giocatori Dunkest
+- [x] Seed squadre e stagione 2026 (`seed.sql`)
+- [ ] Seed giocatori Dunkest e contratti dal foglio
 
 ## Fase 2 — Sola lettura (utenti normali)
 - [ ] Login magic link, signup chiuso
@@ -49,10 +51,11 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Iniziare la Fase 1. Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
+Script di import del foglio (`scripts/import-xlsx`), poi progetto Supabase reale. Aperte solo: soglia di sicurezza, importo quota, formato listone Dunkest (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-21: stack Next.js + Supabase + Vercel (tutto free tier).
 - 2026-10-21: admin dell'app = Scuti e Gabby; Serde (presidente) e Amedeo (moderatore) restano ruoli del regolamento.
 - 2026-10-21: `r` = restricted, `u` = unrestricted nei nomi contratto; la classifica finale si registra nell'app.
 - 2026-10-21: `Dunkest.xlsx` e il .docx restano fuori da git finché non si decide di pubblicarli (nomi/dati privati della lega).
+- 2026-10-21: il monte ingaggi include le quote dei tagliati (verificato sul foglio); la soglia della luxury tax è assunta = cap effettivo.

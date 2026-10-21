@@ -22,9 +22,9 @@ Ruoli nel foglio: A = Ala, C = Centro, G = Guardia.
 
 ## Formule da riprodurre (verificate sul foglio)
 ```
-monte_ingaggi   = Σ stipendi titolari
+monte_ingaggi   = Σ stipendi titolari + Σ quote tagliati (già 1/3 nel foglio)   // verificato su 8/8 squadre
 spazio_salariale = cap(250) + bonus_campionato − monte_ingaggi
-spazio_riserve  = 80 − Σ stipendi riserve
+spazio_riserve  = 80 − Σ stipendi riserve   // verificato su 8/8 squadre
 budget_sforato  = spazio_salariale < 0
 luxury_tax_eur  = min(max(monte − cap_effettivo, 0), 20) / 4       // R-12, parametri in league_settings
 ```
@@ -58,3 +58,6 @@ RLS: `select` per ogni utente autenticato; `insert/update/delete` solo se `exist
 Seed squadre (owner → team): Amedeo → Assago Farmers, Lugiu → CUS Cosenza, Gabby → Bol Bollerz, Damiano → Dame Time, Scuti → Atlanto Non Vinco, Serde → Spaccinos, CC → OKCC, Antonio → San Antonio.
 `team_season.final_rank` è inserita dall'admin a fine stagione (bonus, lottery, luxury tax); `team_season.entry_fee_paid` e `luxury_tax_paid` tracciano i pagamenti.
 Lo schema è una **bozza**, da rifinire in fase 1.
+
+Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): la validazione deve **avvisare**, non bloccare.
+Lo schema eseguibile è in `supabase/migrations/0001_init.sql` (non ancora testato su un database reale).
