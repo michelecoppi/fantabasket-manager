@@ -18,6 +18,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 - Un solo file: `npx vitest run src/lib/cap.test.ts`; un solo test: `npx vitest run -t "parte del nome"`.
 - La CI (`.github/workflows/ci.yml`) esegue lint, typecheck, test e build su ogni PR e su `main`. Prima di dire "fatto" esegui test, typecheck e lint.
 - Import dal foglio: `npx tsx scripts/import-xlsx.ts` fa solo il report; `npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply` **cancella e riscrive** i dati importati su Supabase (serve `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, si ferma se il report ha problemi salvo `--force`). Non lanciarlo senza conferma dell'utente. Dettagli in [docs/IMPORT.md](docs/IMPORT.md).
+- SQL sul database reale: `SUPABASE_DB_URL` in `.env.local` (Supabase → Connect → Session pooler; mai su Vercel). Senza psql installato, via Docker: `export SUPABASE_DB_URL="$(grep '^SUPABASE_DB_URL=' .env.local | cut -d= -f2- | tr -d '\r')"; docker run --rm -i -e SUPABASE_DB_URL postgres:17-alpine sh -c 'psql "$SUPABASE_DB_URL" -X' < query.sql`. Scrivere sul DB reale solo dopo conferma dell'utente.
 - Env: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (vedi `.env.example`); la `service_role` serve solo agli script locali, mai su Vercel.
 - Next.js è una versione recente con breaking changes: leggi `node_modules/next/dist/docs/` e [AGENTS.md](AGENTS.md) prima di scrivere codice Next.
 
