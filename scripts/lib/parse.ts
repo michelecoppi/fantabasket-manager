@@ -24,7 +24,7 @@ export interface CatalogPlayer {
   owner: TeamName | null; // colonna "Restricted" del foglio 3: contiene il proprietario attuale
 }
 
-export type MatchKind = "owner" | "salary" | "none" | "ambiguous";
+type MatchKind = "owner" | "salary" | "none" | "ambiguous";
 export interface PlayerRef {
   rawName: string;
   catalog: CatalogPlayer | null;
@@ -76,7 +76,7 @@ export interface RookieDraftRow {
   nbaTeam: string;
   note: string | null;
 }
-export interface LastContractRow {
+interface LastContractRow {
   date: string;
   team: TeamName;
   salary: number;
@@ -85,7 +85,7 @@ export interface LastContractRow {
   pos: Pos | null;
   player: PlayerRef;
 }
-export interface SheetStats {
+interface SheetStats {
   team: TeamName;
   monte: number;
   spazio: number;
@@ -153,7 +153,7 @@ function readCatalog(ws: ExcelJS.Worksheet): CatalogPlayer[] {
 }
 
 /** Collega il nome breve del foglio ("F.Wagner") al listone Dunkest, usando proprietario e stipendio per i casi dubbi. */
-export function matchPlayer(
+function matchPlayer(
   rawName: string,
   team: TeamName | null,
   salary: number | null,

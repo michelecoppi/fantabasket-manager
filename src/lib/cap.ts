@@ -316,9 +316,6 @@ export function rosterWarnings(roster: RosterEntry[], s: LeagueSettings): string
   return out;
 }
 
-/** R-60: bonus/malus crediti per posizione finale (1°..8°). */
-export const DEFAULT_RANK_BONUS = [5, 4, 3, 2, 0, -1, -2, -3] as const;
-
 /** Valori del regolamento 28/09/2024; in produzione vengono letti da league_settings. */
 export const DEFAULT_SETTINGS: LeagueSettings = {
   cap: 250,
