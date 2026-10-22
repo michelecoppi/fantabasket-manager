@@ -12,38 +12,16 @@ Formato `<anni>[+1] <Nome> [u|r]`. Per ottenere il nome:
 Altre sezioni portano roba in più nel nome: i tagliati lo stipendio originale (`1 Russel 5`, `1 J.Wilson r 4.5`), i talenti l'anno di draft (`Dybantsa 26`, `Hinson 25 (24)`). Vanno tolti prima. Occhio ai `\xa0` nelle celle.
 
 ## Abbinare il nome al giocatore
-1. Normalizzare: ASCII senza accenti, minuscolo, via `. , ' -`, via `jr sr ii iii`.
-2. Nome intero uguale → fatto.
-3. Se il foglio ha un prefisso puntato (`F.Wagner`, `Ke.George`): stesso cognome e nome che inizia per il prefisso.
-4. Più candidati: scegliere con il **ruolo della riga** (A/C/G contro G/F/C di Dunkest) e poi con le partite giocate; i casi sotto restano da confermare a mano.
-5. Abbreviazioni e refusi: tabella di alias.
+Fa `matchPlayer` in `scripts/lib/parse.ts` (nomi in `scripts/lib/names.ts`). Il listone (`Foglio3`) contiene solo i free agent, quindi un cognome uguale non basta: un omonimo sarebbe un falso collegamento (es. Jahmir Young al posto di Trae Young).
+1. Il nome breve si divide in prefisso puntato e cognome (`F.Wagner` → `f` + `wagner`; `Ke.George` → `ke` + `george`), con lettere minuscole senza accenti né punteggiatura.
+2. Candidati = stesso cognome (e nome che inizia per il prefisso, se c'è).
+3. Collegato solo se un candidato ha come proprietario (colonna `Restricted`) la squadra della riga, **oppure** se i suoi crediti sono uguali allo stipendio del contratto. Altrimenti (zero o più candidati) resta un giocatore provvisorio con il solo nome del foglio.
 
-Sul foglio del 21/10: 107 nomi si abbinano da soli, 29 vogliono un alias, 5 sono ambigui, 8 non si trovano. I "non trovati" mancano perché la tabella statistiche contiene solo chi ha giocato almeno una partita: per l'abbinamento serve la lista completa dei giocatori, non le statistiche. `Foglio3` ha solo i free agent, quindi per quelli in rosa serve un export Dunkest completo (vedi PLAN).
+Non c'è una tabella di alias per i giocatori: abbreviazioni e refusi del foglio restano provvisori. Gli unici alias nel codice sono quelli delle squadre. `Foglio3` non contiene chi è già in rosa: per collegare anche quelli serve un export Dunkest completo (vedi PLAN).
 
-### Alias (nome nel foglio → giocatore)
-| Foglio | Giocatore | | Foglio | Giocatore |
-|---|---|---|---|---|
-| F.Wagner | Franz Wagner | | Do.Mitchell | Donovan Mitchell |
-| Ke.George | Keyonte George | | La.Ball | LaMelo Ball |
-| Ky.George | Kyshawn George | | Kneuppel | Kon Knueppel (refuso) |
-| Mk.Bridges | Mikal Bridges | | J.Brown | Jaylen Brown |
-| Mi.Bridges | Miles Bridges | | THE KING | LeBron James |
-| Au.Thompson | Ausar Thompson | | St.Curry | Stephen Curry |
-| Am.Thompson | Amen Thompson | | N.Powell | Norman Powell |
-| Edwards | Anthony Edwards | | D.White | Derrick White |
-| Irving | Kyrie Irving | | Dr.Green | Draymond Green |
-| Poetl | Jakob Poeltl (refuso) | | J.Collins | John Collins |
-| Giannis | Giannis Antetokounmpo | | Nembhard, A.Nembhard | Andrew Nembhard |
-| SGA | Shai Gilgeous-Alexander | | R.Nembhard | RJ Nembhard |
-| De.Murray | Dejounte Murray | | Thomas | Cam Thomas |
-| J.Murray | Jamal Murray | | Holiday | Jrue Holiday |
-| Zion | Zion Williamson | | Ja.Williams | Jalen Williams |
-| J.Johnson | Jalen Johnson | | C.Jonhson | Cameron Johnson (refuso) |
-| K.Johnson | Keldon Johnson | | | |
-
-### Da confermare a mano
-Ambigui, proposta in base al ruolo della riga: `Young` → Trae Young, `J.Smith jr` → Jabari Smith Jr., `Washington` → PJ Washington, `Harper r` → Dylan Harper, `Carter jr` → Wendell Carter Jr.
-Non trovati, proposta: `Lillard` → Damian Lillard, `Haliburton` → Tyrese Haliburton, `JJJ` → Jaren Jackson Jr., `Vanvleet` → Fred VanVleet, `Hartestein` → Isaiah Hartenstein, `Withmore` → Cam Whitmore, `Murray-Boyeles` → Collin Murray-Boyles. Resta da identificare `A.Walker` (2+1, 6.5).
+### Proposte di abbinamento manuale (non implementate)
+Abbreviazioni e refusi che un futuro alias potrebbe risolvere: `F.Wagner` Franz Wagner, `Ke.George` Keyonte George, `Ky.George` Kyshawn George, `Mk.Bridges` Mikal Bridges, `Mi.Bridges` Miles Bridges, `Au.Thompson` Ausar Thompson, `Am.Thompson` Amen Thompson, `Do.Mitchell` Donovan Mitchell, `La.Ball` LaMelo Ball, `Kneuppel` Kon Knueppel, `Poetl` Jakob Poeltl, `THE KING` LeBron James, `St.Curry` Stephen Curry, `SGA` Shai Gilgeous-Alexander, `Giannis` Giannis Antetokounmpo, `JJJ` Jaren Jackson Jr., `Vanvleet` Fred VanVleet, `Hartestein` Isaiah Hartenstein, `Withmore` Cam Whitmore, `C.Jonhson` Cameron Johnson.
+Ambigui, in base al ruolo della riga: `Young` Trae Young, `J.Smith jr` Jabari Smith Jr., `Washington` PJ Washington, `Harper r` Dylan Harper, `Carter jr` Wendell Carter Jr. Da identificare: `A.Walker` (2+1, 6.5).
 
 ## Fonte dati Dunkest
 Il sito ha una tabella statistiche pubblica, non documentata (può cambiare), che risponde con un JSON. Serve l'header `User-Agent`.

@@ -17,7 +17,7 @@
 **Foglio2** — ordine rookie draft 2026: 40 righe = 5 giri × 8; colonne squadra | cognome | nome | squadra NBA | note ("Da Spacc." = pick ricevuta).
 **Foglio3** — elenco dei **free agent** (anche allenatori, es. `Head Coach`): nome, cognome, ruolo (Guard/Forward/Center), squadra NBA, `Cr 26/27` (crediti), `Restricted` (squadra ex-proprietaria che può pareggiare l'offerta, `r` se ex-rookie; 24 righe prima dell'asta; non c'è una colonna proprietario). **Non contiene i giocatori già in rosa.** Prima dell'asta 443 righe utili, dopo ~360 righe di sole celle con spazi; dopo l'asta del 20/10 ne restano ~370 e nessuno è più restricted, quindi il diritto vale solo per l'asta. Come leggerlo: [IMPORT.md](IMPORT.md).
 
-Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = **rookie** (R-26, confermato dall'utente); `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III". Nel DB: `contracts.is_rookie` per `r`, `contracts.restriction = 'unrestricted'` per `u` (anche dopo un pareggio, es. Okongwu). Chi non ha sigla non è né rookie né unrestricted: i restricted non-rookie si riconoscono da `Restricted` in Foglio3 (vedi `restricted_rights`).
+Notazione nome contratto: `<anni> [+1] <Nome> [u|r]` es. `1+1 Tatum u`, `2 Flagg r`: `u` = unrestricted, `r` = **rookie** (R-26, confermato dall'utente); `+1` = team option; `2 Murphy III` = 2 anni, nome "Murphy III". Nel DB: `contracts.is_rookie` per `r`, `contracts.restriction = 'unrestricted'` per `u` (anche dopo un pareggio, es. Okongwu). Chi non ha sigla non è né rookie né unrestricted: i restricted non-rookie si riconoscono da `Restricted` in Foglio3 (non modellato nel DB: dopo l'asta la colonna è vuota, il diritto vale solo per l'asta).
 Ruoli nel foglio: A = Ala, C = Centro, G = Guardia.
 
 ## Formule da riprodurre (verificate sul foglio)
@@ -47,37 +47,13 @@ Foglio del 21/10/2026, dopo l'asta (titolari 13 per squadra). `src/lib/cap.test.
 
 Casi utili: AMEDEO ha le riserve al limite (spazio 0), DAMIANO è l'unico sforato (luxury tax teorica da R-12: `min(11, 20) / 4 = 2.75 €`, nel foglio non risulta incassata), ENTONY ha 0.5 di spazio. Tagli arrotondati allo 0.5 (5 → 1.5).
 
-## Bozza schema Postgres (Supabase)
-```sql
-create type app_role as enum ('admin','viewer');
-create type roster_slot as enum ('starter','reserve','talent');
-create type pos as enum ('G','A','C');
-
-create table profiles (id uuid primary key references auth.users, display_name text, role app_role not null default 'viewer', team_id uuid);
-create table seasons (id serial primary key, year int unique not null, is_current bool default false);
-create table league_settings (season_id int references seasons, key text, value numeric, primary key (season_id,key)); -- cap, floor, reserve_budget, tax_rate...
-create table teams (id uuid primary key default gen_random_uuid(), name text unique not null, owner_name text not null);
-create table players (id serial primary key, first_name text, last_name text, pos pos, nba_team text, dunkest_credits numeric(5,1), unique(first_name,last_name,nba_team));
-create table contracts (
-  id serial primary key, season_id int references seasons, team_id uuid references teams, player_id int references players,
-  slot roster_slot not null, years_left numeric(2,1), /* null = durata da decidere (migrazione 0004) */ team_option bool default false,
-  salary numeric(5,1) not null, restriction text check (restriction in ('restricted','unrestricted')), is_rookie bool not null default false, notes text
-);
-create table cuts (id serial primary key, season_id int, team_id uuid, player_id int, salary numeric(5,1), years_left int, status text); -- paga 1/3
-create table draft_picks (id serial primary key, year int, round int check (round between 1 and 5), original_team uuid, current_team uuid, status text, note text);
-create table rookie_draft (season_id int, pick_no int, team_id uuid, player_id int, note text);
-create table last_contracts (id serial primary key, player_id int, team_id uuid, salary numeric(5,1), ended_on date);
-create table restricted_rights (season_id int, player_id int, team_id uuid, is_rookie bool default false, primary key (season_id, player_id)); -- PROPOSTA (non in 20261021214000_init.sql): colonna Restricted di Foglio3, si svuota dopo l'asta
-create table team_season (season_id int, team_id uuid, bonus int default 0, entry_fee_paid bool default false, final_rank int, luxury_tax_paid bool default false, primary key(season_id,team_id));
-create table trades (id serial primary key, season_id int, created_at timestamptz default now(), status text, payload jsonb, approved_by uuid);
-create table audit_log (id bigserial primary key, at timestamptz default now(), user_id uuid, action text, table_name text, row_id text, before jsonb, after jsonb);
-```
-RLS: `select` per ogni utente autenticato; `insert/update/delete` solo se `exists(select 1 from profiles where id=auth.uid() and role='admin')`.
+## Schema Postgres (Supabase)
+Fonte di verità: `supabase/migrations/` (si parte da `20261021214000_init.sql`, poi una migrazione per modifica; elenco e numerazione in [PLAN.md](../PLAN.md)). Questo file non ripete lo schema per non farlo divergere.
+Tabelle principali: `profiles` (ruolo `admin`/`viewer`), `seasons`, `league_settings` (tutti i parametri di regolamento: cap, budget riserve, divisore del floor, luxury tax, massimi di rosa, orizzonte pick...), `teams`, `players`, `contracts`, `cuts` (4 stati: `pending`, `cut`, `reinstated`, `awarded`), `talents`, `draft_picks`, `rookie_draft`, `last_contracts`, `team_season` (bonus, classifica finale, quota e luxury tax pagate), `trades`, `audit_log`.
+RLS: `select` per ogni utente autenticato; `insert/update/delete` solo se `is_admin()`. Le scritture admin passano da RPC `security definer` (vedi CLAUDE.md).
 Seed squadre (owner → team): Amedeo → Assago Farmers, Lugiu → CUS Cosenza, Gabby → Bol Bollerz, Damiano → Dame Time, Scuti → Atlanto Non Vinco, Serde → Spaccinos, CC → OKCC, Antonio → San Antonio.
-`team_season.final_rank` è inserita dall'admin a fine stagione (bonus, lottery, luxury tax); `team_season.entry_fee_paid` e `luxury_tax_paid` tracciano i pagamenti.
-Lo schema è una **bozza**, da rifinire in fase 1.
+`team_season.final_rank` è inserita dall'admin a fine stagione (bonus, lottery, luxury tax); `entry_fee_paid` e `luxury_tax_paid` tracciano i pagamenti.
 
-Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): la validazione deve **avvisare**, non bloccare.
-Lo schema eseguibile è in `supabase/migrations/20261021214000_init.sql` (non ancora testato su un database reale).
+Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): i minimi **avvisano**, i massimi di rosa bloccano firma/modifica/rientro (`rosterLimitErrors` in `lib/cap.ts`, vedi OPEN-QUESTIONS).
 
 Collegamento nome breve → giocatore: l'import collega un giocatore al listone solo se coincidono cognome **e** (proprietario in colonna `Restricted` **oppure** stipendio = crediti). Un cognome uguale non basta: l'elenco contiene solo free agent, quindi un omonimo sarebbe un falso collegamento (es. Jahmir Young al posto di Trae Young). I casi non collegati restano giocatori provvisori con il solo nome del foglio.

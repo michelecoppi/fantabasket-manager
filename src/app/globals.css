@@ -34,7 +34,6 @@
   --color-brand-blue: var(--brand-blue);
   --color-brand-red: var(--brand-red);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {

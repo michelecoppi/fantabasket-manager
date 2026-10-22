@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Gestionale web per una lega privata di fantabasket NBA (8 squadre). Lingua di UI, commenti utente e documenti: **italiano**. Codice e nomi di variabili/tabelle: **inglese**.
 
 ## Stato del progetto
-Fasi 0-2 completate (dati importati, sito online in sola lettura). Fase 3 (pannello admin) in corso: firma, modifica contratto, taglio (primo passo) e scambio sono fatti in `/admin`; mancano asta tagliati, talenti/rookie, gestione pick, chiusura stagione. Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
+Fasi 0-2 completate (dati importati, sito online in sola lettura). Fase 3 (pannello admin) quasi chiusa; restano squadra talenti/rookie e chiusura stagione. Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
 
 ## Regole di lega
 Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 ed è stato confermato ancora valido (2026-10-21). Dubbi aperti in [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md).
