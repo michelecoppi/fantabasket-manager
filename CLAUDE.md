@@ -16,7 +16,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 ## Comandi
 - `npm run dev` · `npm run build` · `npm run lint` · `npm run typecheck` (fa `next typegen && tsc --noEmit`) · `npm test` (vitest, nessun config: prende ogni `*.test.ts`, in `src/lib/` e `scripts/lib/`).
 - Un solo file: `npx vitest run src/lib/cap.test.ts`; un solo test: `npx vitest run -t "parte del nome"`.
-- La CI (`.github/workflows/ci.yml`) esegue lint, typecheck, test e build su ogni PR e su `main`. Prima di dire "fatto" esegui test, typecheck e lint.
+- La CI (`.github/workflows/ci.yml`) esegue lint, typecheck, test e build su ogni PR e su `main`, più il job `rls` che applica migrazioni e seed su un Postgres Supabase e lancia `supabase/tests/rls.sql`. Prima di dire "fatto" esegui test, typecheck e lint. Una nuova tabella o RPC `admin_*` deve passare il test RLS (la tabella ha bisogno di una riga di prova in `rls.sql`).
 - Import dal foglio: `npx tsx scripts/import-xlsx.ts` fa solo il report; `npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply` **cancella e riscrive** i dati importati su Supabase (serve `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, si ferma se il report ha problemi salvo `--force`). Non lanciarlo senza conferma dell'utente. Dettagli in [docs/IMPORT.md](docs/IMPORT.md).
 - Env: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (vedi `.env.example`); la `service_role` serve solo agli script locali, mai su Vercel.
 - Next.js è una versione recente con breaking changes: leggi `node_modules/next/dist/docs/` e [AGENTS.md](AGENTS.md) prima di scrivere codice Next.

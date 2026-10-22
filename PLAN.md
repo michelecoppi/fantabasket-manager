@@ -17,7 +17,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
 - [x] Schema SQL + RLS in `supabase/migrations/20261021214000_init.sql` e `seed.sql` (eseguiti su Supabase)
 - [x] Progetto Supabase creato, migrazioni 0001-0002 e seed applicati
-- [ ] Testare le policy RLS con un utente viewer
+- [x] Testare le policy RLS con un utente viewer (issue #3): `supabase/tests/rls.sql` prova anon, viewer e admin su tutte le tabelle e tutte le RPC `admin_*` (lette dal catalogo, quindi una tabella senza RLS o una RPC senza guardia fa fallire il test) e gira in CI nel job `rls` su `supabase/postgres:17.11.0.006`. Verificato che fallisce allentando una policy (19 varianti provate: audit_log leggibile, scrittura ai viewer, auto-promozione, anon in lettura, UPDATE/DELETE su audit_log, RPC senza guardia...). In locale: vedi l'intestazione del file
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (40 test verdi in tutto)
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
@@ -73,6 +73,7 @@ Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live 
 Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
+- 2026-10-22: issue #3: test RLS in SQL puro (`supabase/tests/rls.sql`, transazione con rollback, id espliciti) invece di pgTAP: nessuna estensione da installare e il test controlla anche la forma del catalogo. Il job CI usa l'immagine `supabase/postgres` come service container (ruoli, schema auth e default privileges di Supabase già dentro, versione uguale a quella del progetto: 17.11) invece di `supabase start`, che richiederebbe `config.toml` e una decina di immagini. Se si aggiorna Postgres su Supabase, alzare anche il tag in `ci.yml`.
 - 2026-10-22: completamento pannello admin: stesso schema della 0006 (una RPC per operazione, regole in `lib/cap.ts`). I tagli hanno 4 stati e ricordano i termini del contratto; solo `pending` e `cut` pesano sul monte ingaggi.
 - 2026-10-22: migrazioni rinominate `<timestamp>_nome.sql` e storico remoto allineato (righe 0001, 0002, 0006 inserite in `supabase_migrations.schema_migrations`): il check "Supabase Preview" falliva con "Remote migration versions not found in local migrations directory". Rinominata anche la 0007 (applicata come `20261021222924`).
 - 2026-10-22: meno round-trip verso Supabase: `proxy.ts` e `loadProfile` usano `getClaims()` (JWT ES256 verificato in locale, nessuna chiamata ad Auth; una sessione revocata vale fino alla scadenza del JWT, come già per la RLS); `loadLeague` legge anche `version` e `loadVersions` ne deriva, la stagione corrente si legge una volta per richiesta. Da controllare a mano: regione delle funzioni Vercel (Supabase è in `eu-west-1`).

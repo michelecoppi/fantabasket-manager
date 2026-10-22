@@ -23,3 +23,36 @@ jobs:
       - run: npm test
       # La build non ha bisogno dei secret Supabase: nessuna pagina li legge a build time.
       - run: npm run build
+
+  # Test delle policy RLS (supabase/tests/rls.sql). L'immagine supabase/postgres porta già i ruoli anon/authenticated,
+  # lo schema auth e i default privileges di Supabase (senza config.toml non serve `supabase start`).
+  # Tenere la versione allineata a quella del progetto Supabase.
+  rls:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: supabase/postgres:17.11.0.006
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h localhost -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Applica migrazioni e seed
+        run: |
+          for f in supabase/migrations/*.sql supabase/seed.sql; do
+            echo "== $f"
+            psql -X -q -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - name: Test RLS
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
