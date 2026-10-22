@@ -13,3 +13,6 @@ next-env.d.ts
 *.tsbuildinfo
 coverage/
 .vercel
+
+# worktree locali degli agenti
+.claude/worktrees/

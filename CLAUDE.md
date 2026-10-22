@@ -59,6 +59,17 @@ Attenzione: il file ha encoding sporco (`1°` appare come `1�`, `Traoré` come
 - UI mobile-first: gli utenti la useranno da telefono.
 - Commit piccoli, messaggi in italiano o inglese ma coerenti. Non committare `.env*` né chiavi Supabase `service_role`.
 
+## Flusso di lavoro (persone e agenti, tutti uguali)
+- Lavori non banali: un branch, `tipo/nome-breve` (`feat`, `fix`, `chore`, `docs`, `perf`, `test`), poi PR su GitHub; si mergia solo con la CI verde.
+- Piccole modifiche (doc, PLAN.md, typo, ritocchi minimi) si possono committare e pushare direttamente su `main`. Il push su `main` fa partire CI e deploy: prima test, typecheck e lint.
+- Crea i branch senza upstream: `git switch -c tipo/nome --no-track origin/main`. Con l'upstream su `main` un `git push` finirebbe su `main` anche quando non vuoi. Upstream solo sul branch omonimo (`git push -u origin tipo/nome`).
+- Commit, push e PR solo su richiesta esplicita dell'utente, anche per `main`: la regola sopra dice dove si può andare, non autorizza da sola.
+- Messaggi di commit: `tipo(scope): oggetto`, in italiano, brevi, senza firme o trailer di assistenti.
+- Prima di dire "fatto": `npm test`, `npm run typecheck`, `npm run lint` (e il test RLS se tocchi tabelle o RPC). A fine lavoro aggiorna [PLAN.md](PLAN.md).
+- Dopo il merge: cancella il branch locale e il worktree. Un worktree vive in `.claude/worktrees/` (ignorato da git).
+- Non committare file locali degli agenti (worktree, impostazioni, skill installate in locale).
+- Regola di lega dubbia o non scritta nel regolamento: chiedi, non scegliere.
+
 ## Cosa NON fare
 - Non aggiungere servizi a pagamento o che richiedano carta di credito.
 - Non scrivere regole di lega nel codice senza averle messe in OPEN-QUESTIONS/PLAN.
