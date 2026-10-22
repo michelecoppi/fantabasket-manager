@@ -19,7 +19,7 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
 - [x] Schema SQL + RLS in `supabase/migrations/20261021214000_init.sql` e `seed.sql` (eseguiti su Supabase)
 - [x] Progetto Supabase creato, migrazioni 0001-0002 e seed applicati
-- [ ] Testare le policy RLS con un utente viewer
+- [x] Testare le policy RLS con un utente viewer (2026-10-22, via psql in transazione `read only` con rollback, ruoli simulati con `set local role` e `request.jwt.claims`): `anon` non legge nulla e non esegue nessuna RPC; un utente autenticato senza profilo admin legge tutto tranne `audit_log` e riceve `FORBIDDEN` dalle RPC admin; un admin passa la guardia. Non coperto: esiste solo il profilo di Gabby e Scuti (nessun viewer reale) e `audit_log` è vuota, quindi la sua policy è verificata solo dalla definizione, non dai dati
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta- [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
 - [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
