@@ -9,12 +9,12 @@ import {
   type TradeSide,
 } from "./cap";
 
-export interface TeamRow {
+interface TeamRow {
   id: string;
   name: string;
   owner_name: string;
 }
-export interface PlayerJoin {
+interface PlayerJoin {
   first_name: string;
   last_name: string;
   pos: Position | null;
@@ -32,7 +32,7 @@ export interface ContractRow {
   players: PlayerJoin | null;
 }
 /** R-41/R-42: 'pending' = in attesa dell'asta dei tagliati, 'cut' = taglio definitivo. Rientrati e assegnati non si caricano più. */
-export type CutStatus = "pending" | "cut";
+type CutStatus = "pending" | "cut";
 export interface CutRow {
   id: number;
   team_id: string;
@@ -45,7 +45,7 @@ export interface CutRow {
   team_option: boolean;
   players: PlayerJoin | null;
 }
-export interface TalentRow {
+interface TalentRow {
   id: number;
   team_id: string;
   display_name: string;
@@ -53,7 +53,7 @@ export interface TalentRow {
   entry_credits: number | null;
   notes: string | null;
 }
-export interface PickRow {
+interface PickRow {
   id: number;
   year: number;
   round: number;
@@ -62,7 +62,7 @@ export interface PickRow {
   to_confirm: boolean;
   note: string | null;
 }
-export interface TeamSeasonRow {
+interface TeamSeasonRow {
   team_id: string;
   bonus: number;
   final_rank: number | null;
@@ -73,7 +73,7 @@ export interface SettingRow {
   key: string;
   value: number;
 }
-export interface RookieDraftRow {
+interface RookieDraftRow {
   pick_no: number;
   team_id: string;
   note: string | null;
@@ -112,7 +112,7 @@ export interface RosterPlayer {
   restriction: ContractRow["restriction"];
   rookie: boolean;
 }
-export interface TeamCut {
+interface TeamCut {
   id: number;
   playerId: number;
   name: string;

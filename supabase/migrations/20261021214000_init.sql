@@ -19,7 +19,7 @@ create table league_settings (
   key text not null,
   value numeric not null,
   primary key (season_id, key)
-); -- cap, reserve_budget, floor_divisor, tax_credits_per_euro, tax_max_over, safety_threshold, entry_fee...
+); -- cap, reserve_budget, floor_divisor, tax_credits_per_euro, tax_max_over, ... (elenco completo: seed.sql e settingsFromRows in src/lib/league.ts)
 
 create table teams (
   id uuid primary key default gen_random_uuid(),

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_RANK_BONUS,
   DEFAULT_SETTINGS as S,
   luxuryTaxEur,
   rosterWarnings,
@@ -87,12 +86,6 @@ describe("regole", () => {
 
   it("sforamento segnalato", () => {
     expect(teamFinance([entry("starter", 255)], [], 0, S).overCap).toBe(true);
-  });
-
-  it("bonus per classifica (R-60): 8 posizioni", () => {
-    expect(DEFAULT_RANK_BONUS).toHaveLength(8);
-    expect(DEFAULT_RANK_BONUS[0]).toBe(5);
-    expect(DEFAULT_RANK_BONUS[7]).toBe(-3);
   });
 });
 

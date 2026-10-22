@@ -14,18 +14,20 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Repo GitHub pubblico
 
 ## Fase 1 — Progetto e dati
+Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice si usa la numerazione breve: 0001 `20261021214000_init`, 0002 `…214010_picks_to_confirm`, 0003 `…214052_contracts_unique_player`, 0004 `…214053_contracts_years_nullable`, 0005 `…214255_contracts_is_rookie`, 0006 `…220000_admin_rpc`, 0007 `…222924_admin_completamento`.
+
 - [x] Creare progetto Next.js 16 + TS + Tailwind 4, lint, vitest
 - [x] Schema SQL + RLS in `supabase/migrations/20261021214000_init.sql` e `seed.sql` (eseguiti su Supabase)
 - [x] Progetto Supabase creato, migrazioni 0001-0002 e seed applicati
-- [x] Testare le policy RLS con un utente viewer (issue #3): `supabase/tests/rls.sql` prova anon, viewer e admin su tutte le tabelle e tutte le RPC `admin_*` (lette dal catalogo, quindi una tabella senza RLS o una RPC senza guardia fa fallire il test) e gira in CI nel job `rls` su `supabase/postgres:17.11.0.006`. Verificato che fallisce allentando una policy (19 varianti provate: audit_log leggibile, scrittura ai viewer, auto-promozione, anon in lettura, UPDATE/DELETE su audit_log, RPC senza guardia...). In locale: vedi l'intestazione del file
+- [x] Testare le policy RLS con un utente viewer (issue #3). Verifica manuale del 2026-10-22 (via psql in transazione `read only` con rollback, ruoli simulati con `set local role` e `request.jwt.claims`): `anon` non legge nulla, non scrive e non esegue nessuna RPC; un viewer (profilo finto creato nella transazione) legge tutto tranne `audit_log`, non riesce a INSERT/UPDATE/DELETE su nessuna tabella provata, non può cambiare `profiles.role` né `team_id` e riceve `FORBIDDEN` dalle RPC admin; un admin legge e scrive, ma nemmeno lui può modificare o cancellare `audit_log`. Ora automatica: `supabase/tests/rls.sql` prova anon, viewer e admin su tutte le tabelle e tutte le RPC `admin_*` (lette dal catalogo, quindi una tabella senza RLS o una RPC senza guardia fa fallire il test) e gira in CI nel job `rls` su `supabase/postgres:17.11.0.006`. Verificato che fallisce allentando una policy (19 varianti provate: audit_log leggibile, scrittura ai viewer, auto-promozione, anon in lettura, UPDATE/DELETE su audit_log, RPC senza guardia...). In locale: vedi l'intestazione del file. Hardening possibile: `anon` e `authenticated` hanno anche `TRUNCATE`, `REFERENCES` e `TRIGGER` su tutte le tabelle `public` (default di Supabase); la RLS non copre `TRUNCATE`, e PostgREST non lo espone, ma si può revocare con una migrazione (proposta nella PR #26, non applicata)
 - [x] `src/lib/cap.ts` + test: riproduce monte ingaggi, spazio salariale e spazio riserve di tutte e 8 le squadre del foglio, prima e dopo l'asta (40 test verdi in tutto)
 - [x] `scripts/import-xlsx.ts`: report di verifica (8/8 squadre quadrano col foglio) e `--apply` su Supabase (provato); guida a nomi e fonti: [docs/IMPORT.md](docs/IMPORT.md)
 - [x] Pick incerte importabili come `to_confirm` (migrazione 0002); report a 0 problemi
 - [x] Migrazione 0002 applicata, `.env.local` creato, import `--apply` eseguito (2026-10-21): 123 contratti, 5 tagliati, 39 talenti, 120 pick, 40 rookie draft, 568 giocatori
 - [x] Migrazioni 0003 (`unique (season_id, player_id)` su `contracts`) e 0004 (`years_left` nullable) applicate su Supabase il 2026-10-21 via MCP. L'import segnala come problema un giocatore in più contratti
-- [x] Migrazione 0005 (`contracts.is_rookie`, `r` = rookie) applicata e dati del foglio post-asta importati su Supabase il 2026-10-21 (eseguito dall'utente nell'editor SQL, perché lo strumento MCP rifiuta i `delete`): 149 contratti, 7 tagliati, 51 talenti, 120 pick 2027-2029, 40 rookie draft, 532 giocatori; monte ingaggi delle 8 squadre uguale al foglio. Backup dei dati pre-asta nello schema `import_backup` (da eliminare con `drop schema import_backup cascade;` quando non serve più)
-- [ ] Durata dei 17 ingaggi d'asta senza prefisso (es. Durant, Siakam): la lega non l'ha ancora decisa, import con `years_left = null` (si vede `?`); da impostare dall'admin (fase 3) o con un nuovo import
-- [ ] UI admin: correggere le pick da confermare (fase 3)
+- [x] Migrazione 0005 (`contracts.is_rookie`, `r` = rookie) applicata e dati del foglio post-asta importati su Supabase il 2026-10-21 (eseguito dall'utente nell'editor SQL, perché lo strumento MCP rifiuta i `delete`): 149 contratti, 7 tagliati, 51 talenti, 120 pick 2027-2029, 40 rookie draft, 532 giocatori; monte ingaggi delle 8 squadre uguale al foglio. Il backup dei dati pre-asta (schema `import_backup`) risulta già eliminato (verificato il 2026-10-22 via psql)
+- [ ] Durata dei 17 ingaggi d'asta senza prefisso (es. Durant, Siakam): la lega non l'ha ancora decisa, import con `years_left = null` (si vede `?`); da impostare dall'admin (strumento pronto: durate in blocco in `/admin/rose`) o con un nuovo import
+- [x] UI admin: correggere le pick da confermare (`/admin/pick`, casella «da confermare»)
 - [ ] Export Dunkest completo per i giocatori in rosa (nome intero, squadra NBA, ruolo)
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
 - [x] Seed giocatori Dunkest e contratti dal foglio (125 giocatori in rosa sono provvisori: solo cognome)
@@ -40,7 +42,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 - [x] Strumenti per gli utenti (issue #13): griglia pick in `/draft`, contratti in scadenza in `/scadenze`, simulatore di scambio in sola lettura in `/scambio` (`tradeImpact` in `lib/cap.ts`, R-57), ordinamento/filtri sulla home, PWA installabile (`manifest.ts`, icone da `scripts/make-icons.mjs`; niente service worker, l'app è sempre online)
 - [x] Logo della lega in header, login, favicon e icone PWA (`scripts/make-icons.mjs` lo ricava da `scripts/assets/logo-source.jpg`)
 - [x] Pulizia (issue #11): tolti gli svg del template, `CLAUDE.md` e `docs/STACK.md` riallineati, commento residuo in `next.config.ts`
-- [ ] **Verifica con login reale** (le pagine con dati non sono ancora state viste in un browser: manca la chiave anon)
+- [ ] **Verificare le pagine con dati su Vercel** (il login è provato in locale)
 
 ## Deploy
 - [x] Vercel: sito online (dominio di produzione verificato: apre `/login`). Guida in [docs/DEPLOY.md](docs/DEPLOY.md). Nota: l'URL del singolo deploy (`...-michelecoppis-projects.vercel.app`) è protetto da Vercel SSO, va condiviso solo il dominio di produzione `fantabasket-manager.vercel.app`
@@ -62,7 +64,7 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 ## Fase 4 — Rifiniture
 - [ ] Storico stagioni e scambi
 - [ ] Export CSV/Excel
-- [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`, serve aggiungere i secret su GitHub)
+- [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`; i secret su GitHub si aggiungono come in [docs/DEPLOY.md](docs/DEPLOY.md))
 - [ ] Backup periodico del database
 - [ ] Notifiche (opzionale)
 
@@ -70,10 +72,11 @@ Sostituire il foglio Excel con un sito dove **admin** (Scuti e Gabby) gestiscono
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
 
 ## Prossimo passo
-Login provato in locale; verificare le pagine anche su Vercel. Gli altri 6 utenti si creano dopo. Aperte solo: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
+Pannello admin quasi chiuso: restano squadra talenti/rookie (attende la domanda 4 di OPEN-QUESTIONS) e chiusura stagione. In parallelo: verificare le pagine su Vercel, creare gli altri 6 utenti, impostare le durate dei 17 ingaggi d'asta. Domande aperte: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
 - 2026-10-22: issue #3: test RLS in SQL puro (`supabase/tests/rls.sql`, transazione con rollback, id espliciti) invece di pgTAP: nessuna estensione da installare e il test controlla anche la forma del catalogo. Il job CI usa l'immagine `supabase/postgres` come service container (ruoli, schema auth e default privileges di Supabase già dentro, versione uguale a quella del progetto: 17.11) invece di `supabase start`, che richiederebbe `config.toml` e una decina di immagini. Se si aggiorna Postgres su Supabase, alzare anche il tag in `ci.yml`.
+- 2026-10-22: pulizia del progetto. Eliminati i 12 branch remoti già mergiati (PR #1-#24, nessuna PR aperta) e il branch locale superseduto; `seed.sql` allineato (mancavano `pick_horizon_years` e `draft_rounds`, un DB nuovo non caricava le pagine); tolti `DEFAULT_RANK_BONUS` (R-60 resta in REGOLAMENTO, andrà in `league_settings` con la chiusura stagione) e il font Geist Mono mai usato; doc riallineati al codice (`DATA-MODEL` rimanda alle migrazioni invece di duplicare lo schema, `IMPORT` descrive l'abbinamento reale). Da fare a mano su GitHub: attivare «Automatically delete head branches» (oggi `deleteBranchOnMerge` è spento).
 - 2026-10-22: completamento pannello admin: stesso schema della 0006 (una RPC per operazione, regole in `lib/cap.ts`). I tagli hanno 4 stati e ricordano i termini del contratto; solo `pending` e `cut` pesano sul monte ingaggi.
 - 2026-10-22: migrazioni rinominate `<timestamp>_nome.sql` e storico remoto allineato (righe 0001, 0002, 0006 inserite in `supabase_migrations.schema_migrations`): il check "Supabase Preview" falliva con "Remote migration versions not found in local migrations directory". Rinominata anche la 0007 (applicata come `20261021222924`).
 - 2026-10-22: meno round-trip verso Supabase: `proxy.ts` e `loadProfile` usano `getClaims()` (JWT ES256 verificato in locale, nessuna chiamata ad Auth; una sessione revocata vale fino alla scadenza del JWT, come già per la RLS); `loadLeague` legge anche `version` e `loadVersions` ne deriva, la stagione corrente si legge una volta per richiesta. Da controllare a mano: regione delle funzioni Vercel (Supabase è in `eu-west-1`).

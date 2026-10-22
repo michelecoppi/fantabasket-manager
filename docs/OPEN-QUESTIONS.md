@@ -8,14 +8,11 @@ Aggiornato 2026-10-21 dopo le risposte dell'utente.
 2. **Admin e ruoli del regolamento**: Scuti e Gabby sono admin dell'app; presidente (Serde) e moderatore (Amedeo) restano ruoli del regolamento. Gli scambi vanno ufficializzati dal moderatore: l'app deve registrare chi li approva anche se non è admin? *(fase 3)*
 3. **Quota di iscrizione**: importo (serve per il campo `QUOTA PAGATA`; nel foglio è solo un flag SI/NO, tutti NO). *(fase 3)*
 4. **Dettagli dei rookie al bivio**: `25` e `26` sono l'anno di draft (Hansen 25, Dybantsa 26); restano ignoti `26?` (Sorber, Barnhizer), `(24)` (Hinson, Holmes II) e il 100 di Rogkavopoulos, che sembra un refuso. Resta da definire come mostrare la scadenza della prelazione. *(fase 3)*
-5. **Contratto e taglio sullo stesso giocatore** (R-42): un giocatore tagliato che rientra in rosa può avere nella stessa stagione sia una riga in `contracts` sia una in `cuts`? Oggi non succede (0 casi), ma finché non è chiaro non c'è un vincolo di esclusività nel database (la migrazione 0003 vincola solo `contracts`). *(fase 3)*
+5. **Contratto e taglio sullo stesso giocatore** (R-42): un giocatore tagliato che rientra in rosa può avere nella stessa stagione sia una riga in `contracts` sia una in `cuts`? Oggi non succede (0 casi), ma finché non è chiaro non c'è un vincolo di esclusività nel database (`20261021214052_contracts_unique_player` vincola solo `contracts`). *(fase 3)*
 6. **Durata dei contratti d'asta**: 17 ingaggi del foglio del 21/10 non hanno il prefisso degli anni (es. `Durant 35`, `Siakam 31`) perché gli anni **non sono ancora stati decisi** (confermato dall'utente, non è un'assunzione). L'import li scrive con `years_left = null` (mostrati come `?`); quando la lega decide, l'admin imposta la durata (fase 3) o si rilancia l'import sul foglio aggiornato. *(non blocca)*
 
 ## Assunzioni correnti
-- Cap effettivo = 250 + bonus campionato (verificato sul foglio).
-- `SPAZIO S. RISERVE` = 80 − stipendi riserve.
-- Le 6 righe sotto la riga vuota di ogni squadra sono le riserve (righe 18-23, verificato su 8 squadre su 8).
-- Il monte ingaggi include i tagli: `Σ titolari + Σ costo tagli`, con costo = 1/3 dello stipendio arrotondato allo 0.5 più vicino (5 → 1.5, 10 → 3.5). Verificato su 8 squadre su 8 prima e dopo l'asta.
+Cap effettivo, spazio riserve, righe delle riserve e monte ingaggi con i tagli (1/3 arrotondato a 0.5) sono verificati sul foglio su 8 squadre su 8, prima e dopo l'asta: formule e zone in [DATA-MODEL.md](DATA-MODEL.md), codice in `src/lib/cap.ts`.
 
 ## Risolte
 | # | Domanda | Risposta |
@@ -45,7 +42,7 @@ Aggiornato 2026-10-21 dopo le risposte dell'utente.
 | CC | OKCC |
 | ENTONY (Antonio) | San Antonio |
 
-Alias usati nel foglio: Farmers, Cosenza/CUS, Bollerz/BOL, Dame/DAME, Atlanto/ATLANTO, Spaccinos/SPACC, OKCC/Thunders (Foglio2), Spurs/ST. ANT (Foglio2 e ultimo contratto). `cckers` in Foglio3 = OKCC. Controllo sui dati: le scelte 2026 in "Squadra talenti" di ogni proprietario coincidono con l'ordine di `Foglio2` per tutte e 8 le squadre.
+Gli alias di squadra usati nel foglio sono in `ALIASES` di `scripts/lib/names.ts`. Controllo sui dati: le scelte 2026 in "Squadra talenti" di ogni proprietario coincidono con l'ordine di `Foglio2` per tutte e 8 le squadre.
 
 - Riga ULTIMO CONTRATTO `O.Toppin` → San Antonio (risolta 2026-10-21).
 
@@ -58,10 +55,10 @@ Alias usati nel foglio: Farmers, Cosenza/CUS, Bollerz/BOL, Dame/DAME, Atlanto/AT
 - **ASSUNZIONE** R-33: il massimo di 2 pick per giro è contato per anno di draft (parametro `max_picks_per_round`); in uno scambio avvisa, non blocca.
 - **ASSUNZIONE** R-20/R-22: durate ammesse = ½ e gli interi fino a `contract_max_years` (3); la team option solo su 1 o 2 anni. La durata può restare "da fissare" (R-51).
 - **ASSUNZIONE** R-10: firmare un contratto che porta sopra il cap avvisa ma non blocca (nel foglio Dame Time è già sforato dopo l'asta). Gli scambi invece bloccano (R-57) salvo eccezione del moderatore con motivazione.
-- **ASSUNZIONE** R-42: il taglio crea una riga `cuts` in stato `pending` (asta dei tagliati); la quota è 1/3 arrotondato a 0,5 (`cutShare`). Taglio definitivo e rientro non sono ancora implementati.
+- **ASSUNZIONE** R-42: il taglio crea una riga `cuts` in stato `pending` (asta dei tagliati); la quota è 1/3 arrotondato a 0,5 (`cutShare`). Taglio definitivo e rientro sono implementati nel completamento admin (vedi sotto).
 - Lo scambio registra "approvato da" come testo libero (domanda 2: il moderatore può non essere admin).
 
-## ASSUNZIONI del completamento admin (migrazione 0007)
+## ASSUNZIONI del completamento admin (migrazione `20261021222924_admin_completamento`)
 - **ASSUNZIONE** R-41/R-42: se un tagliato viene preso da un'altra squadra all'asta dei tagliati, l'ex proprietario **non paga più la quota** (il regolamento prevede il 1/3 solo se nessuno lo prende). Da confermare.
 - **ASSUNZIONE** R-42: finché il taglio è «in asta» (`pending`) la quota conta già nel monte ingaggi, come i tagli definitivi.
 - **ASSUNZIONE** R-41: «ex proprietario non può partecipare» = non può essere la squadra che firma il giocatore tagliato in attesa.

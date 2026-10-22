@@ -1,6 +1,6 @@
 // Parsing dei testi del foglio Excel: nomi contratto, alias squadra, normalizzazione. Vedi docs/DATA-MODEL.md.
 
-export const TEAM_NAMES = [
+const TEAM_NAMES = [
   "Assago Farmers",
   "CUS Cosenza",
   "Bol Bollerz",
