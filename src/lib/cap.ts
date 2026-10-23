@@ -28,6 +28,10 @@ export interface LeagueSettings {
   pickHorizonYears: number;
   /** R-31: giri del draft */
   draftRounds: number;
+  /** R-60: bonus/malus di crediti per la stagione successiva, dal 1° all'ultimo in classifica */
+  rankBonus: number[];
+  /** R-32: le prime scelte del draft si estraggono tra le ultime N squadre della classifica */
+  lotteryTeams: number;
 }
 
 export interface RosterEntry {
@@ -331,4 +335,6 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   maxPicksPerRound: 2,
   pickHorizonYears: 3,
   draftRounds: 5,
+  rankBonus: [5, 4, 3, 2, 0, -1, -2, -3],
+  lotteryTeams: 4,
 };

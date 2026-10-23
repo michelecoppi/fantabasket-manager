@@ -52,7 +52,7 @@ Fonte di verità: `supabase/migrations/` (si parte da `20261021214000_init.sql`,
 Tabelle principali: `profiles` (ruolo `admin`/`viewer`), `seasons`, `league_settings` (tutti i parametri di regolamento: cap, budget riserve, divisore del floor, luxury tax, massimi di rosa, orizzonte pick...), `teams`, `players`, `contracts`, `cuts` (4 stati: `pending`, `cut`, `reinstated`, `awarded`), `talents`, `draft_picks`, `rookie_draft`, `last_contracts`, `team_season` (bonus, classifica finale, quota e luxury tax pagate), `trades`, `audit_log`.
 RLS: `select` per ogni utente autenticato; `insert/update/delete` solo se `is_admin()`. Le scritture admin passano da RPC `security definer` (vedi CLAUDE.md).
 Seed squadre (owner → team): Amedeo → Assago Farmers, Lugiu → CUS Cosenza, Gabby → Bol Bollerz, Damiano → Dame Time, Scuti → Atlanto Non Vinco, Serde → Spaccinos, CC → OKCC, Antonio → San Antonio.
-`team_season.final_rank` è inserita dall'admin a fine stagione (bonus, lottery, luxury tax); `entry_fee_paid` e `luxury_tax_paid` tracciano i pagamenti.
+`team_season.final_rank` è inserita dall'admin a fine stagione in `/admin/chiusura`, che calcola bonus (`rank_bonus_1..8`), ordine del draft (`lottery_teams`) e apre la stagione nuova (`admin_close_season`); `entry_fee_paid` e `luxury_tax_paid` tracciano i pagamenti. Le righe della stagione chiusa (`contracts`, `cuts`, `team_season`) restano come storico; i contratti in scadenza finiscono in `last_contracts` (`restricted` = la squadra può pareggiare, R-23).
 
 Nota: nel foglio alcune squadre non rispettano ancora 5G/5A/3C o le 3 riserve minime (offseason in corso): i minimi **avvisano**, i massimi di rosa bloccano firma/modifica/rientro (`rosterLimitErrors` in `lib/cap.ts`, vedi OPEN-QUESTIONS).
 

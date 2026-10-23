@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin/rose", label: "Rose" },
   { href: "/admin/pick", label: "Pick" },
   { href: "/admin/quote", label: "Quote" },
+  { href: "/admin/chiusura", label: "Chiusura" },
   { href: "/admin/registro", label: "Registro" },
 ];
 

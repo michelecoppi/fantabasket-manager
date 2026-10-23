@@ -121,6 +121,7 @@ async function write(d: ImportData) {
           player_id: playerId(c.player),
           paid_salary: c.paidSalary,
           years_left: c.years,
+          status: "cut", // il foglio è post-asta: i tagli sono già definitivi (come in 0007), non in attesa dell'asta dei tagliati
         })),
       ),
       "insert cuts",
