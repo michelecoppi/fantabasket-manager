@@ -42,6 +42,43 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Transizioni di pagina (<ViewTransition> in template.tsx): l'header resta fermo, il contenuto sfuma e sale. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+::view-transition-old(.page-out) {
+  animation: 120ms ease-in both fade-in reverse;
+}
+::view-transition-new(.page-in) {
+  animation: 220ms ease-out 120ms both fade-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
 /* Titoli stile broadcast: condensed, maiuscolo, pesante. */
 .font-display {
   font-family: var(--font-display), Impact, sans-serif;

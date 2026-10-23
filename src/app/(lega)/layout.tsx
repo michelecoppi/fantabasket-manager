@@ -27,7 +27,7 @@ export const instant = false;
 export default function LegaLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <header className="sticky top-0 z-10 bg-nav text-white shadow-md">
+      <header style={{ viewTransitionName: "site-header" }} className="sticky top-0 z-10 bg-nav text-white shadow-md">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 pt-2">
           <Link href="/" className="font-display flex items-center gap-2 pb-2 text-2xl font-extrabold">
             <Image src="/logo.png" alt="" width={270} height={360} priority className="h-10 w-auto" />
@@ -55,7 +55,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
         <div className="h-1 bg-gradient-to-r from-brand-blue via-brand-blue to-brand-red" />
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-        <Suspense fallback={<p className="text-sm text-muted">Caricamento…</p>}>{children}</Suspense>
+        {children}
       </main>
     </>
   );

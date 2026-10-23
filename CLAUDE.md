@@ -33,7 +33,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 
 **Auth.** `src/proxy.ts` (in Next 16 `middleware` si chiama `proxy`) rinnova la sessione Supabase e manda a `/login` chi non è autenticato; `src/lib/supabase/server.ts` crea il client con la chiave anon e i cookie. `admin/layout.tsx` risponde 404 ai viewer, ma i permessi veri sono RLS + RPC.
 
-**Next 16 `cacheComponents`.** I dati per-utente devono stare dentro `<Suspense>` (lo fa `src/app/(lega)/layout.tsx`, con `export const instant = false`). Le pagine già viste restano 5 minuti nella cache del router (`staleTimes` in `next.config.ts`): per questo c'è il pulsante "Aggiorna" e le action fanno `revalidatePath`. I tipi `LayoutProps<"/route">` / `PageProps` sono globali, generati da `next typegen`.
+**Next 16 `cacheComponents`.** I dati per-utente devono stare dentro `<Suspense>` (lo fa `src/app/(lega)/loading.tsx`, lo scheletro di caricamento; il layout ha `export const instant = false`). `template.tsx` anima il cambio pagina con `<ViewTransition>`. Le pagine già viste restano 5 minuti nella cache del router (`staleTimes` in `next.config.ts`): per questo c'è il pulsante "Aggiorna" e le action fanno `revalidatePath`. I tipi `LayoutProps<"/route">` / `PageProps` sono globali, generati da `next typegen`.
 
 **Database.** Migrazioni in `supabase/migrations/` con nome `<timestamp>_nome.sql` (formato Supabase; il nome deve coincidere con la versione in `list_migrations`, altrimenti il check "Supabase Preview" fallisce) (+ `seed.sql`), senza `config.toml`: si applicano a mano su Supabase (MCP o editor SQL) e l'applicazione si annota in PLAN.md. Una migrazione nuova non è "fatta" finché non è applicata sul progetto reale.
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 
 export const inputClass =
   "w-full rounded-md border border-line bg-surface px-3 py-2.5 text-base outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30 disabled:opacity-50";
@@ -29,6 +30,16 @@ export function Button({
       {pending && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
       {children}
     </button>
+  );
+}
+
+/** Pulsante di invio di un `<form>`/`<Form>`: mostra il caricamento finché l'invio (o la navigazione) non finisce. */
+export function SubmitButton({ children, className }: { children: ReactNode; className?: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" pending={pending} className={className}>
+      {children}
+    </Button>
   );
 }
 
@@ -89,7 +100,7 @@ const callouts = {
 
 export function Callout({ tone = "info", title, children }: { tone?: keyof typeof callouts; title?: string; children?: ReactNode }) {
   return (
-    <div role={tone === "bad" ? "alert" : "status"} className={`rounded-md border-l-4 px-3 py-2.5 text-sm ${callouts[tone]}`}>
+    <div role={tone === "bad" ? "alert" : "status"} className={`animate-[fade-in_200ms_ease-out] rounded-md border-l-4 px-3 py-2.5 text-sm ${callouts[tone]}`}>
       {title && <div className="font-semibold">{title}</div>}
       {children}
     </div>

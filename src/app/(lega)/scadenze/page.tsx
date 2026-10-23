@@ -1,4 +1,6 @@
+import Form from "next/form";
 import Link from "next/link";
+import { SubmitButton } from "@/components/controls";
 import { Card, PageTitle, RestrictionBadge, Section } from "@/components/ui";
 import { endSeason, expiringContracts, parseExpiringFilters } from "@/lib/expiring";
 import { fmt } from "@/lib/format";
@@ -22,7 +24,7 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
       </PageTitle>
 
       <Card className="p-3">
-        <form className="grid grid-cols-2 gap-2 sm:grid-cols-4" action="/scadenze">
+        <Form className="grid grid-cols-2 gap-2 sm:grid-cols-4" action="/scadenze">
           <select name="squadra" defaultValue={filters.teamId} className={control} aria-label="Squadra">
             <option value="">Tutte le squadre</option>
             {league.teams.map((t) => <option key={t.team.id} value={t.team.id}>{t.team.name}</option>)}
@@ -31,9 +33,9 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
             <option value="">Tutte le stagioni</option>
             {seasons.map((y) => <option key={y} value={y}>Scade nel {y}</option>)}
           </select>
-          <button className="font-display rounded bg-brand-red px-3 py-2 text-lg font-bold text-white">Filtra</button>
+          <SubmitButton>Filtra</SubmitButton>
           <Link href="/scadenze" className="font-display rounded border border-line px-3 py-2 text-center text-lg font-bold">Azzera</Link>
-        </form>
+        </Form>
       </Card>
 
       {noYears > 0 && <p className="mt-4 text-sm text-muted">{noYears} contratti senza durata (da fissare) non sono in elenco.</p>}

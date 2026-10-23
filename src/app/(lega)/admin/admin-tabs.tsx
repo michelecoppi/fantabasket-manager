@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PendingLabel } from "@/components/nav";
 
 const tabs = [
   { href: "/admin", label: "Panoramica" },
@@ -28,7 +29,7 @@ export function AdminTabs() {
               active ? "border-brand-red bg-brand-red text-white" : "border-line bg-surface text-muted hover:border-brand-red hover:text-foreground"
             }`}
           >
-            {t.label}
+            <PendingLabel>{t.label}</PendingLabel>
           </Link>
         );
       })}
