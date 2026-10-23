@@ -49,7 +49,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 - Ogni modifica admin a contratti/pick/budget scrive una riga in `audit_log` (oggi lo fanno le RPC).
 
 ## Fonte dati
-`Dunkest.xlsx` (solo in locale, ignorato da git) ha 3 fogli: `Foglio1` rose/contratti/pick, `Foglio2` ordine rookie draft, `Foglio3` listone giocatori Dunkest con crediti 26/27. Struttura e significato in [docs/DATA-MODEL.md](docs/DATA-MODEL.md). L'import è lo script ripetibile `scripts/import-xlsx.ts` (parsing in `scripts/lib/parse.ts`, alias squadra e normalizzazione nomi in `scripts/lib/names.ts`, correzioni alle pick in `scripts/lib/overrides.ts`), non a mano.
+`Dunkest.xlsx` (solo in locale, ignorato da git) ha 3 fogli: `Foglio1` rose/contratti/pick, `Foglio2` ordine rookie draft, `Foglio3` listone giocatori Dunkest con crediti 26/27. Struttura e significato in [docs/DATA-MODEL.md](docs/DATA-MODEL.md). L'import è lo script ripetibile `scripts/import-xlsx.ts` (parsing in `scripts/lib/parse.ts`, alias squadra e normalizzazione nomi in `scripts/lib/names.ts`, correzioni alle pick e alias dei giocatori in `scripts/lib/overrides.ts`, snapshot dei giocatori Dunkest in `scripts/data/dunkest-players.json` da `scripts/fetch-dunkest-players.ts`), non a mano.
 Attenzione: il file ha encoding sporco (`1°` appare come `1�`, `Traoré` come `Traor�`) e celle con `\xa0`; l'import normalizza.
 
 ## Convenzioni

@@ -21,6 +21,14 @@ export function duplicateContractPlayers(contracts: { player: PlayerRef }[]): st
   return [...byKey.values()].filter((names) => names.length > 1).map((names) => names[0]);
 }
 
+// season_id Dunkest → stagione. Per chi non ha ancora giocato nel 2026-27 la squadra NBA è quella dell'ultima stagione giocata.
+const SEASON_LABEL: Record<number, string> = { 29: "2026-27", 25: "2025-26", 19: "2024-25" };
+function describe(r: PlayerRef): string {
+  const c = r.catalog;
+  const stale = c?.season && c.season !== 29 ? `, squadra del ${SEASON_LABEL[c.season] ?? c.season}` : "";
+  return `${c?.firstName} ${c?.lastName} (${c?.nbaTeam}, ${c?.pos ?? "?"}${stale})`;
+}
+
 export function buildReport(d: ImportData): { text: string; problems: number } {
   const lines: string[] = [];
   let problems = d.warnings.length;
@@ -55,8 +63,19 @@ export function buildReport(d: ImportData): { text: string; problems: number } {
     ...d.cuts.map((c) => ({ where: `taglio ${c.team}`, ref: c.player })),
     ...d.lastContracts.map((c) => ({ where: `ultimo contratto ${c.team}`, ref: c.player })),
   ];
-  const kinds = ["owner", "salary", "ambiguous", "none"] as const;
+  const kinds = ["owner", "salary", "alias", "pool", "ambiguous", "none"] as const;
   p(kinds.map((k) => `${k}: ${count(refs, (r) => r.ref.match === k)}`).join(" · "));
+  // `pool` = cognome unico nello snapshot Dunkest: da controllare a occhio (manca chi non ha giocato), vedi matchPlayer
+  const pooled = refs.filter((r) => r.ref.match === "pool");
+  if (pooled.length) {
+    p("Collegati per cognome (da controllare):");
+    for (const u of pooled) p(`  ${u.ref.rawName} → ${describe(u.ref)}  (${u.where})`);
+  }
+  const roleDiff = refs.filter((r) => (r.ref.match === "pool" || r.ref.match === "alias") && r.ref.catalog?.pos && r.ref.pos !== r.ref.catalog.pos);
+  if (roleDiff.length) {
+    p("Ruolo del foglio diverso da Dunkest (resta quello del foglio):");
+    for (const u of roleDiff) p(`  ${u.ref.rawName}: foglio ${u.ref.pos}, Dunkest ${u.ref.catalog?.pos}  (${u.where})`);
+  }
   const unmatched = refs.filter((r) => r.ref.match === "none" || r.ref.match === "ambiguous");
   if (unmatched.length) {
     p("Da verificare (verranno creati come giocatori provvisori):");

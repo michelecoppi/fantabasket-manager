@@ -1,6 +1,40 @@
 import type { TeamName } from "./names";
 
 /**
+ * Nomi del foglio che il solo cognome non risolve (abbreviazioni, refusi, soprannomi, omonimi).
+ * Chiave: nome del foglio senza anni né sigle, ridotto a lettere minuscole (`lettersOnly`); valore: nome intero come
+ * scritto da Dunkest, da cercare in scripts/data/dunkest-players.json. Vale per tutte le squadre.
+ */
+export const PLAYER_ALIASES: Record<string, string> = {
+  // abbreviazioni e soprannomi
+  mkbridges: "Mikal Bridges",
+  mibridges: "Miles Bridges",
+  giannis: "Giannis Antetokounmpo",
+  sga: "Shai Gilgeous-Alexander",
+  jjj: "Jaren Jackson Jr.",
+  theking: "LeBron James",
+  zion: "Zion Williamson",
+  rwilliamsiii: "Robert Williams", // Dunkest non scrive "III"
+  // refusi
+  poetl: "Jakob Poeltl",
+  withmore: "Cam Whitmore",
+  hartestein: "Isaiah Hartenstein",
+  kneuppel: "Kon Knueppel",
+  cjonhson: "Cameron Johnson",
+  murrayboyeles: "Collin Murray-Boyles",
+  pallelarsson: "Pelle Larsson",
+  russel: "D'Angelo Russell", // taglio Atlanto Non Vinco, unico Russell nello snapshot
+  // omonimi risolti da ruolo e stipendio
+  holiday: "Jrue Holiday", // Spaccinos, G da 11: Aaron Holiday (Houston) varrebbe molto meno
+  jjohnson: "Jalen Johnson", // OKCC, A da 30
+  thomas: "Cam Thomas", // confermato dall'utente 2026-10-23: unico Thomas dello snapshot, ma la sua squadra è del 2024-25
+  bmiller: "Brandon Miller", // confermato dall'utente 2026-10-23: Baba Miller è nel listone dei free agent
+  // ex contratti di giocatori ora nel listone dei free agent (il cognome da solo è ambiguo)
+  anwiggins: "Andrew Wiggins",
+  otoppin: "Obi Toppin",
+};
+
+/**
  * Correzioni alle pick lette dal foglio. Chiave: "anno-giro-squadra originale" → squadra che la possiede.
  * `ChS` nel foglio = pick ceduta senza indicare a chi: la destinazione va scritta qui.
  */
