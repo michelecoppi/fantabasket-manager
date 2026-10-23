@@ -1,4 +1,6 @@
+import Form from "next/form";
 import Link from "next/link";
+import { SubmitButton } from "@/components/controls";
 import { Badge, PageTitle, Stat } from "@/components/ui";
 import { fmt } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
@@ -16,7 +18,7 @@ export default async function Home(props: PageProps<"/">) {
     <>
       <PageTitle sub={<>Cap {fmt(settings.cap)} (più bonus campionato) · floor {fmt(settings.cap - settings.cap / settings.floorDivisor)} · budget riserve {fmt(settings.reserveBudget)}</>}>Lega {league.seasonYear}</PageTitle>
 
-      <form action="/" className="mb-4 grid grid-cols-2 gap-2 sm:flex">
+      <Form action="/" className="mb-4 grid grid-cols-2 gap-2 sm:flex">
         <select name="ordina" defaultValue={options.sort} className={control} aria-label="Ordina per">
           <option value="nome">Per nome</option>
           <option value="monte">Per monte ingaggi</option>
@@ -28,9 +30,9 @@ export default async function Home(props: PageProps<"/">) {
           <option value="floor">Solo sotto floor</option>
           <option value="incomplete">Solo rose incomplete</option>
         </select>
-        <button className="font-display rounded bg-brand-red px-4 py-2 text-lg font-bold text-white">Applica</button>
+        <SubmitButton>Applica</SubmitButton>
         <Link href="/" className="font-display rounded border border-line px-4 py-2 text-center text-lg font-bold">Azzera</Link>
-      </form>
+      </Form>
 
       {teams.length === 0 && <p className="text-sm text-muted">Nessuna squadra con questo filtro.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
