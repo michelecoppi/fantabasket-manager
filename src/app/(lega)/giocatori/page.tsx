@@ -59,7 +59,10 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
               <span className="font-display w-6 text-center text-xl font-bold text-brand-blue">{p.pos ?? "?"}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{p.name}</span>
-                <span className="block text-xs text-muted">{p.nbaTeam ?? "NBA n.d."}</span>
+                <span className="block text-xs text-muted">
+                  {p.nbaTeam ?? "NBA n.d."}
+                  {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
+                </span>
               </span>
               {p.ownerTeamId ? (
                 <Link href={`/squadre/${p.ownerTeamId}`}>
@@ -67,6 +70,8 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                 </Link>
               ) : p.cutByTeamId ? (
                 <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>tagliato</Badge>
+              ) : p.restrictedTeamId ? (
+                <Badge tone="warn" title="Restricted: il vecchio proprietario può pareggiare l'offerta più alta (R-23)">restricted</Badge>
               ) : (
                 <Badge tone="good">libero</Badge>
               )}
