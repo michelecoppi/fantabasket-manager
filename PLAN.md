@@ -29,7 +29,7 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 - [ ] Durata dei 17 ingaggi d'asta senza prefisso (es. Durant, Siakam): la lega non l'ha ancora decisa, import con `years_left = null` (si vede `?`); da impostare dall'admin (strumento pronto: durate in blocco in `/admin/rose`) o con un nuovo import
 - [x] UI admin: correggere le pick da confermare (`/admin/pick`, casella «da confermare»)
 - [x] Nomi interi e squadra NBA per i giocatori in rosa: snapshot Dunkest (`scripts/fetch-dunkest-players.ts`) + `PLAYER_ALIASES` in `scripts/lib/overrides.ts`; sul foglio del 21/10 resta provvisorio solo `A.Walker`. Il report elenca i 146 collegamenti per cognome da controllare
-- [ ] Applicare i nomi al database reale: `import --apply` riscrive tutto (a 2026-10-23 `audit_log` è vuoto, ma serve conferma), oppure un UPDATE mirato dei 162 giocatori provvisori (nome, squadra NBA; `pos` resta quello del foglio)
+- [x] Nomi applicati al database reale (2026-10-23, `import --apply` con `Dunkest-aggiornato.xlsx`, `audit_log` vuoto prima): giocatori 532 → 527, provvisori 162 → 1 (`A.Walker`), monte ingaggi delle 8 squadre uguale a prima, nessun giocatore con due contratti. Serviva `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` e `NEXT_PUBLIC_SUPABASE_URL` nella forma `https://<ref>.supabase.co` (non il link della dashboard)
 - [ ] Capire se Dunkest permette di caricare le rose (la guida dice che il commissioner le inserisce a mano, uno per uno) e, se no, preparare la scheda per squadra da copiare
 - [x] Seed squadre e stagione 2026 (`seed.sql`)
 - [x] Seed giocatori Dunkest e contratti dal foglio (125 giocatori in rosa sono provvisori: solo cognome)
