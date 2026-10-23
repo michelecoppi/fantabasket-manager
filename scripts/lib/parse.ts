@@ -1,6 +1,6 @@
 // Legge Dunkest.xlsx e restituisce dati strutturati + avvisi. Nessuna scrittura: vedi scripts/import-xlsx.ts.
 import ExcelJS from "exceljs";
-import { PICKS_TO_CONFIRM, PICK_OVERRIDES } from "./overrides";
+import { PICKS_TO_CONFIRM, PICK_OVERRIDES, PLAYER_ALIASES } from "./overrides";
 import {
   SHEET_TEAM_ORDER,
   lettersOnly,
@@ -22,9 +22,20 @@ export interface CatalogPlayer {
   nbaTeam: string | null;
   credits: number | null;
   owner: TeamName | null; // colonna "Restricted" del foglio 3: contiene il proprietario attuale
+  season?: number; // solo se viene dallo snapshot Dunkest: stagione da cui si è presa la squadra NBA
 }
 
-type MatchKind = "owner" | "salary" | "none" | "ambiguous";
+/** Giocatore dello snapshot scripts/data/dunkest-players.json (scripts/fetch-dunkest-players.ts). `season` = season_id Dunkest della squadra. */
+export interface PoolPlayer {
+  firstName: string;
+  lastName: string;
+  pos: Pos | null;
+  nbaTeam: string;
+  season: number;
+}
+
+// owner/salary: dal listone dei free agent (Foglio3); alias/pool: dallo snapshot Dunkest (alias = nome in PLAYER_ALIASES)
+type MatchKind = "owner" | "salary" | "alias" | "pool" | "none" | "ambiguous";
 export interface PlayerRef {
   rawName: string;
   catalog: CatalogPlayer | null;
@@ -152,36 +163,64 @@ function readCatalog(ws: ExcelJS.Worksheet): CatalogPlayer[] {
   return out;
 }
 
-/** Collega il nome breve del foglio ("F.Wagner") al listone Dunkest, usando proprietario e stipendio per i casi dubbi. */
-function matchPlayer(
+const fullKey = (p: { firstName: string; lastName: string }) => lettersOnly(p.firstName + p.lastName);
+
+/**
+ * Collega il nome breve del foglio ("F.Wagner") a un giocatore Dunkest. Ordine:
+ * 1. alias esplicito (PLAYER_ALIASES), cercato nel listone e poi nello snapshot;
+ * 2. listone dei free agent, con proprietario e stipendio per i casi dubbi;
+ * 3. snapshot Dunkest (`pool`): cognome (e prefisso) uguali, escludendo i free agent del listone e, se resta più
+ *    di un candidato, tenendo quello col ruolo della riga. Un cognome unico nello snapshot non prova nulla se manca
+ *    chi non ha giocato, quindi il report elenca ogni collegamento di questo tipo.
+ */
+export function matchPlayer(
   rawName: string,
   team: TeamName | null,
   salary: number | null,
   catalog: CatalogPlayer[],
   pos: Pos | null,
+  pool: PoolPlayer[] = [],
 ): PlayerRef {
-  const { prefix, last } = splitShortName(rawName);
-  const cands = catalog.filter(
-    (p) => lettersOnly(p.lastName) === last && (prefix === "" || lettersOnly(p.firstName).startsWith(prefix)),
-  );
   const done = (catalogPlayer: CatalogPlayer | null, match: MatchKind): PlayerRef => ({
     rawName,
     catalog: catalogPlayer,
     match,
     pos: pos ?? catalogPlayer?.pos ?? null,
   });
-  if (cands.length === 0) return done(null, "none");
-  const mine = team ? cands.filter((p) => p.owner === team) : [];
-  if (mine.length === 1) return done(mine[0], "owner");
-  // Un cognome uguale non basta: il listone contiene solo free agent, quindi un omonimo (es. Jahmir Young
-  // al posto di Trae Young) sarebbe un falso collegamento. Servono proprietario o stipendio coerenti.
-  const pool = mine.length > 1 ? mine : cands;
-  const bySalary = salary === null ? [] : pool.filter((p) => p.credits === salary);
-  if (bySalary.length === 1) return done(bySalary[0], "salary");
-  return done(null, "ambiguous");
+  const fromPool = (p: PoolPlayer): CatalogPlayer => ({ ...p, credits: null, owner: null });
+
+  const alias = PLAYER_ALIASES[lettersOnly(rawName)];
+  if (alias) {
+    const key = lettersOnly(alias);
+    const listed = catalog.find((p) => fullKey(p) === key);
+    const pooled = pool.find((p) => fullKey(p) === key);
+    if (listed) return done(listed, "alias");
+    if (pooled) return done(fromPool(pooled), "alias");
+  }
+
+  const { prefix, last } = splitShortName(rawName);
+  const sameName = (p: { firstName: string; lastName: string }) =>
+    lettersOnly(p.lastName) === last && (prefix === "" || lettersOnly(p.firstName).startsWith(prefix));
+  const cands = catalog.filter(sameName);
+  if (cands.length > 0) {
+    const mine = team ? cands.filter((p) => p.owner === team) : [];
+    if (mine.length === 1) return done(mine[0], "owner");
+    // Un cognome uguale non basta: il listone contiene solo free agent, quindi un omonimo (es. Jahmir Young
+    // al posto di Trae Young) sarebbe un falso collegamento. Servono proprietario o stipendio coerenti.
+    const among = mine.length > 1 ? mine : cands;
+    const bySalary = salary === null ? [] : among.filter((p) => p.credits === salary);
+    if (bySalary.length === 1) return done(bySalary[0], "salary");
+  }
+
+  const free = new Set(catalog.map(fullKey)); // chi è nel listone è libero: non può essere il giocatore in rosa
+  let pooled = pool.filter((p) => sameName(p) && !free.has(fullKey(p)));
+  const byPos = pooled.filter((p) => p.pos === pos);
+  if (pooled.length > 1 && byPos.length === 1) pooled = byPos;
+  if (pooled.length === 1) return done(fromPool(pooled[0]), "pool");
+  return done(null, cands.length === 0 && pooled.length === 0 ? "none" : "ambiguous");
 }
 
-export async function parseWorkbook(path: string): Promise<ImportData> {
+export async function parseWorkbook(path: string, pool: PoolPlayer[] = []): Promise<ImportData> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(path);
   const f1 = wb.getWorksheet("Foglio1");
@@ -222,7 +261,7 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
           restriction: p.restriction,
           rookie: p.rookie,
           salary,
-          player: matchPlayer(p.name, team, salary, catalog, role),
+          player: matchPlayer(p.name, team, salary, catalog, role, pool),
         });
       }
     }
@@ -250,7 +289,7 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
         teamOption: p.teamOption,
         originalSalary: p.trailingNumber,
         paidSalary: paid,
-        player: matchPlayer(p.name, team, p.trailingNumber, catalog, role),
+        player: matchPlayer(p.name, team, p.trailingNumber, catalog, role, pool),
       });
     }
     for (let r = 74; r <= 88; r++) {
@@ -343,7 +382,7 @@ export async function parseWorkbook(path: string): Promise<ImportData> {
       restriction: p.restriction,
       rookie: p.rookie,
       pos: p.position,
-      player: matchPlayer(p.name, null, sal, catalog, p.position),
+      player: matchPlayer(p.name, null, sal, catalog, p.position, pool),
     });
   }
 

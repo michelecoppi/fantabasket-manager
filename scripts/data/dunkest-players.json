@@ -1,0 +1,4657 @@
+[
+ {
+  "firstName": "Precious",
+  "lastName": "Achiuwa",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Darius",
+  "lastName": "Acuff Jr.",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Steven",
+  "lastName": "Adams",
+  "pos": "C",
+  "nbaTeam": "Houston Rockets",
+  "season": 25
+ },
+ {
+  "firstName": "Bam",
+  "lastName": "Adebayo",
+  "pos": "C",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Ochai",
+  "lastName": "Agbaji",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Santi",
+  "lastName": "Aldama",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Trey",
+  "lastName": "Alexander",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Nickeil",
+  "lastName": "Alexander-Walker",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Grayson",
+  "lastName": "Allen",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Jarrett",
+  "lastName": "Allen",
+  "pos": "C",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Jose",
+  "lastName": "Alvarado",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Christian",
+  "lastName": "Anderson",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Kyle",
+  "lastName": "Anderson",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Antetokounmpo",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Giannis",
+  "lastName": "Antetokounmpo",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Thanasis",
+  "lastName": "Antetokounmpo",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Cole",
+  "lastName": "Anthony",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 19
+ },
+ {
+  "firstName": "OG",
+  "lastName": "Anunoby",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Deni",
+  "lastName": "Avdija",
+  "pos": "A",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Tobe",
+  "lastName": "Awaka",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Deandre",
+  "lastName": "Ayton",
+  "pos": "C",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Marvin",
+  "lastName": "Bagley III",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Ace",
+  "lastName": "Bailey",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Adama",
+  "lastName": "Bal",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Patrick",
+  "lastName": "Baldwin Jr.",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "LaMelo",
+  "lastName": "Ball",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Lonzo",
+  "lastName": "Ball",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 19
+ },
+ {
+  "firstName": "Paolo",
+  "lastName": "Banchero",
+  "pos": "A",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Desmond",
+  "lastName": "Bane",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Dalano",
+  "lastName": "Banton",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 25
+ },
+ {
+  "firstName": "Dominick",
+  "lastName": "Barlow",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Harrison",
+  "lastName": "Barnes",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Scottie",
+  "lastName": "Barnes",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Brooks",
+  "lastName": "Barnhizer",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "RJ",
+  "lastName": "Barrett",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Charles",
+  "lastName": "Bassey",
+  "pos": "C",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Emoni",
+  "lastName": "Bates",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 19
+ },
+ {
+  "firstName": "Jamison",
+  "lastName": "Battle",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Nicolas",
+  "lastName": "Batum",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Damion",
+  "lastName": "Baugh",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 19
+ },
+ {
+  "firstName": "Bradley",
+  "lastName": "Beal",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Malik",
+  "lastName": "Beasley",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 19
+ },
+ {
+  "firstName": "Marjon",
+  "lastName": "Beauchamp",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Reece",
+  "lastName": "Beekman",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 19
+ },
+ {
+  "firstName": "Joan",
+  "lastName": "Beringer",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Saddiq",
+  "lastName": "Bey",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Goga",
+  "lastName": "Bitadze",
+  "pos": "C",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Bismack",
+  "lastName": "Biyombo",
+  "pos": "C",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Anthony",
+  "lastName": "Black",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Leaky",
+  "lastName": "Black",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Bogdan",
+  "lastName": "Bogdanovic",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Bol",
+  "lastName": "Bol",
+  "pos": "C",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Adem",
+  "lastName": "Bona",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Devin",
+  "lastName": "Booker",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Cameron",
+  "lastName": "Boozer",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Brandon",
+  "lastName": "Boston Jr.",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 19
+ },
+ {
+  "firstName": "Chris",
+  "lastName": "Boucher",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 19
+ },
+ {
+  "firstName": "Jamaree",
+  "lastName": "Bouyea",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Jaden",
+  "lastName": "Bradley",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Tony",
+  "lastName": "Bradley",
+  "pos": "C",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Malaki",
+  "lastName": "Branham",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 19
+ },
+ {
+  "firstName": "Christian",
+  "lastName": "Braun",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Trevon",
+  "lastName": "Brazile",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Koby",
+  "lastName": "Brea",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Bridges",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Mikal",
+  "lastName": "Bridges",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Miles",
+  "lastName": "Bridges",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Malcolm",
+  "lastName": "Brogdon",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 19
+ },
+ {
+  "firstName": "Dillon",
+  "lastName": "Brooks",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Keion",
+  "lastName": "Brooks Jr.",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 19
+ },
+ {
+  "firstName": "Johni",
+  "lastName": "Broome",
+  "pos": "C",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Bruce",
+  "lastName": "Brown",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Jaylen",
+  "lastName": "Brown",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Kobe",
+  "lastName": "Brown",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Maliq",
+  "lastName": "Brown",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Mikel",
+  "lastName": "Brown Jr.",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Brunson",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Carter",
+  "lastName": "Bryant",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Thomas",
+  "lastName": "Bryant",
+  "pos": "C",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Kobe",
+  "lastName": "Bufkin",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 19
+ },
+ {
+  "firstName": "Alec",
+  "lastName": "Burks",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 19
+ },
+ {
+  "firstName": "Brayden",
+  "lastName": "Burries",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Jared",
+  "lastName": "Butler",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Jimmy",
+  "lastName": "Butler",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Matas",
+  "lastName": "Buzelis",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Jamal",
+  "lastName": "Cain",
+  "pos": "A",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Kentavious",
+  "lastName": "Caldwell-Pope",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Toumani",
+  "lastName": "Camara",
+  "pos": "A",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Vlatko",
+  "lastName": "Cancar",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 19
+ },
+ {
+  "firstName": "Clint",
+  "lastName": "Capela",
+  "pos": "C",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Dylan",
+  "lastName": "Cardwell",
+  "pos": "C",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Branden",
+  "lastName": "Carlson",
+  "pos": "C",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 25
+ },
+ {
+  "firstName": "Bub",
+  "lastName": "Carrington",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Devin",
+  "lastName": "Carter",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Jevon",
+  "lastName": "Carter",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Wendell",
+  "lastName": "Carter Jr.",
+  "pos": "C",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Caruso",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Stephon",
+  "lastName": "Castle",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Colin",
+  "lastName": "Castleton",
+  "pos": "C",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Julian",
+  "lastName": "Champagnie",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Justin",
+  "lastName": "Champagnie",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Ulrich",
+  "lastName": "Chomche",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 19
+ },
+ {
+  "firstName": "Cam",
+  "lastName": "Christie",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Max",
+  "lastName": "Christie",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Christopher",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 19
+ },
+ {
+  "firstName": "Moussa",
+  "lastName": "Cisse",
+  "pos": "C",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Sidy",
+  "lastName": "Cissoko",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Jaylen",
+  "lastName": "Clark",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Brandon",
+  "lastName": "Clarke",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 19
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Clarkson",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Nic",
+  "lastName": "Claxton",
+  "pos": "C",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Walter",
+  "lastName": "Clayton Jr.",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Nique",
+  "lastName": "Clifford",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Donovan",
+  "lastName": "Clingan",
+  "pos": "C",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Noah",
+  "lastName": "Clowney",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Amir",
+  "lastName": "Coffey",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Collier",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "John",
+  "lastName": "Collins",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Zach",
+  "lastName": "Collins",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Mike",
+  "lastName": "Conley",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Pat",
+  "lastName": "Connaughton",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Ryan",
+  "lastName": "Conwell",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Sharife",
+  "lastName": "Cooper",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Bilal",
+  "lastName": "Coulibaly",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Ricky",
+  "lastName": "Council IV",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Cedric",
+  "lastName": "Coward",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Torrey",
+  "lastName": "Craig",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 19
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Crawford",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Jae",
+  "lastName": "Crowder",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 19
+ },
+ {
+  "firstName": "L.J.",
+  "lastName": "Cryer",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Cade",
+  "lastName": "Cunningham",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Seth",
+  "lastName": "Curry",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Stephen",
+  "lastName": "Curry",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Tristan",
+  "lastName": "da Silva",
+  "pos": "A",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Pacome",
+  "lastName": "Dadiet",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Dyson",
+  "lastName": "Daniels",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "N'Faly",
+  "lastName": "Dante",
+  "pos": "C",
+  "nbaTeam": "Houston Rockets",
+  "season": 19
+ },
+ {
+  "firstName": "Anthony",
+  "lastName": "Davis",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Terence",
+  "lastName": "Davis",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 19
+ },
+ {
+  "firstName": "JD",
+  "lastName": "Davison",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 25
+ },
+ {
+  "firstName": "Sergio",
+  "lastName": "de Larrea",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Egor",
+  "lastName": "Demin",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "RayJ",
+  "lastName": "Dennis",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "DeMar",
+  "lastName": "DeRozan",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Moussa",
+  "lastName": "Diabate",
+  "pos": "C",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Alpha",
+  "lastName": "Diallo",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Mohamed",
+  "lastName": "Diawara",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Gradey",
+  "lastName": "Dick",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Hunter",
+  "lastName": "Dickinson",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Ousmane",
+  "lastName": "Dieng",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Rob",
+  "lastName": "Dillingham",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Spencer",
+  "lastName": "Dinwiddie",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 19
+ },
+ {
+  "firstName": "Donte",
+  "lastName": "DiVincenzo",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Luka",
+  "lastName": "Doncic",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Luguentz",
+  "lastName": "Dort",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Ayo",
+  "lastName": "Dosunmu",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Jeff",
+  "lastName": "Dowtin",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Andre",
+  "lastName": "Drummond",
+  "pos": "C",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Ducas",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 19
+ },
+ {
+  "firstName": "David",
+  "lastName": "Duke Jr.",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 19
+ },
+ {
+  "firstName": "Kris",
+  "lastName": "Dunn",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Ryan",
+  "lastName": "Dunn",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "Durant",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Duren",
+  "pos": "C",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Tari",
+  "lastName": "Eason",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Zach",
+  "lastName": "Edey",
+  "pos": "C",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "VJ",
+  "lastName": "Edgecombe",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Anthony",
+  "lastName": "Edwards",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Jesse",
+  "lastName": "Edwards",
+  "pos": "C",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 19
+ },
+ {
+  "firstName": "Justin",
+  "lastName": "Edwards",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Kessler",
+  "lastName": "Edwards",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 19
+ },
+ {
+  "firstName": "Keon",
+  "lastName": "Ellis",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Joel",
+  "lastName": "Embiid",
+  "pos": "C",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Tristan",
+  "lastName": "Enaruna",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Noa",
+  "lastName": "Essengue",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Tyson",
+  "lastName": "Etienne",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Drew",
+  "lastName": "Eubanks",
+  "pos": "C",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Evans",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Tosan",
+  "lastName": "Evbuomwan",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Dante",
+  "lastName": "Exum",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 19
+ },
+ {
+  "firstName": "Jeremiah",
+  "lastName": "Fears",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Kyle",
+  "lastName": "Filipowski",
+  "pos": "C",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Dorian",
+  "lastName": "Finney-Smith",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 25
+ },
+ {
+  "firstName": "Cooper",
+  "lastName": "Flagg",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Adam",
+  "lastName": "Flagler",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 19
+ },
+ {
+  "firstName": "Rasheer",
+  "lastName": "Fleming",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Kingston",
+  "lastName": "Flemings",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Trentyn",
+  "lastName": "Flowers",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 19
+ },
+ {
+  "firstName": "Simone",
+  "lastName": "Fontecchio",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "De'Aaron",
+  "lastName": "Fox",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Enrique",
+  "lastName": "Freeman",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Markelle",
+  "lastName": "Fultz",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 19
+ },
+ {
+  "firstName": "Johnny",
+  "lastName": "Furphy",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Daniel",
+  "lastName": "Gafford",
+  "pos": "C",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Myron",
+  "lastName": "Gardner",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Darius",
+  "lastName": "Garland",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Luka",
+  "lastName": "Garza",
+  "pos": "C",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Keyonte",
+  "lastName": "George",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Kyshawn",
+  "lastName": "George",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Paul",
+  "lastName": "George",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Taj",
+  "lastName": "Gibson",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Giddey",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Keshon",
+  "lastName": "Gilbert",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Shai",
+  "lastName": "Gilgeous-Alexander",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Anthony",
+  "lastName": "Gill",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Collin",
+  "lastName": "Gillespie",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Ja'Kobi",
+  "lastName": "Gillespie",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Rudy",
+  "lastName": "Gobert",
+  "pos": "C",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Vladislav",
+  "lastName": "Goldin",
+  "pos": "C",
+  "nbaTeam": "Miami Heat",
+  "season": 25
+ },
+ {
+  "firstName": "Hugo",
+  "lastName": "Gonzalez",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Goodwin",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Aaron",
+  "lastName": "Gordon",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Eric",
+  "lastName": "Gordon",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Jerami",
+  "lastName": "Grant",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Allen",
+  "lastName": "Graves",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "AJ",
+  "lastName": "Green",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Draymond",
+  "lastName": "Green",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Green",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Javonte",
+  "lastName": "Green",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Jeff",
+  "lastName": "Green",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 25
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Green",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Quentin",
+  "lastName": "Grimes",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Mouhamadou",
+  "lastName": "Gueye",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Mouhamed",
+  "lastName": "Gueye",
+  "pos": "A",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Rui",
+  "lastName": "Hachimura",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Tyrese",
+  "lastName": "Haliburton",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "PJ",
+  "lastName": "Hall",
+  "pos": "C",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Yang",
+  "lastName": "Hansen",
+  "pos": "C",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Tim",
+  "lastName": "Hardaway Jr.",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "James",
+  "lastName": "Harden",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Jaden",
+  "lastName": "Hardy",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "EJ",
+  "lastName": "Harkless",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Dylan",
+  "lastName": "Harper",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Ron",
+  "lastName": "Harper Jr.",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 25
+ },
+ {
+  "firstName": "Gary",
+  "lastName": "Harris",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Tobias",
+  "lastName": "Harris",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Hart",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Hartenstein",
+  "pos": "C",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Sam",
+  "lastName": "Hauser",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Hawkins",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Jaxson",
+  "lastName": "Hayes",
+  "pos": "C",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Killian",
+  "lastName": "Hayes",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Scoot",
+  "lastName": "Henderson",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Taylor",
+  "lastName": "Hendricks",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Chucky",
+  "lastName": "Hepburn",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 25
+ },
+ {
+  "firstName": "Tyler",
+  "lastName": "Herro",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Mario",
+  "lastName": "Hezonja",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Buddy",
+  "lastName": "Hield",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Haywood",
+  "lastName": "Highsmith",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Blake",
+  "lastName": "Hinson",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Aaron",
+  "lastName": "Holiday",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 25
+ },
+ {
+  "firstName": "Jrue",
+  "lastName": "Holiday",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Ronald",
+  "lastName": "Holland II",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Richaun",
+  "lastName": "Holmes",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 19
+ },
+ {
+  "firstName": "DaRon",
+  "lastName": "Holmes II",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Chet",
+  "lastName": "Holmgren",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Hood-Schifino",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Bryce",
+  "lastName": "Hopkins",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Al",
+  "lastName": "Horford",
+  "pos": "C",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Talen",
+  "lastName": "Horton-Tucker",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 19
+ },
+ {
+  "firstName": "Caleb",
+  "lastName": "Houstan",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 19
+ },
+ {
+  "firstName": "Jett",
+  "lastName": "Howard",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "Huerter",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Jay",
+  "lastName": "Huff",
+  "pos": "C",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Ariel",
+  "lastName": "Hukporti",
+  "pos": "C",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "De'Andre",
+  "lastName": "Hunter",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "CJ",
+  "lastName": "Huntley",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Bones",
+  "lastName": "Hyland",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Oso",
+  "lastName": "Ighodaro",
+  "pos": "C",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Graham",
+  "lastName": "Ike",
+  "pos": "C",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Joe",
+  "lastName": "Ingles",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Brandon",
+  "lastName": "Ingram",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 25
+ },
+ {
+  "firstName": "Harrison",
+  "lastName": "Ingram",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Kyrie",
+  "lastName": "Irving",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Jonathan",
+  "lastName": "Isaac",
+  "pos": "A",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Jaden",
+  "lastName": "Ivey",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 19
+ },
+ {
+  "firstName": "Gregory",
+  "lastName": "Jackson",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Jackson",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Quenton",
+  "lastName": "Jackson",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Andre",
+  "lastName": "Jackson Jr.",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Jaren",
+  "lastName": "Jackson Jr.",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Trayce",
+  "lastName": "Jackson-Davis",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Kasparas",
+  "lastName": "Jakucionis",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Bronny",
+  "lastName": "James",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "LeBron",
+  "lastName": "James",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Sion",
+  "lastName": "James",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Jaime",
+  "lastName": "Jaquez Jr.",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "DaQuan",
+  "lastName": "Jeffries",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 19
+ },
+ {
+  "firstName": "Trey",
+  "lastName": "Jemison",
+  "pos": "C",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Daniss",
+  "lastName": "Jenkins",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Ty",
+  "lastName": "Jerome",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Joe",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "AJ",
+  "lastName": "Johnson",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Cameron",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Chaney",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "James",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 19
+ },
+ {
+  "firstName": "Keldon",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Keon",
+  "lastName": "Johnson",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 19
+ },
+ {
+  "firstName": "Keshad",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 25
+ },
+ {
+  "firstName": "Morez",
+  "lastName": "Johnson",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Tre",
+  "lastName": "Johnson",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Nikola",
+  "lastName": "Jokic",
+  "pos": "C",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Colby",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 19
+ },
+ {
+  "firstName": "Curtis",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Dillon",
+  "lastName": "Jones",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Herbert",
+  "lastName": "Jones",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Isaac",
+  "lastName": "Jones",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Kai",
+  "lastName": "Jones",
+  "pos": "C",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 19
+ },
+ {
+  "firstName": "Kam",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Mason",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 19
+ },
+ {
+  "firstName": "Spencer",
+  "lastName": "Jones",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Tre",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Tyus",
+  "lastName": "Jones",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Derrick",
+  "lastName": "Jones Jr.",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "David",
+  "lastName": "Jones-Garcia",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "DeAndre",
+  "lastName": "Jordan",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Cory",
+  "lastName": "Joseph",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 19
+ },
+ {
+  "firstName": "Nikola",
+  "lastName": "Jovic",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Johnny",
+  "lastName": "Juzang",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 19
+ },
+ {
+  "firstName": "Ryan",
+  "lastName": "Kalkbrenner",
+  "pos": "C",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Karaban",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Yuki",
+  "lastName": "Kawamura",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Trevor",
+  "lastName": "Keels",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 25
+ },
+ {
+  "firstName": "Luke",
+  "lastName": "Kennard",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Jayson",
+  "lastName": "Kent",
+  "pos": "A",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Walker",
+  "lastName": "Kessler",
+  "pos": "C",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Braxton",
+  "lastName": "Key",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 19
+ },
+ {
+  "firstName": "Corey",
+  "lastName": "Kispert",
+  "pos": "A",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Maxi",
+  "lastName": "Kleber",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Bobi",
+  "lastName": "Klintman",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 19
+ },
+ {
+  "firstName": "Dalton",
+  "lastName": "Knecht",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "Knox II",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 19
+ },
+ {
+  "firstName": "Kon",
+  "lastName": "Knueppel",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Tyler",
+  "lastName": "Kolek",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Christian",
+  "lastName": "Koloko",
+  "pos": "C",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "John",
+  "lastName": "Konchar",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Luke",
+  "lastName": "Kornet",
+  "pos": "C",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Vit",
+  "lastName": "Krejci",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Jonathan",
+  "lastName": "Kuminga",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Kyle",
+  "lastName": "Kuzma",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Jock",
+  "lastName": "Landale",
+  "pos": "C",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Chaz",
+  "lastName": "Lanier",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Jake",
+  "lastName": "LaRavia",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Pelle",
+  "lastName": "Larsson",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Zach",
+  "lastName": "LaVine",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "AJ",
+  "lastName": "Lawson",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 25
+ },
+ {
+  "firstName": "Damion",
+  "lastName": "Lee",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Len",
+  "pos": "C",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 19
+ },
+ {
+  "firstName": "Yaxel",
+  "lastName": "Lendeborg",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Kawhi",
+  "lastName": "Leonard",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Malevy",
+  "lastName": "Leons",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Caris",
+  "lastName": "LeVert",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Maxwell",
+  "lastName": "Lewis",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 19
+ },
+ {
+  "firstName": "E.J.",
+  "lastName": "Liddell",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Damian",
+  "lastName": "Lillard",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Dereck",
+  "lastName": "Lively II",
+  "pos": "C",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Livers",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Chris",
+  "lastName": "Livingston",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 19
+ },
+ {
+  "firstName": "Kevon",
+  "lastName": "Looney",
+  "pos": "C",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Brook",
+  "lastName": "Lopez",
+  "pos": "C",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Caleb",
+  "lastName": "Love",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 25
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "Love",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Kyle",
+  "lastName": "Lowry",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Trey",
+  "lastName": "Lyles",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Khaman",
+  "lastName": "Maluach",
+  "pos": "C",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Sandro",
+  "lastName": "Mamukelashvili",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Terance",
+  "lastName": "Mann",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Tre",
+  "lastName": "Mann",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Chris",
+  "lastName": "Manon",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Aday",
+  "lastName": "Mara",
+  "pos": "C",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Lauri",
+  "lastName": "Markkanen",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Naji",
+  "lastName": "Marshall",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Alijah",
+  "lastName": "Martin",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Caleb",
+  "lastName": "Martin",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Cody",
+  "lastName": "Martin",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Jaylen",
+  "lastName": "Martin",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 19
+ },
+ {
+  "firstName": "KJ",
+  "lastName": "Martin",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 19
+ },
+ {
+  "firstName": "Tyrese",
+  "lastName": "Martin",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Nick",
+  "lastName": "Martinelli",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Jahmai",
+  "lastName": "Mashack",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Garrison",
+  "lastName": "Mathews",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 19
+ },
+ {
+  "firstName": "Bennedict",
+  "lastName": "Mathurin",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Karlo",
+  "lastName": "Matkovic",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Tyrese",
+  "lastName": "Maxey",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Bez",
+  "lastName": "Mbeng",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Miles",
+  "lastName": "McBride",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Jared",
+  "lastName": "McCain",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Mac",
+  "lastName": "McClung",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "CJ",
+  "lastName": "McCollum",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "T.J.",
+  "lastName": "McConnell",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "McCullar Jr.",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Jaden",
+  "lastName": "McDaniels",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Doug",
+  "lastName": "McDermott",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Bryce",
+  "lastName": "McGowens",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "McLaughlin",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Liam",
+  "lastName": "McNeeley",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Jack",
+  "lastName": "McVeigh",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 19
+ },
+ {
+  "firstName": "De'Anthony",
+  "lastName": "Melton",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Sam",
+  "lastName": "Merrill",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Vasilije",
+  "lastName": "Micic",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Khris",
+  "lastName": "Middleton",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Baba",
+  "lastName": "Miller",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Brandon",
+  "lastName": "Miller",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Emanuel",
+  "lastName": "Miller",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Miller",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Leonard",
+  "lastName": "Miller",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Patty",
+  "lastName": "Mills",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 19
+ },
+ {
+  "firstName": "Shake",
+  "lastName": "Milton",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 19
+ },
+ {
+  "firstName": "Justin",
+  "lastName": "Minaya",
+  "pos": "A",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 19
+ },
+ {
+  "firstName": "Riley",
+  "lastName": "Minix",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Minott",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Yves",
+  "lastName": "Missi",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Ajay",
+  "lastName": "Mitchell",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Davion",
+  "lastName": "Mitchell",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Donovan",
+  "lastName": "Mitchell",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Evan",
+  "lastName": "Mobley",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Jonathan",
+  "lastName": "Mogbo",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Malik",
+  "lastName": "Monk",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Moses",
+  "lastName": "Moody",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Wendell",
+  "lastName": "Moore Jr.",
+  "pos": "G",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Morales",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Ja",
+  "lastName": "Morant",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Markieff",
+  "lastName": "Morris",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 19
+ },
+ {
+  "firstName": "Monte",
+  "lastName": "Morris",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 19
+ },
+ {
+  "firstName": "Trey",
+  "lastName": "Murphy III",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Dejounte",
+  "lastName": "Murray",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Jamal",
+  "lastName": "Murray",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Keegan",
+  "lastName": "Murray",
+  "pos": "A",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Kris",
+  "lastName": "Murray",
+  "pos": "A",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 25
+ },
+ {
+  "firstName": "Collin",
+  "lastName": "Murray-Boyles",
+  "pos": "A",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Svi",
+  "lastName": "Mykhailiuk",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Pete",
+  "lastName": "Nance",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Larry",
+  "lastName": "Nance Jr.",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Andrew",
+  "lastName": "Nembhard",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Ryan",
+  "lastName": "Nembhard",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 29
+ },
+ {
+  "firstName": "Aaron",
+  "lastName": "Nesmith",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Asa",
+  "lastName": "Newell",
+  "pos": "A",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Tristen",
+  "lastName": "Newton",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 19
+ },
+ {
+  "firstName": "Georges",
+  "lastName": "Niang",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Yanic Konan",
+  "lastName": "Niederhauser",
+  "pos": "C",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Zeke",
+  "lastName": "Nnaji",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Miles",
+  "lastName": "Norris",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 19
+ },
+ {
+  "firstName": "Jusuf",
+  "lastName": "Nurkic",
+  "pos": "C",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "Royce",
+  "lastName": "O'Neale",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Oduro",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Toby",
+  "lastName": "Okani",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Chuma",
+  "lastName": "Okeke",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 19
+ },
+ {
+  "firstName": "Josh",
+  "lastName": "Okogie",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Onyeka",
+  "lastName": "Okongwu",
+  "pos": "C",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Isaac",
+  "lastName": "Okoro",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Lachlan",
+  "lastName": "Olbrich",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Kelly",
+  "lastName": "Olynyk",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Norchad",
+  "lastName": "Omier",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Kelly",
+  "lastName": "Oubre Jr.",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Chris",
+  "lastName": "Paul",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 19
+ },
+ {
+  "firstName": "Cameron",
+  "lastName": "Payne",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 19
+ },
+ {
+  "firstName": "Elfrid",
+  "lastName": "Payton",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 19
+ },
+ {
+  "firstName": "Gary",
+  "lastName": "Payton II",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Koa",
+  "lastName": "Peat",
+  "pos": "A",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Micah",
+  "lastName": "Peavy",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 25
+ },
+ {
+  "firstName": "Sean",
+  "lastName": "Pedulla",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Noah",
+  "lastName": "Penda",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 25
+ },
+ {
+  "firstName": "Taelon",
+  "lastName": "Peter",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Darryn",
+  "lastName": "Peterson",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Drew",
+  "lastName": "Peterson",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 19
+ },
+ {
+  "firstName": "Julian",
+  "lastName": "Phillips",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Pickett",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Scotty",
+  "lastName": "Pippen Jr.",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Daeqwon",
+  "lastName": "Plowden",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Mason",
+  "lastName": "Plumlee",
+  "pos": "C",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Brandin",
+  "lastName": "Podziemski",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Jakob",
+  "lastName": "Poeltl",
+  "pos": "C",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Poole",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Craig",
+  "lastName": "Porter Jr.",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Kevin",
+  "lastName": "Porter Jr.",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Michael",
+  "lastName": "Porter Jr.",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Bobby",
+  "lastName": "Portis",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Kristaps",
+  "lastName": "Porzingis",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Quinten",
+  "lastName": "Post",
+  "pos": "C",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Micah",
+  "lastName": "Potter",
+  "pos": "C",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "John",
+  "lastName": "Poulakidas",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Drake",
+  "lastName": "Powell",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Dwight",
+  "lastName": "Powell",
+  "pos": "C",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Norman",
+  "lastName": "Powell",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Taurean",
+  "lastName": "Prince",
+  "pos": "A",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Payton",
+  "lastName": "Pritchard",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Tyrese",
+  "lastName": "Proctor",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Olivier-Maxence",
+  "lastName": "Prosper",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Zyon",
+  "lastName": "Pullin",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Derik",
+  "lastName": "Queen",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Trevelin",
+  "lastName": "Queen",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 19
+ },
+ {
+  "firstName": "Neemias",
+  "lastName": "Queta",
+  "pos": "C",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Immanuel",
+  "lastName": "Quickley",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Lester",
+  "lastName": "Quinones",
+  "pos": "G",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 19
+ },
+ {
+  "firstName": "Julius",
+  "lastName": "Randle",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Maxime",
+  "lastName": "Raynaud",
+  "pos": "C",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Duop",
+  "lastName": "Reath",
+  "pos": "C",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Austin",
+  "lastName": "Reaves",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Paul",
+  "lastName": "Reed",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Tarris",
+  "lastName": "Reed Jr.",
+  "pos": "C",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Alex",
+  "lastName": "Reese",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Julian",
+  "lastName": "Reese",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Antonio",
+  "lastName": "Reeves",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Naz",
+  "lastName": "Reid",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Jared",
+  "lastName": "Rhoden",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 19
+ },
+ {
+  "firstName": "Will",
+  "lastName": "Richard",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Nick",
+  "lastName": "Richards",
+  "pos": "C",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Jase",
+  "lastName": "Richardson",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Will",
+  "lastName": "Riley",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Zaccharie",
+  "lastName": "Risacher",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Duncan",
+  "lastName": "Robinson",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Mitchell",
+  "lastName": "Robinson",
+  "pos": "C",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Jeremiah",
+  "lastName": "Robinson-Earl",
+  "pos": "C",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 19
+ },
+ {
+  "firstName": "David",
+  "lastName": "Roddy",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Ryan",
+  "lastName": "Rollins",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Jackson",
+  "lastName": "Rowe",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 19
+ },
+ {
+  "firstName": "Terry",
+  "lastName": "Rozier",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 19
+ },
+ {
+  "firstName": "Rayan",
+  "lastName": "Rupert",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "D'Angelo",
+  "lastName": "Russell",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Cormac",
+  "lastName": "Ryan",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Domantas",
+  "lastName": "Sabonis",
+  "pos": "C",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Tidjane",
+  "lastName": "Salaun",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Kobe",
+  "lastName": "Sanders",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Payton",
+  "lastName": "Sandfort",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 25
+ },
+ {
+  "firstName": "Gui",
+  "lastName": "Santos",
+  "pos": "A",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Ben",
+  "lastName": "Saraf",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Dario",
+  "lastName": "Saric",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 19
+ },
+ {
+  "firstName": "Alexandre",
+  "lastName": "Sarr",
+  "pos": "C",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Olivier",
+  "lastName": "Sarr",
+  "pos": "C",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Marcus",
+  "lastName": "Sasser",
+  "pos": "G",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "Baylor",
+  "lastName": "Scheierman",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Dennis",
+  "lastName": "Schroder",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 29
+ },
+ {
+  "firstName": "Trevon",
+  "lastName": "Scott",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Jaylin",
+  "lastName": "Sellers",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Alperen",
+  "lastName": "Sengun",
+  "pos": "C",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Brice",
+  "lastName": "Sensabaugh",
+  "pos": "A",
+  "nbaTeam": "Utah Jazz",
+  "season": 29
+ },
+ {
+  "firstName": "Collin",
+  "lastName": "Sexton",
+  "pos": "G",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Landry",
+  "lastName": "Shamet",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Terrence",
+  "lastName": "Shannon Jr.",
+  "pos": "G",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Emanuel",
+  "lastName": "Sharp",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 29
+ },
+ {
+  "firstName": "Day'Ron",
+  "lastName": "Sharpe",
+  "pos": "C",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Shaedon",
+  "lastName": "Sharpe",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 25
+ },
+ {
+  "firstName": "Jamal",
+  "lastName": "Shead",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Ben",
+  "lastName": "Sheppard",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Reed",
+  "lastName": "Sheppard",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Max",
+  "lastName": "Shulga",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 25
+ },
+ {
+  "firstName": "Pascal",
+  "lastName": "Siakam",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Ben",
+  "lastName": "Simmons",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 19
+ },
+ {
+  "firstName": "Anfernee",
+  "lastName": "Simons",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "KJ",
+  "lastName": "Simpson",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Jericho",
+  "lastName": "Sims",
+  "pos": "C",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Slawson",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Javon",
+  "lastName": "Small",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Marcus",
+  "lastName": "Smart",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Dru",
+  "lastName": "Smith",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 25
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Smith",
+  "pos": "C",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Malachi",
+  "lastName": "Smith",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Tolu",
+  "lastName": "Smith",
+  "pos": "C",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Tyler",
+  "lastName": "Smith",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 25
+ },
+ {
+  "firstName": "Jabari",
+  "lastName": "Smith Jr.",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Nick",
+  "lastName": "Smith Jr.",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Jeremy",
+  "lastName": "Sochan",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 25
+ },
+ {
+  "firstName": "Cam",
+  "lastName": "Spencer",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Pat",
+  "lastName": "Spencer",
+  "pos": "G",
+  "nbaTeam": "Phoenix Suns",
+  "season": 29
+ },
+ {
+  "firstName": "Jaden",
+  "lastName": "Springer",
+  "pos": "G",
+  "nbaTeam": "Utah Jazz",
+  "season": 19
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Stevens",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Lamar",
+  "lastName": "Stevens",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 19
+ },
+ {
+  "firstName": "Isaiah",
+  "lastName": "Stewart",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 25
+ },
+ {
+  "firstName": "Bennett",
+  "lastName": "Stirtz",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Julian",
+  "lastName": "Strawther",
+  "pos": "G",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Max",
+  "lastName": "Strus",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Suggs",
+  "pos": "G",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Jae'Sean",
+  "lastName": "Tate",
+  "pos": "A",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Jayson",
+  "lastName": "Tatum",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Garrett",
+  "lastName": "Temple",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 25
+ },
+ {
+  "firstName": "Dalen",
+  "lastName": "Terry",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Adou",
+  "lastName": "Thiero",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Cam",
+  "lastName": "Thomas",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 19
+ },
+ {
+  "firstName": "Amen",
+  "lastName": "Thompson",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Ausar",
+  "lastName": "Thompson",
+  "pos": "A",
+  "nbaTeam": "Detroit Pistons",
+  "season": 29
+ },
+ {
+  "firstName": "Ethan",
+  "lastName": "Thompson",
+  "pos": "G",
+  "nbaTeam": "Indiana Pacers",
+  "season": 25
+ },
+ {
+  "firstName": "Klay",
+  "lastName": "Thompson",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Tristan",
+  "lastName": "Thompson",
+  "pos": "C",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 19
+ },
+ {
+  "firstName": "JT",
+  "lastName": "Thor",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 19
+ },
+ {
+  "firstName": "Bruce",
+  "lastName": "Thornton",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Matisse",
+  "lastName": "Thybulle",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Xavier",
+  "lastName": "Tillman",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Drew",
+  "lastName": "Timme",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Nae'Qwan",
+  "lastName": "Tomlin",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "John",
+  "lastName": "Tonje",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 25
+ },
+ {
+  "firstName": "Nikola",
+  "lastName": "Topic",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 25
+ },
+ {
+  "firstName": "Jacob",
+  "lastName": "Toppin",
+  "pos": "A",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 19
+ },
+ {
+  "firstName": "Obi",
+  "lastName": "Toppin",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Karl-Anthony",
+  "lastName": "Towns",
+  "pos": "C",
+  "nbaTeam": "New York Knicks",
+  "season": 29
+ },
+ {
+  "firstName": "Nolan",
+  "lastName": "Traore",
+  "pos": "G",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Luke",
+  "lastName": "Travers",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 19
+ },
+ {
+  "firstName": "Gary",
+  "lastName": "Trent Jr.",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 25
+ },
+ {
+  "firstName": "Oscar",
+  "lastName": "Tshiebwe",
+  "pos": "C",
+  "nbaTeam": "Utah Jazz",
+  "season": 25
+ },
+ {
+  "firstName": "P.J.",
+  "lastName": "Tucker",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 19
+ },
+ {
+  "firstName": "Myles",
+  "lastName": "Turner",
+  "pos": "C",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "Hunter",
+  "lastName": "Tyson",
+  "pos": "A",
+  "nbaTeam": "Denver Nuggets",
+  "season": 19
+ },
+ {
+  "firstName": "Jaylon",
+  "lastName": "Tyson",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Stanley",
+  "lastName": "Umude",
+  "pos": "G",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 19
+ },
+ {
+  "firstName": "Jonas",
+  "lastName": "Valanciunas",
+  "pos": "C",
+  "nbaTeam": "Denver Nuggets",
+  "season": 25
+ },
+ {
+  "firstName": "Jarred",
+  "lastName": "Vanderbilt",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 25
+ },
+ {
+  "firstName": "Fred",
+  "lastName": "VanVleet",
+  "pos": "G",
+  "nbaTeam": "Houston Rockets",
+  "season": 29
+ },
+ {
+  "firstName": "Devin",
+  "lastName": "Vassell",
+  "pos": "G",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Gabe",
+  "lastName": "Vincent",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Nikola",
+  "lastName": "Vucevic",
+  "pos": "C",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Tristan",
+  "lastName": "Vukcevic",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Dean",
+  "lastName": "Wade",
+  "pos": "A",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 25
+ },
+ {
+  "firstName": "Keaton",
+  "lastName": "Wagler",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 29
+ },
+ {
+  "firstName": "Franz",
+  "lastName": "Wagner",
+  "pos": "A",
+  "nbaTeam": "Orlando Magic",
+  "season": 29
+ },
+ {
+  "firstName": "Moritz",
+  "lastName": "Wagner",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 29
+ },
+ {
+  "firstName": "Jabari",
+  "lastName": "Walker",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 29
+ },
+ {
+  "firstName": "Jarace",
+  "lastName": "Walker",
+  "pos": "A",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ },
+ {
+  "firstName": "Lonnie",
+  "lastName": "Walker IV",
+  "pos": "G",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 19
+ },
+ {
+  "firstName": "Cason",
+  "lastName": "Wallace",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Keaton",
+  "lastName": "Wallace",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 25
+ },
+ {
+  "firstName": "Jordan",
+  "lastName": "Walsh",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Ja'Kobe",
+  "lastName": "Walter",
+  "pos": "G",
+  "nbaTeam": "Toronto Raptors",
+  "season": 29
+ },
+ {
+  "firstName": "Kel'el",
+  "lastName": "Ware",
+  "pos": "C",
+  "nbaTeam": "Milwaukee Bucks",
+  "season": 29
+ },
+ {
+  "firstName": "PJ",
+  "lastName": "Washington",
+  "pos": "A",
+  "nbaTeam": "Dallas Mavericks",
+  "season": 29
+ },
+ {
+  "firstName": "TyTy",
+  "lastName": "Washington Jr.",
+  "pos": "G",
+  "nbaTeam": "Los Angeles Clippers",
+  "season": 25
+ },
+ {
+  "firstName": "Lindy",
+  "lastName": "Waters III",
+  "pos": "A",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 25
+ },
+ {
+  "firstName": "Trendon",
+  "lastName": "Watford",
+  "pos": "A",
+  "nbaTeam": "Philadelphia 76ers",
+  "season": 25
+ },
+ {
+  "firstName": "Jamir",
+  "lastName": "Watkins",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Anton",
+  "lastName": "Watson",
+  "pos": "A",
+  "nbaTeam": "New York Knicks",
+  "season": 19
+ },
+ {
+  "firstName": "Peyton",
+  "lastName": "Watson",
+  "pos": "G",
+  "nbaTeam": "Cleveland Cavaliers",
+  "season": 29
+ },
+ {
+  "firstName": "Jaylen",
+  "lastName": "Wells",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 29
+ },
+ {
+  "firstName": "Victor",
+  "lastName": "Wembanyama",
+  "pos": "C",
+  "nbaTeam": "San Antonio Spurs",
+  "season": 29
+ },
+ {
+  "firstName": "Blake",
+  "lastName": "Wesley",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 25
+ },
+ {
+  "firstName": "Russell",
+  "lastName": "Westbrook",
+  "pos": "G",
+  "nbaTeam": "Sacramento Kings",
+  "season": 25
+ },
+ {
+  "firstName": "Coby",
+  "lastName": "White",
+  "pos": "G",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Derrick",
+  "lastName": "White",
+  "pos": "G",
+  "nbaTeam": "Boston Celtics",
+  "season": 29
+ },
+ {
+  "firstName": "Dariq",
+  "lastName": "Whitehead",
+  "pos": "A",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Cam",
+  "lastName": "Whitmore",
+  "pos": "A",
+  "nbaTeam": "Washington Wizards",
+  "season": 25
+ },
+ {
+  "firstName": "Aaron",
+  "lastName": "Wiggins",
+  "pos": "G",
+  "nbaTeam": "Atlanta Hawks",
+  "season": 29
+ },
+ {
+  "firstName": "Andrew",
+  "lastName": "Wiggins",
+  "pos": "A",
+  "nbaTeam": "Miami Heat",
+  "season": 29
+ },
+ {
+  "firstName": "Amari",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Boston Celtics",
+  "season": 25
+ },
+ {
+  "firstName": "Brandon",
+  "lastName": "Williams",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 29
+ },
+ {
+  "firstName": "Cody",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 29
+ },
+ {
+  "firstName": "Grant",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Charlotte Hornets",
+  "season": 25
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Jaylin",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Kenrich",
+  "lastName": "Williams",
+  "pos": "G",
+  "nbaTeam": "Oklahoma City Thunder",
+  "season": 29
+ },
+ {
+  "firstName": "Mark",
+  "lastName": "Williams",
+  "pos": "C",
+  "nbaTeam": "Phoenix Suns",
+  "season": 25
+ },
+ {
+  "firstName": "Nate",
+  "lastName": "Williams",
+  "pos": "G",
+  "nbaTeam": "Golden State Warriors",
+  "season": 25
+ },
+ {
+  "firstName": "Patrick",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Robert",
+  "lastName": "Williams",
+  "pos": "C",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 29
+ },
+ {
+  "firstName": "Ziaire",
+  "lastName": "Williams",
+  "pos": "A",
+  "nbaTeam": "Los Angeles Lakers",
+  "season": 29
+ },
+ {
+  "firstName": "Vince",
+  "lastName": "Williams Jr.",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 19
+ },
+ {
+  "firstName": "Lucas",
+  "lastName": "Williamson",
+  "pos": "G",
+  "nbaTeam": "Memphis Grizzlies",
+  "season": 25
+ },
+ {
+  "firstName": "Zion",
+  "lastName": "Williamson",
+  "pos": "A",
+  "nbaTeam": "New Orleans Pelicans",
+  "season": 29
+ },
+ {
+  "firstName": "Caleb",
+  "lastName": "Wilson",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 29
+ },
+ {
+  "firstName": "Jalen",
+  "lastName": "Wilson",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Danny",
+  "lastName": "Wolf",
+  "pos": "A",
+  "nbaTeam": "Brooklyn Nets",
+  "season": 25
+ },
+ {
+  "firstName": "Delon",
+  "lastName": "Wright",
+  "pos": "G",
+  "nbaTeam": "New York Knicks",
+  "season": 19
+ },
+ {
+  "firstName": "Guerschon",
+  "lastName": "Yabusele",
+  "pos": "A",
+  "nbaTeam": "Chicago Bulls",
+  "season": 25
+ },
+ {
+  "firstName": "Jahmir",
+  "lastName": "Young",
+  "pos": "G",
+  "nbaTeam": "Miami Heat",
+  "season": 25
+ },
+ {
+  "firstName": "Trae",
+  "lastName": "Young",
+  "pos": "G",
+  "nbaTeam": "Washington Wizards",
+  "season": 29
+ },
+ {
+  "firstName": "Chris",
+  "lastName": "Youngblood",
+  "pos": "G",
+  "nbaTeam": "Portland Trail Blazers",
+  "season": 25
+ },
+ {
+  "firstName": "Rocco",
+  "lastName": "Zikarsky",
+  "pos": "C",
+  "nbaTeam": "Minnesota Timberwolves",
+  "season": 25
+ },
+ {
+  "firstName": "Ivica",
+  "lastName": "Zubac",
+  "pos": "C",
+  "nbaTeam": "Indiana Pacers",
+  "season": 29
+ }
+]
