@@ -9,6 +9,14 @@ export default async function DraftPage() {
   const years = [...new Set(league.picks.map((p) => p.year))].sort();
   const name = (id: string | null) => (id ? league.teamNames.get(id) ?? "?" : "da definire");
   const hasPending = league.picks.some((p) => p.to_confirm);
+  // L'ordine del draft si registra alla chiusura: il proprietario di adesso si legge dalle pick, così gli scambi successivi si vedono.
+  const slot = (r: (typeof league.rookieDraft)[number]) => {
+    if (!r.original_team_id) return { teamId: r.team_id, note: r.note };
+    const round = Math.ceil(r.pick_no / league.teams.length);
+    const pick = league.picks.find((p) => p.year === league.seasonYear && p.round === round && p.original_team_id === r.original_team_id);
+    const teamId = pick?.current_team_id ?? r.team_id;
+    return { teamId, note: teamId === r.original_team_id ? "" : `Da ${name(r.original_team_id)}` };
+  };
 
   return (
     <>
@@ -63,15 +71,18 @@ export default async function DraftPage() {
       })}
 
       {league.rookieDraft.length > 0 && (
-        <Section title="Ordine del draft 2026" aside={`${league.rookieDraft.length} scelte`}>
+        <Section title={`Ordine del draft ${league.seasonYear}`} aside={`${league.rookieDraft.length} scelte`}>
           <ol className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-            {league.rookieDraft.map((r) => (
-              <li key={r.pick_no} className="flex items-center gap-3 px-3 py-2">
-                <span className="w-8 text-sm tabular-nums text-muted">{r.pick_no}</span>
-                <Link href={`/squadre/${r.team_id}`} className="w-40 shrink-0 truncate font-medium hover:underline">{name(r.team_id)}</Link>
-                <span className="min-w-0 flex-1 truncate text-sm text-muted">{r.note}</span>
-              </li>
-            ))}
+            {league.rookieDraft.map((r) => {
+              const { teamId, note } = slot(r);
+              return (
+                <li key={r.pick_no} className="flex items-center gap-3 px-3 py-2">
+                  <span className="w-8 text-sm tabular-nums text-muted">{r.pick_no}</span>
+                  <Link href={`/squadre/${teamId}`} className="w-40 shrink-0 truncate font-medium hover:underline">{name(teamId)}</Link>
+                  <span className="min-w-0 flex-1 truncate text-sm text-muted">{note}</span>
+                </li>
+              );
+            })}
           </ol>
         </Section>
       )}

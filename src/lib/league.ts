@@ -76,6 +76,8 @@ export interface SettingRow {
 interface RookieDraftRow {
   pick_no: number;
   team_id: string;
+  /** null per i draft importati dal foglio: `team_id` è allora l'unica informazione */
+  original_team_id: string | null;
   note: string | null;
 }
 
@@ -162,6 +164,12 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     if (v === undefined) throw new Error(`league_settings: manca la chiave "${k}"`);
     return v;
   };
+  // R-60: rank_bonus_1..N (uno per posizione in classifica), almeno il primo è obbligatorio.
+  const rankBonus = () => {
+    const out: number[] = [];
+    for (let i = 1; m.has(`rank_bonus_${i}`); i++) out.push(get(`rank_bonus_${i}`));
+    return out.length ? out : [get("rank_bonus_1")];
+  };
   return {
     cap: get("cap"),
     reserveBudget: get("reserve_budget"),
@@ -176,6 +184,8 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     maxPicksPerRound: get("max_picks_per_round"),
     pickHorizonYears: get("pick_horizon_years"),
     draftRounds: get("draft_rounds"),
+    rankBonus: rankBonus(),
+    lotteryTeams: get("lottery_teams"),
   };
 }
 

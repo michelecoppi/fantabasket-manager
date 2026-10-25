@@ -12,7 +12,8 @@ import {
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
-import { loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
+import { loadCloseInput, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
+import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true; message: string; warnings: string[] } | { ok: false; error: string };
@@ -354,6 +355,41 @@ export async function openPickYear(input: { year: number }): Promise<ActionResul
   if (error) return rpcError(error.message);
   refresh();
   return done(`Pick del draft ${input.year} aperte: ${league.settings.draftRounds} giri per squadra, ognuna alla sua squadra.`);
+}
+
+// ---------- Chiusura stagione (R-60, R-32, R-23, R-24) ----------
+/** Rilegge i dati dal database e ricalcola il piano: della pagina si fidano solo le scelte dell'admin. */
+export async function closeSeason(choices: CloseChoices): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!SEASON_CLOSE_ENABLED) return fail("La chiusura di stagione non è ancora abilitata.");
+  const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((v) => typeof v === "string");
+  if (!choices || !isStrings(choices.ranking) || !isStrings(choices.lottery) || !Array.isArray(choices.exercised) || !choices.exercised.every(isNum)) return fail("Dati non validi.");
+
+  const [league, input] = await Promise.all([loadLeague(), loadCloseInput()]);
+  const plan = planSeasonClose(input, choices, league.settings);
+  if (plan.errors.length) return fail(plan.errors.join(" "));
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_close_season", {
+    p_plan: {
+      season_id: input.seasonId,
+      new_year: plan.newYear,
+      summary: plan.summary,
+      teams: plan.teams.map((t) => ({ team_id: t.teamId, rank: t.rank, bonus: t.bonus, tax_eur: t.taxEur })),
+      carry_contracts: plan.carryContracts.map((c) => ({ id: c.id, version: c.version, years_left: c.years, team_option: c.teamOption, restriction: c.restriction })),
+      expire_contracts: plan.expireContracts.map((c) => ({ id: c.id, version: c.version, restricted: c.restricted })),
+      carry_cuts: plan.carryCuts.map((c) => ({ id: c.id, version: c.version, years_left: c.years })),
+      end_cuts: plan.endCuts,
+      draft_order: plan.draftOrder.map((d) => ({ pick_no: d.pickNo, team_id: d.teamId, original_team_id: d.originalTeamId, note: d.note })),
+    },
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  // R-34: con la stagione nuova rientra nell'orizzonte un altro draft, ma le pick non si aprono da sole.
+  const nextDraft = plan.newYear + league.settings.pickHorizonYears;
+  const open = league.picks.some((p) => p.year === nextDraft) ? "" : ` Apri in Pick il draft ${nextDraft}.`;
+  return done(`Stagione ${input.seasonYear} chiusa: ora la stagione corrente è la ${plan.newYear}.${open}`, plan.warnings);
 }
 
 // ---------- Quota di iscrizione e luxury tax ----------

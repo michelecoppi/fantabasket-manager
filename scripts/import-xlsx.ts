@@ -1,8 +1,9 @@
 // Uso:
 //   npx tsx scripts/import-xlsx.ts                 → solo report, non tocca il database
 //   npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply   → scrive su Supabase (cancella e riscrive i dati importati)
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-import { parseWorkbook, type CatalogPlayer, type ImportData, type PlayerRef } from "./lib/parse";
+import { parseWorkbook, type CatalogPlayer, type ImportData, type PlayerRef, type PoolPlayer } from "./lib/parse";
 import { buildReport } from "./lib/report";
 import { lettersOnly } from "./lib/names";
 
@@ -11,7 +12,8 @@ const apply = process.argv.includes("--apply");
 const season = 2026;
 
 async function main() {
-  const data = await parseWorkbook(file);
+  const pool = JSON.parse(readFileSync("scripts/data/dunkest-players.json", "utf8")) as PoolPlayer[];
+  const data = await parseWorkbook(file, pool);
   const { text, problems } = buildReport(data);
   console.log(text);
   console.log(`\nProblemi rilevati: ${problems}`);
@@ -66,6 +68,13 @@ async function write(d: ImportData) {
     ...d.lastContracts.map((c) => c.player),
   ];
   for (const r of allRefs) if (!r.catalog && !placeholders.has(r.rawName)) placeholders.set(r.rawName, r);
+  // giocatori in rosa trovati nello snapshot Dunkest (non nel listone): nome, squadra NBA, ruolo del foglio
+  const known = new Set(d.catalog.map(key1));
+  for (const r of allRefs) {
+    if (!r.catalog || known.has(key1(r.catalog))) continue;
+    known.add(key1(r.catalog));
+    rows.push({ first_name: r.catalog.firstName, last_name: r.catalog.lastName, pos: r.pos, nba_team: r.catalog.nbaTeam, dunkest_credits: null });
+  }
   for (const [name, r] of placeholders) rows.push({ first_name: "", last_name: name, pos: r.pos, nba_team: null, dunkest_credits: null });
 
   const ids = new Map<string, number>();
@@ -112,6 +121,7 @@ async function write(d: ImportData) {
           player_id: playerId(c.player),
           paid_salary: c.paidSalary,
           years_left: c.years,
+          status: "cut", // il foglio è post-asta: i tagli sono già definitivi (come in 0007), non in attesa dell'asta dei tagliati
         })),
       ),
       "insert cuts",

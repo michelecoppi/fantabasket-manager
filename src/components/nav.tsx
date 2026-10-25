@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -11,6 +11,12 @@ const links = [
   { href: "/scadenze", label: "Scadenze" },
   { href: "/scambio", label: "Scambio" },
 ];
+
+/** Dentro un `<Link>`: pulsa mentre la navigazione è in corso (utile se la pagina non è ancora in prefetch). */
+export function PendingLabel({ children }: { children: ReactNode }) {
+  const { pending } = useLinkStatus();
+  return <span className={pending ? "animate-pulse" : undefined}>{children}</span>;
+}
 
 export function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -23,7 +29,7 @@ export function NavLink({ href, label }: { href: string; label: string }) {
         active ? "border-brand-red text-white" : "border-transparent text-neutral-400 hover:bg-white/5 hover:text-white"
       }`}
     >
-      {label}
+      <PendingLabel>{label}</PendingLabel>
     </Link>
   );
 }

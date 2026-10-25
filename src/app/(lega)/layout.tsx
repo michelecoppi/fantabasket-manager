@@ -27,7 +27,7 @@ export const instant = false;
 export default function LegaLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <header className="sticky top-0 z-20 border-b-2 border-brand-red bg-nav text-white">
+      <header style={{ viewTransitionName: "site-header" }} className="sticky top-0 z-20 border-b-2 border-brand-red bg-nav text-white">
         <div className="mx-auto flex min-h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-10">
           <Link href="/" className="flex min-h-12 items-center gap-2.5" aria-label="Fantabasket Manager — home">
             <Image src="/logo.png" alt="" width={270} height={360} priority className="h-11 w-auto" />
@@ -57,19 +57,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
-        <Suspense
-          fallback={
-            <div className="animate-pulse" role="status" aria-label="Caricamento dei dati della lega">
-              <div className="h-56 bg-surface-subtle" />
-              <div className="mt-8 h-5 w-48 bg-surface-subtle" />
-              <div className="mt-4 space-y-px">
-                {[0, 1, 2, 3].map((row) => <div key={row} className="h-20 bg-surface-subtle" />)}
-              </div>
-            </div>
-          }
-        >
-          {children}
-        </Suspense>
+        {children}
       </main>
     </>
   );

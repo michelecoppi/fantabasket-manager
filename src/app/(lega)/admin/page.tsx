@@ -9,6 +9,7 @@ const tools = [
   { href: "/admin/rose", title: "Rose", text: "Fissa le durate, sposta titolari e riserve, taglia o rimuovi e chiudi i tagli dopo l'asta.", icon: "M4 6h16M4 12h16M4 18h10" },
   { href: "/admin/pick", title: "Pick", text: "Correggi i proprietari, risolvi i «da confermare» e apri i nuovi draft.", icon: "M5 4h14v16H5zM9 9h6M9 13h6" },
   { href: "/admin/quote", title: "Quote", text: "Quota di iscrizione e luxury tax: chi ha pagato e quanto si deve.", icon: "M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5" },
+  { href: "/admin/chiusura", title: "Chiusura", text: "Fine stagione: classifica e bonus, lottery del draft, scadenza dei contratti e team option.", icon: "M5 12l5 5L20 7" },
   { href: "/admin/registro", title: "Registro", text: "Lo storico completo delle operazioni, con filtro per tipo.", icon: "M6 3h12v18H6zM9 8h6M9 12h6M9 16h4" },
 ];
 

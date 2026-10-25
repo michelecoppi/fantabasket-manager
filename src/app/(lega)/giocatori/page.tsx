@@ -1,4 +1,6 @@
+import Form from "next/form";
 import Link from "next/link";
+import { SubmitButton } from "@/components/controls";
 import { Badge, Card, PageTitle } from "@/components/ui";
 import { fmt, POS_LABEL } from "@/lib/format";
 import { loadLeague, loadPlayers } from "@/lib/league-server";
@@ -20,7 +22,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
       <PageTitle sub={`${players.length} giocatori nel listone Dunkest · ${free} liberi`}>Giocatori</PageTitle>
 
       <Card className="p-3">
-        <form className="grid grid-cols-2 gap-2 sm:grid-cols-6" action="/giocatori">
+        <Form className="grid grid-cols-2 gap-2 sm:grid-cols-6" action="/giocatori">
           <input name="q" defaultValue={filters.q} placeholder="Cerca per nome" className={`${control} col-span-2`} />
           <select name="ruolo" defaultValue={filters.pos} className={control} aria-label="Ruolo">
             <option value="">Tutti i ruoli</option>
@@ -39,9 +41,9 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
             <option value="credits">Per crediti</option>
             <option value="name">Per nome</option>
           </select>
-          <button className="font-display col-span-2 rounded bg-brand-red px-3 py-2 text-lg font-bold text-white sm:col-span-5">Filtra</button>
+          <SubmitButton className="col-span-2 sm:col-span-5">Filtra</SubmitButton>
           <Link href="/giocatori" className="font-display col-span-2 rounded border border-line px-3 py-2 text-center text-lg font-bold sm:col-span-1">Azzera</Link>
-        </form>
+        </Form>
       </Card>
 
       <p className="mt-4 mb-2 text-sm text-muted">
@@ -57,7 +59,10 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
               <span className="font-display w-6 text-center text-xl font-bold text-brand-blue">{p.pos ?? "?"}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{p.name}</span>
-                <span className="block text-xs text-muted">{p.nbaTeam ?? "NBA n.d."}</span>
+                <span className="block text-xs text-muted">
+                  {p.nbaTeam ?? "NBA n.d."}
+                  {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
+                </span>
               </span>
               {p.ownerTeamId ? (
                 <Link href={`/squadre/${p.ownerTeamId}`}>
@@ -65,6 +70,8 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                 </Link>
               ) : p.cutByTeamId ? (
                 <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>tagliato</Badge>
+              ) : p.restrictedTeamId ? (
+                <Badge tone="warn" title="Restricted: il vecchio proprietario può pareggiare l'offerta più alta (R-23)">restricted</Badge>
               ) : (
                 <Badge tone="good">libero</Badge>
               )}

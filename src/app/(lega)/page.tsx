@@ -1,5 +1,7 @@
+import Form from "next/form";
 import Link from "next/link";
 import { CapLine } from "@/components/cap-line";
+import { SubmitButton } from "@/components/controls";
 import { Badge } from "@/components/ui";
 import { fmt } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
@@ -92,7 +94,7 @@ export default async function Home(props: PageProps<"/">) {
           <p className="text-xs text-muted">{teams.length} di {league.teams.length} franchigie · non è una classifica</p>
         </div>
 
-        <form key={`${options.sort}-${options.filter}`} action="/" className="grid grid-cols-2 gap-3 border-b border-line py-4 sm:grid-cols-[minmax(10rem,1fr)_minmax(10rem,1fr)_auto_auto] sm:items-end">
+        <Form key={`${options.sort}-${options.filter}`} action="/" className="grid grid-cols-2 gap-3 border-b border-line py-4 sm:grid-cols-[minmax(10rem,1fr)_minmax(10rem,1fr)_auto_auto] sm:items-end">
           <label className="text-xs font-semibold text-muted">Ordina per
             <select name="ordina" defaultValue={options.sort} className={`${control} mt-1`}>
               <option value="nome">Nome</option>
@@ -108,9 +110,9 @@ export default async function Home(props: PageProps<"/">) {
               <option value="incomplete">Solo rose incomplete</option>
             </select>
           </label>
-          <button className="font-display min-h-11 rounded-[2px] bg-brand-red px-5 text-lg font-bold text-white transition-colors hover:bg-accent hover:text-nav">Applica</button>
+          <SubmitButton className="font-display min-h-11 rounded-[2px] bg-brand-red px-5 text-lg font-bold text-white transition-colors hover:bg-accent hover:text-nav">Applica</SubmitButton>
           <Link href="/" className="font-display inline-flex min-h-11 items-center justify-center rounded-[2px] border border-line px-5 text-lg font-bold transition-colors hover:border-foreground hover:bg-surface">Azzera</Link>
-        </form>
+        </Form>
 
         {teams.length === 0 ? (
           <div className="border-b border-line px-4 py-12 text-center">
