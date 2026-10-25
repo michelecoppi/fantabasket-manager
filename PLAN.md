@@ -67,6 +67,7 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 - [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`; i secret su GitHub si aggiungono come in [docs/DEPLOY.md](docs/DEPLOY.md))
 - [ ] Backup periodico del database
 - [ ] Notifiche (opzionale)
+- [x] Redesign Phase 2: design system Front Office editoriale, shell responsive e dashboard `/` con cap line e league board; specifiche in `docs/design/DESIGN_SYSTEM.md`
 
 ## Fuori scope per ora
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
@@ -75,6 +76,9 @@ Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live 
 Pannello admin quasi chiuso: restano squadra talenti/rookie (attende la domanda 4 di OPEN-QUESTIONS) e chiusura stagione. In parallelo: verificare le pagine su Vercel, creare gli altri 6 utenti, impostare le durate dei 17 ingaggi d'asta. Domande aperte: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
+- 2026-10-25: QA autenticato della dashboard completato ai quattro viewport con dati reali. Corretti scrollbar della nav e select dei filtri non riallineate dopo Azzera; verificati loading, empty, dark, focus, ordinamenti e navigazione. Limiti residui e screenshot in `docs/design/PLAN.md`; nessuna modifica a regole, auth, query, action o persistenza.
+- 2026-10-23: redesign Phase 3 senza modifiche applicative: la sessione autenticata non è risultata verificabile nel target Chrome, quindi nessun refinement basato su supposizioni. Gate e procedura per il QA reale in `docs/design/PLAN.md`; Phase 4 non ancora avviata.
+- 2026-10-23: redesign Phase 2 limitato a fondamenta, shell, login e dashboard. Direzione Front Office editoriale: cap line come firma funzionale, league board al posto delle card, nessun dato sportivo inventato. Route, filtri, loader, regole e permessi invariati; QA browser delle pagine pubbliche completato, dashboard autenticata ancora da verificare con una sessione autorizzata.
 - 2026-10-22: issue #3: test RLS in SQL puro (`supabase/tests/rls.sql`, transazione con rollback, id espliciti) invece di pgTAP: nessuna estensione da installare e il test controlla anche la forma del catalogo. Il job CI usa l'immagine `supabase/postgres` come service container (ruoli, schema auth e default privileges di Supabase già dentro, versione uguale a quella del progetto: 17.11) invece di `supabase start`, che richiederebbe `config.toml` e una decina di immagini. Se si aggiorna Postgres su Supabase, alzare anche il tag in `ci.yml`.
 - 2026-10-22: pulizia del progetto. Eliminati i 12 branch remoti già mergiati (PR #1-#24, nessuna PR aperta) e il branch locale superseduto; `seed.sql` allineato (mancavano `pick_horizon_years` e `draft_rounds`, un DB nuovo non caricava le pagine); tolti `DEFAULT_RANK_BONUS` (R-60 resta in REGOLAMENTO, andrà in `league_settings` con la chiusura stagione) e il font Geist Mono mai usato; doc riallineati al codice (`DATA-MODEL` rimanda alle migrazioni invece di duplicare lo schema, `IMPORT` descrive l'abbinamento reale). Da fare a mano su GitHub: attivare «Automatically delete head branches» (oggi `deleteBranchOnMerge` è spento).
 - 2026-10-22: completamento pannello admin: stesso schema della 0006 (una RPC per operazione, regole in `lib/cap.ts`). I tagli hanno 4 stati e ricordano i termini del contratto; solo `pending` e `cut` pesano sul monte ingaggi.

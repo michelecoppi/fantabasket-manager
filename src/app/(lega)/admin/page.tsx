@@ -30,7 +30,7 @@ async function RecentOperations() {
     <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
       {rows.map((r) => (
         <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2.5">
-          <span className="font-display w-32 text-sm font-bold text-brand-red">{auditLabel(r.action)}</span>
+          <span className="font-display w-32 text-sm font-bold text-accent">{auditLabel(r.action)}</span>
           <span className="min-w-0 flex-1 basis-48 text-sm">
             {r.after?.summary}
             {r.after?.cap_override_reason && <span className="block text-xs text-muted">Eccezione cap: {r.after.cap_override_reason}</span>}
@@ -50,7 +50,7 @@ export default function AdminHome() {
         {tools.map((t) => (
           <Link key={t.href} href={t.href} className="group">
             <Card className="h-full border-t-4 border-t-brand-blue p-4 transition group-hover:border-t-brand-red group-hover:shadow-md">
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-red" aria-hidden>
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden>
                 <path d={t.icon} />
               </svg>
               <h2 className="font-display mt-2 text-2xl font-bold">{t.title}</h2>

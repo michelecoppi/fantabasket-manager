@@ -19,8 +19,8 @@ export function NavLink({ href, label }: { href: string; label: string }) {
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`font-display border-b-4 px-3 py-2 text-lg font-bold whitespace-nowrap transition ${
-        active ? "border-brand-red text-white" : "border-transparent text-neutral-400 hover:text-white"
+      className={`font-display -mb-px flex min-h-12 items-center border-b-2 px-4 text-lg font-bold whitespace-nowrap transition-colors sm:px-5 ${
+        active ? "border-brand-red text-white" : "border-transparent text-neutral-400 hover:bg-white/5 hover:text-white"
       }`}
     >
       {label}
@@ -31,7 +31,7 @@ export function NavLink({ href, label }: { href: string; label: string }) {
 /** `extra`: voci aggiuntive (es. Admin, solo per chi ne ha il ruolo). */
 export function MainNav({ extra }: { extra?: ReactNode }) {
   return (
-    <nav className="-mb-px flex gap-1 overflow-x-auto">
+    <nav aria-label="Navigazione principale" className="main-nav -mb-px flex overflow-x-auto">
       {links.map((l) => (
         <NavLink key={l.href} {...l} />
       ))}

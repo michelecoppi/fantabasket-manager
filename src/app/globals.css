@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f2f4;
-  --foreground: #0d1017;
-  --surface: #ffffff;
-  --line: #dcdfe5;
-  --muted: #5f6673;
-  --nav: #0a0d14;
-  --brand-blue: #1d428a;
-  --brand-red: #c8102e;
+  --background: #f4f2ed;
+  --foreground: #181a1b;
+  --surface: #fffefb;
+  --surface-subtle: #e9e7e0;
+  --line: #d5d2c8;
+  --muted: #62625d;
+  --nav: #111315;
+  --brand-blue: #28566d;
+  --brand-red: #b63d24;
+  --accent: #b63d24;
+  --highlight: #80530f;
+  --success: #28734c;
+  --warning: #875b0b;
+  --danger: #b63d24;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #07090d;
-    --foreground: #eceef2;
-    --surface: #12151c;
-    --line: #262b36;
-    --muted: #98a0ae;
-    --nav: #000000;
-    --brand-blue: #4f7be0;
-    --brand-red: #ef3a55;
+    --background: #111315;
+    --foreground: #f1efe7;
+    --surface: #1a1d20;
+    --surface-subtle: #24282b;
+    --line: #383d40;
+    --muted: #a9aaa3;
+    --nav: #090b0c;
+    --brand-blue: #79b7d0;
+    --brand-red: #c7472a;
+    --accent: #ff7958;
+    --highlight: #e3b85f;
+    --success: #79c99b;
+    --warning: #e3b85f;
+    --danger: #ff7958;
   }
 }
 
@@ -28,11 +40,17 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
   --color-line: var(--line);
   --color-muted: var(--muted);
   --color-nav: var(--nav);
   --color-brand-blue: var(--brand-blue);
   --color-brand-red: var(--brand-red);
+  --color-accent: var(--accent);
+  --color-highlight: var(--highlight);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
 }
 
@@ -40,11 +58,49 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
-/* Titoli stile broadcast: condensed, maiuscolo, pesante. */
+::selection {
+  background: var(--brand-red);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.main-nav {
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.main-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .font-display {
   font-family: var(--font-display), Impact, sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.25rem;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

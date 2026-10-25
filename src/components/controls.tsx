@@ -69,7 +69,7 @@ export function Segmented<T extends string | number | null>({
             disabled={o.disabled}
             onClick={() => onChange(o.value)}
             className={`min-h-11 min-w-14 flex-1 rounded-md border px-3 text-base font-semibold transition disabled:opacity-40 ${
-              on ? "border-brand-blue bg-brand-blue text-white" : "border-line bg-surface hover:border-brand-blue"
+              on ? "border-brand-blue bg-brand-blue text-white dark:text-nav" : "border-line bg-surface hover:border-brand-blue"
             }`}
           >
             {o.label}
