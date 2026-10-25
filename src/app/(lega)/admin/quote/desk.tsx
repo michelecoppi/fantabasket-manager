@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Callout, Check } from "@/components/controls";
 import { Badge, Card } from "@/components/ui";
-import { fmt } from "@/lib/format";
+import { fmt, fmtEuro } from "@/lib/format";
 import { setTeamSeason } from "../actions";
 
 export interface FeeTeam {
@@ -48,7 +48,7 @@ function TeamFees({ team, onDone }: { team: FeeTeam; onDone: (o: Outcome) => voi
       </div>
       <div className="mt-1">
         {owesTax ? (
-          <Badge tone={paid.tax ? "good" : "bad"}>{fmt(team.taxEur)} € {paid.tax ? "pagati" : "da pagare"}</Badge>
+          <Badge tone={paid.tax ? "good" : "bad"}>{fmtEuro(team.taxEur)} € {paid.tax ? "pagati" : "da pagare"}</Badge>
         ) : (
           <Badge>nessuna luxury tax</Badge>
         )}

@@ -19,6 +19,7 @@ export interface RoseCut {
   id: number;
   version: number;
   name: string;
+  pos: Position | null;
   status: "pending" | "cut";
   paid: number;
   years: number | null;
@@ -244,7 +245,7 @@ function ResolveCutPanel({ team, cut, settings, onDone }: { team: RoseTeam; cut:
   const ev = Number.isFinite(amount)
     ? evaluateSigning(
         { roster, cuts: team.cuts.filter((c) => c.id !== cut.id).map((c) => ({ salary: c.paid })), bonus: team.bonus },
-        { position: null, slot, years, teamOption: false, salary: amount },
+        { position: cut.pos, slot, years, teamOption: false, salary: amount },
         settings,
       )
     : null;

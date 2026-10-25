@@ -70,6 +70,7 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 - [ ] Backup periodico del database
 - [ ] Notifiche (opzionale)
 - [x] Redesign Phase 2: design system Front Office editoriale, shell responsive e dashboard `/` con cap line e league board; specifiche in `docs/design/DESIGN_SYSTEM.md`
+- [x] Audit di prodotto e decisioni di mercato: massimi di rosa negli scambi, esiti completi nel simulatore, luxury tax precisa, preview rientri allineata e totali nelle scadenze; backlog in `docs/product/`
 
 ## Fuori scope per ora
 Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live in tempo reale (valutare in futuro).
@@ -78,6 +79,7 @@ Punteggi/formazioni settimanali (restano su Dunkest), staff fantasia, asta live 
 Pannello admin quasi chiuso: resta la squadra talenti/rookie (attende la domanda 4 di OPEN-QUESTIONS). Prima di attivare `SEASON_CLOSE_ENABLED`: provare `/admin/chiusura` su dati veri (a stagione chiusa non si torna indietro; i preview branch Supabase richiedono il piano Pro, quindi serve un secondo progetto free o una copia). In parallelo: verificare le pagine su Vercel, creare gli altri 6 utenti, impostare le durate dei 17 ingaggi d'asta. Domande aperte: soglia di sicurezza, importo quota, `26?` e `(24)` nei talenti (vedi OPEN-QUESTIONS).
 
 ## Registro decisioni
+- 2026-10-25: audit di prodotto in `docs/product/`. Negli scambi i massimi di rosa ora bloccano solo se peggiorano, come in firma/modifica/rientro; minimi, floor, budget riserve e limite pick restano avvisi. Il viewer vede errori e warning già prodotti da `evaluateTrade`. Gli euro hanno un formatter separato dai crediti; le scadenze aggregano solo valori nominali, senza inventare cap o bonus futuri.
 - 2026-10-25: QA autenticato della dashboard completato ai quattro viewport con dati reali. Corretti scrollbar della nav e select dei filtri non riallineate dopo Azzera; verificati loading, empty, dark, focus, ordinamenti e navigazione. Limiti residui e screenshot in `docs/design/PLAN.md`; nessuna modifica a regole, auth, query, action o persistenza.
 - 2026-10-23: redesign Phase 3 senza modifiche applicative: la sessione autenticata non è risultata verificabile nel target Chrome, quindi nessun refinement basato su supposizioni. Gate e procedura per il QA reale in `docs/design/PLAN.md`; Phase 4 non ancora avviata.
 - 2026-10-23: redesign Phase 2 limitato a fondamenta, shell, login e dashboard. Direzione Front Office editoriale: cap line come firma funzionale, league board al posto delle card, nessun dato sportivo inventato. Route, filtri, loader, regole e permessi invariati; QA browser delle pagine pubbliche completato, dashboard autenticata ancora da verificare con una sessione autorizzata.

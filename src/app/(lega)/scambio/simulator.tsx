@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Callout } from "@/components/controls";
 import { Card } from "@/components/ui";
 import { emptyGive, ImpactCard, TradePicker, type Give, type SimTeam } from "@/components/trade-parts";
 import { evaluateTrade, type LeagueSettings, type TradeParty } from "@/lib/cap";
@@ -63,9 +64,17 @@ export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings
       {nothing ? (
         <p className="text-sm text-muted">Seleziona giocatori o pick da scambiare.</p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          <ImpactCard name={a.name} impact={ev.impacts[0]} give={giveA} receive={giveB} />
-          <ImpactCard name={b.name} impact={ev.impacts[1]} give={giveB} receive={giveA} />
+        <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <ImpactCard name={a.name} impact={ev.impacts[0]} give={giveA} receive={giveB} />
+            <ImpactCard name={b.name} impact={ev.impacts[1]} give={giveB} receive={giveA} />
+          </div>
+          {ev.errors.map((error) => <Callout key={error} tone="bad" title="Scambio non registrabile">{error}</Callout>)}
+          {ev.warnings.length > 0 && (
+            <Callout tone="warn" title="Da controllare (non bloccano)">
+              <ul className="list-disc pl-5">{ev.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+            </Callout>
+          )}
         </div>
       )}
       <p className="mt-4 text-xs text-muted">

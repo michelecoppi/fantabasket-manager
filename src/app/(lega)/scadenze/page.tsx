@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { SubmitButton } from "@/components/controls";
 import { Card, PageTitle, RestrictionBadge, Section } from "@/components/ui";
-import { endSeason, expiringContracts, parseExpiringFilters } from "@/lib/expiring";
+import { endSeason, expiringContracts, parseExpiringFilters, summarizeExpiring } from "@/lib/expiring";
 import { fmt } from "@/lib/format";
 import { loadLeague } from "@/lib/league-server";
 
@@ -15,7 +15,10 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
   const noYears = league.teams.reduce((n, t) => n + [...t.starters, ...t.reserves].filter((p) => p.yearsLeft === null).length, 0);
   const seasons = Array.from({ length: endSeason(league.seasonYear, maxYears) - league.seasonYear + 1 }, (_, i) => league.seasonYear + i);
   const rows = expiringContracts(league.teams, league.seasonYear, filters);
-  const groups = seasons.map((y) => ({ year: y, rows: rows.filter((r) => r.endSeason === y) })).filter((g) => g.rows.length > 0);
+  const groups = seasons.map((y) => {
+    const groupRows = rows.filter((r) => r.endSeason === y);
+    return { year: y, rows: groupRows, summary: summarizeExpiring(groupRows) };
+  }).filter((g) => g.rows.length > 0);
 
   return (
     <>
@@ -41,7 +44,10 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
       {noYears > 0 && <p className="mt-4 text-sm text-muted">{noYears} contratti senza durata (da fissare) non sono in elenco.</p>}
       {groups.length === 0 && <p className="mt-6 text-sm text-muted">Nessun contratto con questi filtri.</p>}
       {groups.map((g) => (
-        <Section key={g.year} title={g.year === league.seasonYear ? `Scadono a fine ${g.year} (stagione corrente)` : `Scadono a fine ${g.year}`} aside={`${g.rows.length} contratti`}>
+        <Section key={g.year} title={g.year === league.seasonYear ? `Scadono a fine ${g.year} (stagione corrente)` : `Scadono a fine ${g.year}`} aside={`${g.rows.length} contratti · ${fmt(g.summary.salary)} crediti`}>
+          <p className="mb-2 text-xs text-muted">
+            {g.summary.starters} titolari · {g.summary.reserves} riserve · {g.summary.options} team option
+          </p>
           <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
             {g.rows.map((r) => (
               <li key={`${r.teamId}-${r.player.id}`} className="flex items-center gap-3 px-3 py-2">

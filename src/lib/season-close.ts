@@ -2,7 +2,7 @@
 // Pura e testata: la server action calcola il piano qui e la RPC `admin_close_season` lo applica in una transazione,
 // senza ricalcolare nulla (regole solo in TypeScript, come per `cap.ts`).
 import type { LeagueSettings } from "./cap";
-import { fmt } from "./format";
+import { fmtEuro } from "./format";
 
 /**
  * Interruttore di sicurezza: finché è false la chiusura non parte (né dal pulsante né dall'action), anche con il piano valido.
@@ -165,7 +165,7 @@ export function planSeasonClose(input: CloseInput, choices: CloseChoices, s: Lea
 
   // R-12: dopo la chiusura /admin/quote lavora sulla stagione nuova, quindi la tassa non pagata si perde di vista.
   for (const t of input.teams) {
-    if (t.taxEur > 0 && !t.taxPaid) warnings.push(`${t.name} deve ${fmt(t.taxEur)} € di luxury tax non segnati come pagati: dopo la chiusura non si tracciano più in Quote.`);
+    if (t.taxEur > 0 && !t.taxPaid) warnings.push(`${t.name} deve ${fmtEuro(t.taxEur)} € di luxury tax non segnati come pagati: dopo la chiusura non si tracciano più in Quote.`);
   }
 
   if (errors.length === 0) {

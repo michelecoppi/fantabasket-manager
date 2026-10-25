@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, tradeImpact, type TradeSide } from "./cap";
-import { endSeason, expiringContracts, parseExpiringFilters } from "./expiring";
+import { endSeason, expiringContracts, parseExpiringFilters, summarizeExpiring } from "./expiring";
 import { buildLeague, type RawLeague } from "./league";
 import { listTeams, parseTeamListOptions } from "./teams-list";
 
@@ -49,6 +49,13 @@ describe("contratti in scadenza", () => {
   it("legge i filtri dall'URL", () => {
     expect(parseExpiringFilters({ squadra: "t1", stagione: "2027" })).toEqual({ teamId: "t1", season: 2027 });
     expect(parseExpiringFilters({ stagione: "boh" })).toEqual({ teamId: "", season: null });
+  });
+  it("aggrega crediti, opzioni e slot delle righe filtrate", () => {
+    const all = expiringContracts(league.teams, 2026, { teamId: "", season: null });
+    expect(summarizeExpiring(all)).toEqual({ salary: 310, options: 1, starters: 3, reserves: 1 });
+    const filtered = expiringContracts(league.teams, 2026, { teamId: "t1", season: 2027 });
+    expect(summarizeExpiring(filtered)).toEqual({ salary: 30, options: 1, starters: 1, reserves: 0 });
+    expect(summarizeExpiring([])).toEqual({ salary: 0, options: 0, starters: 0, reserves: 0 });
   });
 });
 

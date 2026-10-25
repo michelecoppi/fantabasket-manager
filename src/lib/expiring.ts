@@ -37,6 +37,23 @@ export function expiringContracts(teams: TeamView[], currentYear: number, f: Exp
   );
 }
 
+export interface ExpiringSummary {
+  salary: number;
+  options: number;
+  starters: number;
+  reserves: number;
+}
+
+export function summarizeExpiring(rows: ExpiringContract[]): ExpiringSummary {
+  const summary = rows.reduce<ExpiringSummary>((total, row) => ({
+    salary: total.salary + row.player.salary,
+    options: total.options + (row.optionSeason === null ? 0 : 1),
+    starters: total.starters + (row.player.slot === "starter" ? 1 : 0),
+    reserves: total.reserves + (row.player.slot === "reserve" ? 1 : 0),
+  }), { salary: 0, options: 0, starters: 0, reserves: 0 });
+  return { ...summary, salary: Math.round(summary.salary * 10) / 10 };
+}
+
 export function parseExpiringFilters(sp: Record<string, string | string[] | undefined>): ExpiringFilters {
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k][0] : sp[k]) ?? "";
   const season = Number(one("stagione"));
