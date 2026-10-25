@@ -10,6 +10,8 @@ export interface PlayerListItem {
   /** Squadra della lega che lo ha a contratto nella stagione corrente. */
   ownerTeamId: string | null;
   cutByTeamId: string | null;
+  /** R-23: squadra che può pareggiare l'offerta più alta per un restricted (ex contratto scaduto a fine stagione). */
+  restrictedTeamId: string | null;
 }
 
 export type OwnerFilter = "all" | "free" | "taken";

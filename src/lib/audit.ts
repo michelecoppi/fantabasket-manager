@@ -11,6 +11,7 @@ export const AUDIT_ACTIONS: Record<string, string> = {
   pick: "Pick",
   picks_open: "Nuovo draft",
   season: "Quote e tasse",
+  close_season: "Chiusura stagione",
 };
 
 export const auditLabel = (action: string) => AUDIT_ACTIONS[action] ?? action;
