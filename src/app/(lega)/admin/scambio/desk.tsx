@@ -128,7 +128,7 @@ export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: Lea
         ) : (
           <div className="flex items-start gap-3 rounded-md bg-foreground/5 p-3">
             <Side from={a.name} to={b.name} items={summary(a, giveA)} />
-            <span aria-hidden className="font-display self-center text-2xl text-brand-red">⇄</span>
+            <span aria-hidden className="font-display self-center text-2xl text-accent">⇄</span>
             <Side from={b.name} to={a.name} items={summary(b, giveB)} />
           </div>
         )}

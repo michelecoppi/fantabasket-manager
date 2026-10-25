@@ -44,7 +44,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/admin/r
             href={href(1, key)}
             aria-current={key === action ? "page" : undefined}
             className={`min-h-9 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap transition ${
-              key === action ? "border-brand-blue bg-brand-blue text-white" : "border-line bg-surface text-muted hover:border-brand-blue hover:text-foreground"
+              key === action ? "border-brand-blue bg-brand-blue text-white dark:text-nav" : "border-line bg-surface text-muted hover:border-brand-blue hover:text-foreground"
             }`}
           >
             {label}
@@ -60,7 +60,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/admin/r
         <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
           {rows.map((r) => (
             <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2.5">
-              <span className="font-display w-32 text-sm font-bold text-brand-red">{auditLabel(r.action)}</span>
+              <span className="font-display w-32 text-sm font-bold text-accent">{auditLabel(r.action)}</span>
               <span className="min-w-0 flex-1 basis-56 text-sm">
                 {r.after?.summary}
                 {r.after?.cap_override_reason && <span className="block text-xs text-muted">Eccezione cap: {r.after.cap_override_reason}</span>}
