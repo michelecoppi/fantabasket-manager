@@ -140,7 +140,7 @@ describe("chiusura stagione: tagli e luxury tax", () => {
     const teams = ids.map((id) => ({ id, name: id.toUpperCase(), taxEur: id === "t4" ? 2.5 : 0, taxPaid: false }));
     const p = planSeasonClose(input({ teams }), choices, S);
     expect(p.errors).toEqual([]);
-    expect(p.warnings.join(" ")).toContain("T4 deve 2,5 €");
+    expect(p.warnings.join(" ")).toContain("T4 deve 2,50 €");
   });
 
   it("il riepilogo c'è solo se il piano è valido", () => {

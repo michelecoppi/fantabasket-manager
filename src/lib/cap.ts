@@ -175,7 +175,8 @@ export interface TradeEvaluation {
 
 /**
  * Valutazione completa di uno scambio, condivisa da simulatore (sola lettura) e server action (che poi chiama la RPC).
- * R-57 (cap) è bloccante a meno di eccezione del moderatore; composizione della rosa, floor e limite di pick per giro (R-33) avvisano soltanto.
+ * R-57 (cap) è bloccante a meno di eccezione del moderatore; i massimi di rosa (R-01..R-03) bloccano come per firma e modifica.
+ * Minimi di rosa, floor e limite di pick per giro (R-33) avvisano soltanto.
  */
 export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): TradeEvaluation {
   const errors: string[] = [];
@@ -193,6 +194,8 @@ export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): 
 
     const incoming = other.side.roster.filter((r) => other.gives.contracts.has(r.id)).map(({ position, slot, salary }) => ({ position, slot, salary }));
     const impact = tradeImpact(me.side, me.gives.contracts, incoming, s);
+    const rosterAfter = [...me.side.roster.filter((r) => !me.gives.contracts.has(r.id)), ...incoming];
+    errors.push(...rosterLimitErrors(me.side.roster, rosterAfter, s).map((error) => `${me.name}: ${error}`));
 
     const picksAfter = [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...other.picks.filter((p) => other.gives.picks.has(p.id))];
     warnings.push(...pickLimitWarnings(me.name, picksAfter, s));
@@ -309,6 +312,8 @@ export function rosterWarnings(roster: RosterEntry[], s: LeagueSettings): string
   const out: string[] = [];
   const starters = roster.filter((r) => r.slot === "starter");
   const reserves = roster.filter((r) => r.slot === "reserve");
+  const startersTotal = s.starters.G + s.starters.A + s.starters.C;
+  if (starters.length !== startersTotal) out.push(`Titolari: ${starters.length}/${startersTotal}`);
   for (const pos of ["G", "A", "C"] as const) {
     const n = starters.filter((r) => r.position === pos).length;
     if (n !== s.starters[pos]) out.push(`Titolari ${pos}: ${n}/${s.starters[pos]}`);

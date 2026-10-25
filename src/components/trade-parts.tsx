@@ -66,10 +66,10 @@ export function TradePicker({ team, give, onChange }: { team: SimTeam; give: Giv
 export function ImpactCard({ name, impact, give, receive }: { name: string; impact: TradeImpact; give: Give; receive: Give }) {
   const r = impact;
   return (
-    <Card className={`border-t-4 p-4 ${r.breaksCap ? "border-t-brand-red" : "border-t-brand-blue"}`}>
+    <Card className={`border-t-4 p-4 ${r.after.overCap ? "border-t-brand-red" : "border-t-brand-blue"}`}>
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-display text-2xl leading-none font-bold">{name}</h3>
-        {r.breaksCap ? <Badge tone="bad">fa sforare il cap</Badge> : <Badge tone="good">cap rispettato</Badge>}
+        {r.breaksCap ? <Badge tone="bad">richiede eccezione</Badge> : r.after.overCap ? <Badge tone="warn">ancora sopra cap</Badge> : <Badge tone="good">sotto cap</Badge>}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <StatChange label="Monte ingaggi" before={r.before.payroll} after={r.after.payroll} />

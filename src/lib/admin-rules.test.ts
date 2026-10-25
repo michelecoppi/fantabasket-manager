@@ -125,6 +125,50 @@ describe("evaluateTrade (R-57, R-33)", () => {
     const a = party("A", side(0, []), [{ id: 1, year: 2026, round: 1, toConfirm: true }], { picks: [1] });
     expect(evaluateTrade(a, party("B", side(0, [])), S).warnings.some((w) => w.includes("da confermare"))).toBe(true);
   });
+
+  it("blocca i massimi di rosa peggiorati dallo scambio, ma permette di rientrare", () => {
+    const reserve = (id: number, position: "G" | "A" | "C" = "G") => ({ id, position, slot: "reserve" as const, salary: 5 });
+    const six = Array.from({ length: 6 }, (_, i) => reserve(i + 1));
+    const over = evaluateTrade(
+      party("A", side(0, six), [], { contracts: [1] }),
+      party("B", side(0, [reserve(7), reserve(8)]), [], { contracts: [7, 8] }),
+      S,
+    );
+    expect(over.errors).toContain("A: Riserve: 7 (max 6).");
+    expect(over.errors).toContain("A: Riserve G: 7 (max 3).");
+
+    const legal = evaluateTrade(
+      party("A", side(0, six), [], { contracts: [1, 2] }),
+      party("B", side(0, [reserve(7)]), [], { contracts: [7] }),
+      S,
+    );
+    expect(legal.errors).toEqual([]);
+    expect(legal.impacts[0].after.reserveSpace).toBe(55);
+
+    const seven = [...six, reserve(7)];
+    const improving = evaluateTrade(
+      party("A", side(0, seven), [], { contracts: [1, 2] }),
+      party("B", side(0, [reserve(8)]), [], { contracts: [8] }),
+      S,
+    );
+    expect(improving.errors).toEqual([]);
+    expect(improving.impacts[0].warnings).not.toContain("Riserve: 6 (max 6)");
+    expect(improving.impacts[0].warnings).toContain("Riserve G: 6 (max 3)");
+  });
+
+  it("blocca il 14° titolare anche quando arriva da uno scambio 1-per-2", () => {
+    const thirteen = [
+      ...Array.from({ length: 5 }, () => ({ position: "G" as const, slot: "starter" as const, salary: 5 })),
+      ...Array.from({ length: 5 }, () => ({ position: "A" as const, slot: "starter" as const, salary: 5 })),
+      ...Array.from({ length: 3 }, () => ({ position: "C" as const, slot: "starter" as const, salary: 5 })),
+    ].map((entry, i) => ({ ...entry, id: i + 1 }));
+    const result = evaluateTrade(
+      party("A", side(0, thirteen), [], { contracts: [1] }),
+      party("B", side(0, [starter(14, 5, "A"), starter(15, 5, "C")]), [], { contracts: [14, 15] }),
+      S,
+    );
+    expect(result.errors).toContain("A: Titolari: 14 (max 13).");
+  });
 });
 
 const entry = (slot: "starter" | "reserve", position: "G" | "A" | "C" | null, salary = 5) => ({ position, slot, salary });

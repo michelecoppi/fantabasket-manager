@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, PageTitle, RestrictionBadge, Section, Stat } from "@/components/ui";
-import { fmt, POS_LABEL } from "@/lib/format";
+import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { RosterPlayer } from "@/lib/league";
 import { loadLeague } from "@/lib/league-server";
 
@@ -51,7 +51,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         <Stat label="Spazio riserve" value={fmt(f.reserveSpace)} />
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {f.overCap && <Badge tone="bad">budget sforato · luxury tax {fmt(f.luxuryTaxEur)} €</Badge>}
+        {f.overCap && <Badge tone="bad">budget sforato · luxury tax {fmtEuro(f.luxuryTaxEur)} €</Badge>}
         {f.belowFloor && <Badge tone="warn">sotto il salary floor ({fmt(f.floor)})</Badge>}
         {t.warnings.map((w) => <Badge key={w}>{w}</Badge>)}
         <Badge tone={t.entryFeePaid ? "good" : "neutral"}>quota {t.entryFeePaid ? "pagata" : "da pagare"}</Badge>

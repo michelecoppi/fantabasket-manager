@@ -108,9 +108,15 @@ describe("rosterWarnings", () => {
     expect(w).toContain("Riserve: 1 (min 3)");
   });
 
-  it("ruolo sconosciuto non conta come guardia", () => {
-    const w = rosterWarnings([entry("starter", 1, null), entry("reserve", 1, null)], S);
-    expect(w).toContain("Titolari G: 0/5");
+  it("ruolo sconosciuto non conta come guardia, ma conta nel totale titolari", () => {
+    const complete = [
+      ...Array.from({ length: 5 }, () => entry("starter", 1, "G")),
+      ...Array.from({ length: 5 }, () => entry("starter", 1, "A")),
+      ...Array.from({ length: 3 }, () => entry("starter", 1, "C")),
+    ];
+    const w = rosterWarnings([...complete, entry("starter", 1, null), entry("reserve", 1, null)], S);
+    expect(w).toContain("Titolari: 14/13");
+    expect(w).not.toContain("Titolari G: 5/5");
     expect(w).not.toContain("Riserve G: 1 (max 3)");
   });
 

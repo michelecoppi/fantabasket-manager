@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CapLine } from "@/components/cap-line";
 import { SubmitButton } from "@/components/controls";
 import { Badge } from "@/components/ui";
-import { fmt } from "@/lib/format";
+import { fmt, fmtEuro } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
 import { listTeams, parseTeamListOptions } from "@/lib/teams-list";
 
@@ -150,7 +150,7 @@ export default async function Home(props: PageProps<"/">) {
                             {f.belowFloor && <Badge tone="warn" title={`Sotto il salary floor (${fmt(f.floor)})`}>Sotto floor</Badge>}
                             {t.warnings.length > 0 && <Badge title={t.warnings.join(" · ")}>Rosa incompleta</Badge>}
                             <span className={`text-xs ${t.entryFeePaid ? "text-success" : "text-muted"}`}>Quota {t.entryFeePaid ? "pagata" : "da pagare"}</span>
-                            {f.luxuryTaxEur > 0 && <span className={`text-xs ${t.luxuryTaxPaid ? "text-success" : "text-danger"}`}>· Luxury tax {fmt(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}</span>}
+                            {f.luxuryTaxEur > 0 && <span className={`text-xs ${t.luxuryTaxPaid ? "text-success" : "text-danger"}`}>· Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}</span>}
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-3 border-t border-line pt-4 md:contents md:border-0 md:pt-0">

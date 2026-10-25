@@ -65,7 +65,7 @@ Gli alias di squadra usati nel foglio sono in `ALIASES` di `scripts/lib/names.ts
 - **ASSUNZIONE** R-41/R-42: se un tagliato viene preso da un'altra squadra all'asta dei tagliati, l'ex proprietario **non paga più la quota** (il regolamento prevede il 1/3 solo se nessuno lo prende). Da confermare.
 - **ASSUNZIONE** R-42: finché il taglio è «in asta» (`pending`) la quota conta già nel monte ingaggi, come i tagli definitivi.
 - **ASSUNZIONE** R-41: «ex proprietario non può partecipare» = non può essere la squadra che firma il giocatore tagliato in attesa.
-- **ASSUNZIONE** R-01..R-03: i massimi di rosa (13 titolari, 5G/5A/3C, 6 riserve, 3 per ruolo) bloccano firma, modifica e rientro solo se l'operazione li fa superare; i minimi restano avvisi perché in estate la rosa può essere incompleta. Giocatori senza ruolo noto contano solo nei totali.
+- **ASSUNZIONE** R-01..R-03: i massimi di rosa (13 titolari, 5G/5A/3C, 6 riserve, 3 per ruolo) bloccano firma, modifica, rientro e scambi solo se l'operazione li fa superare; i minimi restano avvisi perché in estate la rosa può essere incompleta. Giocatori senza ruolo noto contano solo nei totali.
 - **ASSUNZIONE** R-34: si possono aprire le pick dei prossimi `pick_horizon_years` draft (3) dopo la stagione corrente; `draft_rounds` = 5 (R-31).
 - Un rientro dal taglio ricorda lo stipendio di partenza; i tagli importati dal foglio no, e lo stipendio si inserisce a mano.
 

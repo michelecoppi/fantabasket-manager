@@ -12,6 +12,7 @@ export default async function AdminRosterPage() {
       id: c.id,
       version: versions.cuts[c.id] ?? 0,
       name: c.name,
+      pos: c.pos,
       status: c.status,
       paid: c.paid,
       years: c.yearsLeft,
