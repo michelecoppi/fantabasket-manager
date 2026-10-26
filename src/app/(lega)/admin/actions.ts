@@ -402,14 +402,15 @@ export async function closeSeason(choices: CloseChoices): Promise<ActionResult> 
 }
 
 // ---------- Quota di iscrizione e luxury tax ----------
-export async function setTeamSeason(input: { teamId: string; entryFeePaid: boolean; luxuryTaxPaid: boolean }): Promise<ActionResult> {
+/** `version` null = la squadra non ha ancora una riga di quote (la RPC la crea). */
+export async function setTeamSeason(input: { teamId: string; version: number | null; entryFeePaid: boolean; luxuryTaxPaid: boolean }): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
   const league = await loadLeague();
   const team = league.teams.find((t) => t.team.id === input.teamId);
   if (!team) return fail("Squadra non trovata.");
   const db = await createClient();
-  const { error } = await db.rpc("admin_set_team_season", { p_team_id: input.teamId, p_entry_fee_paid: input.entryFeePaid, p_luxury_tax_paid: input.luxuryTaxPaid });
+  const { error } = await db.rpc("admin_set_team_season", { p_team_id: input.teamId, p_version: input.version, p_entry_fee_paid: input.entryFeePaid, p_luxury_tax_paid: input.luxuryTaxPaid });
   if (error) return rpcError(error.message);
   refresh();
   return done(`${team.team.name} aggiornata.`);

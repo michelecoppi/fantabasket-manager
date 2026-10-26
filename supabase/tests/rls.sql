@@ -286,6 +286,39 @@ begin
   perform rls_t.become('postgres');
 end $$;
 
+-- ---------- Hardening (issue #37): privilegi e versioni ----------
+do $$
+declare t record; f text;
+begin
+  -- Nessun ruolo API può fare TRUNCATE, REFERENCES o TRIGGER (la RLS non governa TRUNCATE).
+  for t in select name from rls_t.tbl order by name loop
+    foreach f in array array['TRUNCATE', 'REFERENCES', 'TRIGGER'] loop
+      perform rls_t.ok(format('anon ha %s su %s', f, t.name), not has_table_privilege('anon', format('public.%I', t.name), f));
+      perform rls_t.ok(format('authenticated ha %s su %s', f, t.name), not has_table_privilege('authenticated', format('public.%I', t.name), f));
+    end loop;
+  end loop;
+
+  -- Versioni null o vecchie: le RPC rifiutano e non scrivono (admin; errore = niente modifiche).
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('update_contract con versione null',
+    rls_t.try('select public.admin_update_contract((select id from public.contracts limit 1), null, ''starter'', 1, false, 1)'), array['error: INVALID%']);
+  perform rls_t.chk('update_contract con versione vecchia',
+    rls_t.try('select public.admin_update_contract(c.id, c.version + 1, ''starter'', 1, false, 1) from public.contracts c limit 1'), array['error: CONFLICT%']);
+  perform rls_t.chk('cut_player con versione null',
+    rls_t.try('select public.admin_cut_player((select id from public.contracts limit 1), null, 0)'), array['error: INVALID%']);
+  perform rls_t.chk('set_pick con versione null',
+    rls_t.try('select public.admin_set_pick((select id from public.draft_picks limit 1), null, null, false, null)'), array['error: INVALID%']);
+  perform rls_t.chk('set_durations con versione mancante',
+    rls_t.try('select public.admin_set_durations(jsonb_build_array(jsonb_build_object(''id'', (select id from public.contracts limit 1), ''years'', 1)))'), array['error: INVALID%']);
+  perform rls_t.chk('set_team_season con versione vecchia',
+    rls_t.try('select public.admin_set_team_season(ts.team_id, ts.version + 1, true, true) from public.team_season ts limit 1'), array['error: CONFLICT%']);
+  perform rls_t.chk('set_team_season senza versione su riga esistente',
+    rls_t.try('select public.admin_set_team_season(ts.team_id, null, true, true) from public.team_season ts limit 1'), array['error: INVALID%']);
+  perform rls_t.chk('set_team_season con versione giusta',
+    rls_t.try('select public.admin_set_team_season(ts.team_id, ts.version, ts.entry_fee_paid, ts.luxury_tax_paid) from public.team_season ts limit 1'), array['rows=1']);
+  perform rls_t.become('postgres');
+end $$;
+
 do $$ begin
   raise notice 'RLS: tutti i test passati (% tabelle, % RPC)', (select count(*) from rls_t.tbl), (select count(*) from rls_t.rpc);
 end $$;
