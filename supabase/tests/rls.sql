@@ -168,6 +168,11 @@ begin
   where p.pronamespace = 'public'::regnamespace and p.proname like 'admin\_%' and p.proname <> 'admin_guard';
   perform rls_t.ok('nessuna RPC admin_* trovata', exists (select 1 from rls_t.rpc));
 
+  perform rls_t.ok('gli helper dei lock di rosa sono chiamabili dai client',
+    not has_function_privilege('authenticated', 'public.roster_lock(jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.lock_current_season()', 'execute')
+    and not has_function_privilege('authenticated', 'public.lock_contract_team(int,int)', 'execute'));
+
   -- Gli helper delle RPC (security definer) non devono essere chiamabili dai client: audit_write permetterebbe di
   -- scrivere righe false nell'audit log.
   perform rls_t.ok('audit_write chiamabile dai client',
@@ -301,9 +306,19 @@ begin
   -- Versioni null o vecchie: le RPC rifiutano e non scrivono (admin; errore = niente modifiche).
   perform rls_t.become('authenticated', rls_t.admin());
   perform rls_t.chk('update_contract con versione null',
-    rls_t.try('select public.admin_update_contract((select id from public.contracts limit 1), null, ''starter'', 1, false, 1)'), array['error: INVALID%']);
+    rls_t.try('select public.admin_update_contract((select id from public.contracts limit 1), null, ''starter'', 1, false, 1, 0)'), array['error: INVALID%']);
   perform rls_t.chk('update_contract con versione vecchia',
-    rls_t.try('select public.admin_update_contract(c.id, c.version + 1, ''starter'', 1, false, 1) from public.contracts c limit 1'), array['error: CONFLICT%']);
+    rls_t.try('select public.admin_update_contract(c.id, c.version + 1, ''starter'', 1, false, 1, t.roster_rev) from public.contracts c join public.teams t on t.id = c.team_id limit 1'), array['error: CONFLICT%']);
+  perform rls_t.chk('update_contract senza revisione di rosa',
+    rls_t.try('select public.admin_update_contract(c.id, c.version, ''starter'', 1, false, 1, null) from public.contracts c limit 1'), array['error: INVALID%']);
+  perform rls_t.chk('update_contract con revisione di rosa vecchia',
+    rls_t.try('select public.admin_update_contract(c.id, c.version, ''starter'', 1, false, 1, t.roster_rev - 1) from public.contracts c join public.teams t on t.id = c.team_id limit 1'), array['error: CONFLICT%']);
+  perform rls_t.chk('sign_contract con revisione di rosa vecchia',
+    rls_t.try('select public.admin_sign_contract(900002, t.id, ''reserve'', 1, false, 1, false, null, null, t.roster_rev - 1) from public.teams t limit 1'), array['error: CONFLICT%']);
+  perform rls_t.chk('execute_trade senza revisioni di rosa',
+    rls_t.try('select public.admin_execute_trade(a.id, b.id, ''{}'', ''{}'', null, null, null) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: INVALID%']);
+  perform rls_t.chk('execute_trade con revisione di rosa vecchia',
+    rls_t.try('select public.admin_execute_trade(a.id, b.id, ''{}'', ''{}'', null, null, jsonb_build_object(a.id::text, a.roster_rev - 1, b.id::text, b.roster_rev)) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: CONFLICT%']);
   perform rls_t.chk('cut_player con versione null',
     rls_t.try('select public.admin_cut_player((select id from public.contracts limit 1), null, 0)'), array['error: INVALID%']);
   perform rls_t.chk('set_pick con versione null',

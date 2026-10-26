@@ -42,6 +42,11 @@ const loadLeagueData = cache(async () => {
   const season = await loadSeason();
   const sid = season.id;
 
+  // La revisione di rosa (migrazione 0012) va letta PRIMA dei contratti: se una firma si infila nel mezzo, la revisione è più
+  // vecchia dei dati e la RPC risponde CONFLICT, invece di accettare una validazione fatta su una rosa già cambiata.
+  const rev = await db.from("teams").select("id,roster_rev");
+  if (rev.error) throw new Error(rev.error.message);
+
   const [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie] = await Promise.all([
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
@@ -74,6 +79,7 @@ const loadLeagueData = cache(async () => {
   const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
   const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data),
     teamSeason: Object.fromEntries((teamSeason.data ?? []).map((r) => [r.team_id, r.version])),
+    rosterRev: Object.fromEntries(rev.data.map((r) => [r.id, r.roster_rev as number])),
   };
   return { league: buildLeague(raw), versions };
 });
