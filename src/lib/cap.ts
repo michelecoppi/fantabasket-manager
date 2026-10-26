@@ -22,6 +22,8 @@ export interface LeagueSettings {
   reserveMaxPerPosition: number;
   /** R-20 / R-22: durata massima di un contratto, team option compresa */
   contractMaxYears: number;
+  /** R-26: durata massima di un contratto rookie (anno in corso incluso), team option compresa */
+  rookieMaxYears: number;
   /** R-33: massimo di pick per giro per squadra (ASSUNZIONE: contate per anno di draft) */
   maxPicksPerRound: number;
   /** R-34: le pick diventano di proprietà solo questi anni prima del draft */
@@ -222,6 +224,8 @@ export interface ContractTerms {
   years: number | null;
   teamOption: boolean;
   salary: number;
+  /** R-26: contratto rookie, con durata massima `rookieMaxYears` */
+  isRookie?: boolean;
 }
 
 /** R-42: quota pagata per un taglio = 1/3 dello stipendio arrotondato allo 0.5 più vicino (5 → 1.5, 10 → 3.5). */
@@ -247,6 +251,10 @@ export function contractTermsErrors(t: ContractTerms, s: LeagueSettings): string
   else if (Math.round(t.salary * 10) / 10 !== t.salary) out.push("Lo stipendio ammette al massimo un decimale (mezzi crediti).");
   if (t.years !== null && !contractDurations(s).includes(t.years)) out.push(`Durata non ammessa (R-20): ${t.years}.`);
   if (t.teamOption && !teamOptionAllowed(t.years, s)) out.push("La team option è ammessa solo su contratti da 1 o 2 stagioni (R-22).");
+  // R-26: con la team option la durata totale è years + 1 (come in teamOptionAllowed).
+  if (t.isRookie && t.years !== null && t.years + (t.teamOption ? 1 : 0) > s.rookieMaxYears) {
+    out.push(`Un contratto rookie dura al massimo ${s.rookieMaxYears} stagioni, team option compresa (R-26).`);
+  }
   return out;
 }
 
@@ -337,6 +345,7 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   reserveMax: 6,
   reserveMaxPerPosition: 3,
   contractMaxYears: 3,
+  rookieMaxYears: 2,
   maxPicksPerRound: 2,
   pickHorizonYears: 3,
   draftRounds: 5,

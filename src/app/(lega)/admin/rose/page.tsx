@@ -19,6 +19,7 @@ export default async function AdminRosterPage() {
       teamOption: c.teamOption,
       originalSalary: c.originalSalary,
       originalSlot: c.originalSlot,
+      originalIsRookie: c.originalIsRookie,
     })),
     players: [...t.starters, ...t.reserves].map((p) => ({
       id: p.id,

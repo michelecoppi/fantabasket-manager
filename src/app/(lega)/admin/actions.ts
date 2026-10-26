@@ -64,7 +64,7 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
   const player = await db.from("players").select("pos,first_name,last_name").eq("id", input.playerId).maybeSingle<{ pos: "G" | "A" | "C" | null; first_name: string; last_name: string }>();
   if (player.error || !player.data) return fail("Giocatore non trovato.");
 
-  const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary };
+  const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary, isRookie: input.isRookie };
   const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
   const name = [player.data.first_name, player.data.last_name].join(" ").trim();
@@ -127,7 +127,7 @@ export async function updateContract(input: UpdateInput): Promise<ActionResult> 
   const owner = league.teams.find((t) => [...t.starters, ...t.reserves].some((p) => p.id === input.contractId));
   const current = owner && [...owner.starters, ...owner.reserves].find((p) => p.id === input.contractId);
   if (!owner || !current) return fail("Contratto non trovato: forse è stato tagliato o scambiato. Aggiorna la pagina.");
-  const ev = evaluateContractEdit(teamSide(owner), input.contractId, { ...input, position: current.pos }, league.settings);
+  const ev = evaluateContractEdit(teamSide(owner), input.contractId, { ...input, isRookie: current.rookie, position: current.pos }, league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
 
   const db = await createClient();
@@ -236,7 +236,7 @@ export async function setDurations(items: { contractId: number; version: number;
     if (!isNum(it.contractId) || !isNum(it.version)) return fail("Dati non validi.");
     const p = byId.get(it.contractId);
     if (!p) return fail("Un contratto non esiste più: aggiorna la pagina.");
-    const errors = contractTermsErrors({ slot: p.slot, years: it.years, teamOption: it.teamOption, salary: p.salary }, league.settings);
+    const errors = contractTermsErrors({ slot: p.slot, years: it.years, teamOption: it.teamOption, salary: p.salary, isRookie: p.rookie }, league.settings);
     if (errors.length) return fail(`${p.name}: ${errors.join(" ")}`);
   }
 
@@ -294,7 +294,7 @@ export async function reinstateCut(input: {
   if (salary === null || !isNum(salary)) return fail("Indica lo stipendio con cui rientra: il taglio non lo ricorda.");
   // Rientrando, la quota del taglio sparisce dal monte ingaggi e lo stipendio pieno torna al suo posto.
   const side = { ...teamSide(found.team), cuts: found.team.cuts.filter((c) => c.id !== input.cutId).map((c) => ({ salary: c.paid })) };
-  const ev = evaluateSigning(side, { slot: input.slot, years: input.years, teamOption: input.teamOption, salary, position: found.cut.pos }, league.settings);
+  const ev = evaluateSigning(side, { slot: input.slot, years: input.years, teamOption: input.teamOption, salary, isRookie: found.cut.originalIsRookie, position: found.cut.pos }, league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
 
   const db = await createClient();

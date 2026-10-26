@@ -42,6 +42,7 @@ export interface CutRow {
   years_left: number | null;
   original_salary: number | null;
   original_slot: "starter" | "reserve" | "talent" | null;
+  original_is_rookie: boolean;
   team_option: boolean;
   players: PlayerJoin | null;
 }
@@ -125,6 +126,7 @@ interface TeamCut {
   /** termini del contratto prima del taglio, per farlo rientrare (null per i tagli importati dal foglio) */
   originalSalary: number | null;
   originalSlot: "starter" | "reserve" | null;
+  originalIsRookie: boolean;
   teamOption: boolean;
 }
 export interface TeamView {
@@ -181,6 +183,7 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     reserveMax: get("reserve_max"),
     reserveMaxPerPosition: get("reserve_max_per_pos"),
     contractMaxYears: get("contract_max_years"),
+    rookieMaxYears: get("rookie_max_years"),
     maxPicksPerRound: get("max_picks_per_round"),
     pickHorizonYears: get("pick_horizon_years"),
     draftRounds: get("draft_rounds"),
@@ -231,6 +234,7 @@ export function buildLeague(raw: RawLeague): LeagueView {
         yearsLeft: c.years_left === null ? null : Number(c.years_left),
         originalSalary: c.original_salary === null ? null : Number(c.original_salary),
         originalSlot: c.original_slot === "starter" || c.original_slot === "reserve" ? c.original_slot : null,
+        originalIsRookie: c.original_is_rookie,
         teamOption: c.team_option,
       }));
     const ts = season.get(team.id);

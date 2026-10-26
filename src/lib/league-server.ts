@@ -46,7 +46,7 @@ const loadLeagueData = cache(async () => {
     db.from("contracts").select(`id,version,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
     db
       .from("cuts")
-      .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,team_option,${playerCols}`)
+      .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,original_is_rookie,team_option,${playerCols}`)
       .eq("season_id", sid)
       .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),

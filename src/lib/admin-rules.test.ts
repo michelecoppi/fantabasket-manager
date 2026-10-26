@@ -59,9 +59,39 @@ describe("durate e team option (R-20, R-22)", () => {
     expect(contractTermsErrors({ ...ok, years: 3 }, S)).toHaveLength(1); // 3 anni + option > 3
     expect(contractTermsErrors({ ...ok, slot: "talent" }, S)).toHaveLength(1);
   });
+
+  it("rookie: al massimo 2 stagioni, team option compresa (R-26)", () => {
+    const rookie = { slot: "starter" as const, years: 1, teamOption: false, salary: 5, isRookie: true };
+    expect(contractTermsErrors(rookie, S)).toEqual([]);
+    expect(contractTermsErrors({ ...rookie, years: 2 }, S)).toEqual([]);
+    expect(contractTermsErrors({ ...rookie, years: 0.5 }, S)).toEqual([]);
+    expect(contractTermsErrors({ ...rookie, years: 1, teamOption: true }, S)).toEqual([]); // 1+1 = 2
+    expect(contractTermsErrors({ ...rookie, years: 3 }, S)).toHaveLength(1);
+    expect(contractTermsErrors({ ...rookie, years: 2, teamOption: true }, S)).toHaveLength(1); // 2+1 = 3
+    expect(contractTermsErrors({ ...rookie, years: null }, S)).toEqual([]); // durata da fissare
+  });
+
+  it("rookie: il massimo arriva dalle impostazioni, i contratti ordinari restano invariati", () => {
+    const base = { slot: "starter" as const, years: 3, teamOption: false, salary: 5 };
+    expect(contractTermsErrors({ ...base, isRookie: true }, { ...S, rookieMaxYears: 3 })).toEqual([]);
+    expect(contractTermsErrors({ ...base, isRookie: true }, { ...S, rookieMaxYears: 1 })).toHaveLength(1);
+    expect(contractTermsErrors({ ...base, isRookie: false }, S)).toEqual([]);
+    expect(contractTermsErrors(base, S)).toEqual([]);
+  });
 });
 
 describe("evaluateSigning", () => {
+  it("blocca la firma di un rookie da 3 anni (R-26)", () => {
+    const r = evaluateSigning(side(0, []), { position: "G", slot: "starter", years: 3, teamOption: false, salary: 4, isRookie: true }, S);
+    expect(r.errors).toHaveLength(1);
+    expect(r.errors[0]).toMatch(/R-26/);
+  });
+
+  it("blocca la modifica di un rookie a 2+1 (R-26)", () => {
+    const r = evaluateContractEdit(side(0, [starter(1, 4)]), 1, { position: "G", slot: "starter", years: 2, teamOption: true, salary: 4, isRookie: true }, S);
+    expect(r.errors).toHaveLength(1);
+  });
+
   it("avvisa (senza bloccare) se la firma fa sforare il cap", () => {
     const r = evaluateSigning(side(0, [starter(1, 240)]), { position: "A", slot: "starter", years: 1, teamOption: false, salary: 15 }, S);
     expect(r.errors).toEqual([]);

@@ -57,6 +57,7 @@ Gli alias di squadra usati nel foglio sono in `ALIASES` di `scripts/lib/names.ts
 ## ASSUNZIONI del pannello admin (issue #6)
 - **ASSUNZIONE** R-33: il massimo di 2 pick per giro è contato per anno di draft (parametro `max_picks_per_round`); in uno scambio avvisa, non blocca.
 - **ASSUNZIONE** R-20/R-22: durate ammesse = ½ e gli interi fino a `contract_max_years` (3); la team option solo su 1 o 2 anni. La durata può restare "da fissare" (R-51).
+- R-26: i contratti rookie durano al massimo `rookie_max_years` (2) stagioni, team option compresa (2+1 non ammesso, 1+1 sì).
 - **ASSUNZIONE** R-10: firmare un contratto che porta sopra il cap avvisa ma non blocca (nel foglio Dame Time è già sforato dopo l'asta). Gli scambi invece bloccano (R-57) salvo eccezione del moderatore con motivazione.
 - **ASSUNZIONE** R-42: il taglio crea una riga `cuts` in stato `pending` (asta dei tagliati); la quota è 1/3 arrotondato a 0,5 (`cutShare`). Taglio definitivo e rientro sono implementati nel completamento admin (vedi sotto).
 - Lo scambio registra "approvato da" come testo libero (domanda 2: il moderatore può non essere admin).
