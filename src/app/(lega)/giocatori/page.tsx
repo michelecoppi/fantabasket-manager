@@ -6,11 +6,11 @@ import { Icon } from "@/components/icons";
 import { Badge, Empty, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
 import { fmt, POS_LABEL } from "@/lib/format";
 import { loadLeague, loadPlayers } from "@/lib/league-server";
-import { filterPlayers, parseFilters } from "@/lib/players";
+import { filterPlayers, PAGE_SIZE, parseFilters, playerStatus } from "@/lib/players";
 import { teamColors } from "@/lib/team-colors";
 
-const MAX_ROWS = 100;
 const control = "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15";
+const pagerLink = "font-display inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-lg font-extrabold transition-colors hover:border-foreground/40";
 const cols = "md:grid md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_4.5rem] md:items-center md:gap-4";
 
 export default async function PlayersPage(props: PageProps<"/giocatori">) {
@@ -18,8 +18,23 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const [players, league] = await Promise.all([loadPlayers(), loadLeague()]);
   const nbaTeams = [...new Set(players.map((p) => p.nbaTeam).filter((t): t is string => !!t))].sort();
   const rows = filterPlayers(players, filters);
-  const shown = rows.slice(0, MAX_ROWS);
-  const free = players.filter((p) => !p.ownerTeamId).length;
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const page = Math.min(filters.page ?? 1, pages);
+  const offset = (page - 1) * PAGE_SIZE;
+  const shown = rows.slice(offset, offset + PAGE_SIZE);
+  const count = { free: 0, cut: 0, restricted: 0, taken: 0 };
+  for (const p of players) count[playerStatus(p)]++;
+  const pageHref = (n: number) => {
+    const qs = new URLSearchParams();
+    if (filters.q) qs.set("q", filters.q);
+    if (filters.pos) qs.set("ruolo", filters.pos);
+    if (filters.nbaTeam) qs.set("nba", filters.nbaTeam);
+    if (filters.owner !== "all") qs.set("stato", filters.owner);
+    if (filters.sort !== "credits") qs.set("ordina", filters.sort);
+    if (n > 1) qs.set("pagina", String(n));
+    const s = qs.toString();
+    return s ? `/giocatori?${s}` : "/giocatori";
+  };
   const colors = teamColors(league.teams.map((t) => t.team.id));
 
   return (
@@ -32,8 +47,11 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
           <Scoreboard
             items={[
               { label: "Giocatori", value: players.length },
-              { label: "Liberi", value: free, tone: "gold" },
-              { label: "In rosa", value: players.length - free },
+              { label: "Senza contratto", value: count.free + count.cut + count.restricted, tone: "gold" },
+              { label: "Liberi", value: count.free },
+              { label: "Tagliati", value: count.cut },
+              { label: "Restricted", value: count.restricted },
+              { label: "In rosa", value: count.taken },
             ]}
           />
         }
@@ -65,9 +83,12 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
             ))}
           </select>
           <select name="stato" defaultValue={filters.owner} className={control} aria-label="Stato">
-            <option value="all">Liberi e occupati</option>
-            <option value="free">Solo liberi</option>
-            <option value="taken">Solo occupati</option>
+            <option value="all">Tutti gli stati</option>
+            <option value="free">Senza contratto (tutti)</option>
+            <option value="open">Liberi (senza vincoli)</option>
+            <option value="cut">Tagliati (in asta)</option>
+            <option value="restricted">Restricted</option>
+            <option value="taken">In rosa</option>
           </select>
           <select name="ordina" defaultValue={filters.sort} className={control} aria-label="Ordina per">
             <option value="credits">Per crediti</option>
@@ -84,7 +105,8 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
       </div>
 
       <p className="mt-5 mb-2 text-sm font-semibold text-muted">
-        {rows.length} risultati{rows.length > MAX_ROWS && ` · mostrati i primi ${MAX_ROWS}, restringi i filtri`}
+        {rows.length} risultati
+        {rows.length > PAGE_SIZE && ` · ${offset + 1}–${offset + shown.length} (pagina ${page} di ${pages})`}
       </p>
 
       {shown.length === 0 ? (
@@ -103,7 +125,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
           <ul className="divide-y divide-line">
             {shown.map((p, i) => (
               <li key={p.id} className={`rise flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60 sm:px-4 ${cols}`} style={stagger(i)}>
-                <span className="tnum hidden text-sm font-semibold text-muted md:block">{i + 1}</span>
+                <span className="tnum hidden text-sm font-semibold text-muted md:block">{offset + i + 1}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-3">
                   <PosChip pos={p.pos} />
                   <span className="min-w-0">
@@ -143,6 +165,32 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
             ))}
           </ul>
         </div>
+      )}
+
+      {pages > 1 && (
+        <nav aria-label="Paginazione" className="mt-4 flex items-center justify-between gap-3">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className={pagerLink}>
+              ← Precedente
+            </Link>
+          ) : (
+            <span aria-hidden className={`${pagerLink} invisible`}>
+              ← Precedente
+            </span>
+          )}
+          <span className="text-sm font-semibold text-muted">
+            Pagina {page} di {pages}
+          </span>
+          {page < pages ? (
+            <Link href={pageHref(page + 1)} className={pagerLink}>
+              Successiva →
+            </Link>
+          ) : (
+            <span aria-hidden className={`${pagerLink} invisible`}>
+              Successiva →
+            </span>
+          )}
+        </nav>
       )}
     </>
   );

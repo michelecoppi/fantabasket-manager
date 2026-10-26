@@ -14,7 +14,8 @@ export interface PlayerListItem {
   restrictedTeamId: string | null;
 }
 
-export type OwnerFilter = "all" | "free" | "taken";
+export type OwnerFilter = "all" | "free" | "open" | "cut" | "restricted" | "taken";
+export type PlayerStatus = "taken" | "cut" | "restricted" | "free";
 export type SortKey = "credits" | "name";
 
 export interface PlayerFilters {
@@ -23,6 +24,18 @@ export interface PlayerFilters {
   nbaTeam: string;
   owner: OwnerFilter;
   sort: SortKey;
+  /** Pagina 1-based. */
+  page?: number;
+}
+
+export const PAGE_SIZE = 50;
+
+/** Stati mutuamente esclusivi: in rosa, tagliato (in asta), restricted (R-23), libero senza vincoli. */
+export function playerStatus(p: PlayerListItem): PlayerStatus {
+  if (p.ownerTeamId) return "taken";
+  if (p.cutByTeamId) return "cut";
+  if (p.restrictedTeamId) return "restricted";
+  return "free";
 }
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -33,14 +46,15 @@ export function filterPlayers(all: PlayerListItem[], f: PlayerFilters): PlayerLi
     if (q && !norm(p.name).includes(q)) return false;
     if (f.pos && p.pos !== f.pos) return false;
     if (f.nbaTeam && p.nbaTeam !== f.nbaTeam) return false;
+    // "free" = senza contratto (include tagliati e restricted); gli altri filtri sono uno stato preciso.
     if (f.owner === "free" && p.ownerTeamId) return false;
-    if (f.owner === "taken" && !p.ownerTeamId) return false;
+    if (f.owner !== "all" && f.owner !== "free" && playerStatus(p) !== (f.owner === "open" ? "free" : f.owner)) return false;
     return true;
   });
   return out.sort((a, b) =>
     f.sort === "name"
-      ? a.name.localeCompare(b.name, "it")
-      : (b.credits ?? -1) - (a.credits ?? -1) || a.name.localeCompare(b.name, "it"),
+      ? a.name.localeCompare(b.name, "it") || a.id - b.id
+      : (b.credits ?? -1) - (a.credits ?? -1) || a.name.localeCompare(b.name, "it") || a.id - b.id,
   );
 }
 
@@ -56,7 +70,8 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     q: one("q").slice(0, 60),
     pos: pos === "G" || pos === "A" || pos === "C" ? pos : "",
     nbaTeam: one("nba").slice(0, 5),
-    owner: owner === "free" || owner === "taken" ? owner : "all",
+    owner: owner === "free" || owner === "open" || owner === "cut" || owner === "restricted" || owner === "taken" ? owner : "all",
     sort: one("ordina") === "name" ? "name" : "credits",
+    page: Math.max(1, Math.min(Math.floor(Number(one("pagina"))) || 1, 1000)),
   };
 }
