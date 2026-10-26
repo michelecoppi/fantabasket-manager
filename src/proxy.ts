@@ -29,8 +29,10 @@ export async function proxy(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
+    // Si ricorda dove voleva andare (validato come path interno da safeNextPath al login).
+    const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     url.pathname = "/login";
-    url.search = "";
+    url.search = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
     return NextResponse.redirect(url);
   }
   return response;
