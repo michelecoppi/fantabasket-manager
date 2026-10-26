@@ -52,6 +52,9 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
     if (p.credits !== null && salary === "") setSalary(String(p.credits));
   };
 
+  // R-24: con un diritto di pareggio aperto il contratto è unrestricted da solo (lo impone anche il database).
+  const hasRight = player?.restrictedTeamId != null;
+
   const submit = () => {
     if (!team || !player) return;
     start(async () => {
@@ -168,7 +171,9 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
                 Team option (+1) <span className="text-xs text-muted">solo 1–2 anni</span>
               </Check>
               <Check checked={isRookie} onChange={setIsRookie}>Contratto rookie <span className="text-xs text-muted">(r)</span></Check>
-              <Check checked={unrestricted} onChange={setUnrestricted}>Unrestricted <span className="text-xs text-muted">(u)</span></Check>
+              <Check checked={unrestricted || hasRight} disabled={hasRight} onChange={setUnrestricted}>
+                Unrestricted <span className="text-xs text-muted">{hasRight ? "(u, automatico: diritto di pareggio, R-24)" : "(u)"}</span>
+              </Check>
             </div>
             <Field label="Note" htmlFor="notes">
               <input id="notes" className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Facoltative" />

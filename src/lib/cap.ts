@@ -241,6 +241,18 @@ export function cutShare(salary: number): number {
 export interface LastContract {
   salary: number;
   on: string;
+  /** R-23: diritto di pareggio ancora aperto (l'ultima riga è restricted e non è stata consumata da una firma). */
+  restricted?: boolean;
+}
+
+/**
+ * R-24: un giocatore con diritto restricted aperto, alla firma successiva (qualunque squadra), ha un contratto unrestricted e il
+ * diritto si consuma: niente due prelazioni consecutive. Lo applica anche il trigger `contracts_consume_right`; qui serve ad avvisare
+ * l'admin e a non dipendere dal checkbox. ASSUNZIONE confermata dall'utente (docs/OPEN-QUESTIONS.md).
+ */
+export function signingRestriction(last: LastContract | null, manualUnrestricted: boolean): { unrestricted: boolean; consumesRight: boolean } {
+  const consumesRight = last?.restricted === true;
+  return { unrestricted: consumesRight || manualUnrestricted, consumesRight };
 }
 
 export interface AuctionFloor {

@@ -39,7 +39,7 @@ Ordine consigliato:
 
 1. **P1-05 rookie max due anni:** aggiungere `rookie_max_years` a migrazione, seed, `LeagueSettings`, loader e validatori; coprire firma, modifica e durate massive.
 2. **P1-04 minimo R-25:** chiarire arrotondamento e durata esatta del vincolo, poi mostrare ultimo stipendio/minimo e validare server-side anche l'assegnazione dei tagliati.
-3. **P2-04 diritti restricted:** modellare consumo del diritto e secondo contratto unrestricted senza affidarsi a un checkbox.
+3. **P2-04 diritti restricted (fatta):** modellare consumo del diritto e secondo contratto unrestricted senza affidarsi a un checkbox.
 4. **P2-05 listone completo:** paginazione e distinzione tra senza contratto, tagliati e restricted; prepara la UI alle informazioni R-25.
 
 **Dipendenze:** decisioni di lega scritte, migrazioni applicate e test su entrambi i percorsi di firma. Non introdurre valori numerici hardcodati.
