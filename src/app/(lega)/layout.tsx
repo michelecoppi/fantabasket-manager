@@ -11,13 +11,17 @@ async function UserBadge() {
   const profile = await loadProfile();
   if (!profile) return null;
   return (
-    <span className="hidden min-w-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 py-1 pr-3 pl-1 text-xs text-white/75 lg:flex">
+    <Link
+      href="/account"
+      title="Il tuo account e la password"
+      className="hidden min-w-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 py-1 pr-3 pl-1 text-xs text-white/75 transition-colors hover:border-gold/60 hover:text-white lg:flex"
+    >
       <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white">
         <Icon name="user" size={15} />
       </span>
       <span className="max-w-32 truncate font-semibold">{profile.display_name}</span>
       {profile.role === "admin" && <span className="rounded-full bg-gold px-1.5 py-px text-[0.625rem] font-black tracking-wider text-nav uppercase">admin</span>}
-    </span>
+    </Link>
   );
 }
 
@@ -54,6 +58,9 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
               <UserBadge />
             </Suspense>
             <RefreshButton />
+            <Link href="/account" aria-label="Account e password" title="Account e password" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/8 hover:text-white">
+              <Icon name="key" size={19} />
+            </Link>
             <form action="/auth/signout" method="post">
               <button aria-label="Esci" title="Esci" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/8 hover:text-white">
                 <Icon name="logout" size={19} />
