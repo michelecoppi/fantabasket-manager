@@ -6,9 +6,10 @@ Serve: account GitHub (già c'è), account Vercel (piano **Hobby**, nessuna cart
 1. Vai su vercel.com → **Sign Up** → **Continue with GitHub**.
 2. **Add New… → Project** → scegli il repo `fantabasket-manager` → **Import**.
 3. Framework: Next.js (rilevato da solo). Non cambiare comandi di build.
-4. In **Environment Variables** aggiungi solo queste due (valori dal tuo `.env.local`):
+4. In **Environment Variables** aggiungi solo queste tre (valori dal tuo `.env.local`):
    - `NEXT_PUBLIC_SUPABASE_URL` — l'indirizzo base, es. `https://xxxx.supabase.co`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — la chiave pubblica `sb_publishable_...`
+   - `NEXT_PUBLIC_SITE_URL` — l'indirizzo pubblico del sito, es. `https://fantabasket-manager-xxxx.vercel.app` (senza `/` finale). Il link di accesso via email punta qui, non all'indirizzo della richiesta. Se manca, ripiega su Origin/Host (va bene solo in locale).
 5. **Non** aggiungere `SUPABASE_SERVICE_ROLE_KEY`: salta i permessi del database e serve solo per l'import in locale.
 6. **Deploy**. Alla fine ottieni un indirizzo tipo `https://fantabasket-manager-xxxx.vercel.app`.
 

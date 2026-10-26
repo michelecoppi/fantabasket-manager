@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useActionState } from "react";
 import { Icon } from "@/components/icons";
 import { sendMagicLink, signInWithPassword, type LoginState } from "./actions";
 
@@ -12,6 +13,15 @@ const button =
   "font-display inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg px-3 text-lg font-extrabold transition-[filter,transform] active:scale-[0.98] disabled:opacity-60";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginScreen />
+    </Suspense>
+  );
+}
+
+function LoginScreen() {
+  const next = useSearchParams().get("next") ?? "";
   const [pw, pwAction, pwPending] = useActionState(signInWithPassword, initial);
   const [ml, mlAction, mlPending] = useActionState(sendMagicLink, initial);
 
@@ -45,6 +55,7 @@ export default function LoginPage() {
             </div>
 
             <form action={pwAction} className="flex flex-col gap-3">
+              <input type="hidden" name="next" value={next} />
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-white/80">Email</span>
                 <span className="relative block">
@@ -77,6 +88,7 @@ export default function LoginPage() {
             </div>
 
             <form action={mlAction} className="flex flex-col gap-3">
+              <input type="hidden" name="next" value={next} />
               <p className="text-sm text-white/60">Ricevi un link di accesso via email.</p>
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-white/80">Email per il link</span>
