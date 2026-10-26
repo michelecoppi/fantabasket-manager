@@ -65,6 +65,7 @@ interface PickRow {
 }
 interface TeamSeasonRow {
   team_id: string;
+  version: number;
   bonus: number;
   final_rank: number | null;
   entry_fee_paid: boolean;
@@ -87,6 +88,8 @@ export interface Versions {
   contracts: Record<number, number>;
   picks: Record<number, number>;
   cuts: Record<number, number>;
+  /** per squadra (la riga delle quote può non esistere ancora) */
+  teamSeason: Record<string, number>;
 }
 
 export interface RawLeague {

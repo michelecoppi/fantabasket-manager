@@ -13,6 +13,8 @@ export interface FeeTeam {
   effectiveCap: number;
   /** luxury tax dovuta in euro (R-12) */
   taxEur: number;
+  /** null = riga delle quote non ancora creata */
+  version: number | null;
   entryFeePaid: boolean;
   luxuryTaxPaid: boolean;
 }
@@ -22,12 +24,15 @@ function TeamFees({ team, onDone }: { team: FeeTeam; onDone: (o: Outcome) => voi
   const [pending, start] = useTransition();
   // Stato ottimistico: il valore mostrato è quello appena scelto finché la pagina non si ricarica con il dato salvato.
   const [paid, setPaid] = useState({ fee: team.entryFeePaid, tax: team.luxuryTaxPaid });
+  // Ogni salvataggio riuscito alza la versione di 1 (trigger bump_version): la tengo qui per i clic successivi.
+  const [version, setVersion] = useState(team.version);
   const save = (next: { fee: boolean; tax: boolean }) => {
     const before = paid;
     setPaid(next);
     start(async () => {
-      const r = await setTeamSeason({ teamId: team.id, entryFeePaid: next.fee, luxuryTaxPaid: next.tax });
+      const r = await setTeamSeason({ teamId: team.id, version, entryFeePaid: next.fee, luxuryTaxPaid: next.tax });
       if (!r.ok) setPaid(before);
+      else setVersion((v) => (v ?? 0) + 1);
       onDone(r.ok ? { ok: true, text: r.message } : { ok: false, text: r.error });
     });
   };

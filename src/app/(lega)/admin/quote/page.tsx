@@ -1,9 +1,9 @@
 import { PageTitle } from "@/components/ui";
-import { loadLeague } from "@/lib/league-server";
+import { loadLeague, loadVersions } from "@/lib/league-server";
 import { QuoteDesk } from "./desk";
 
 export default async function AdminFeesPage() {
-  const league = await loadLeague();
+  const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
   return (
     <>
       <PageTitle icon="coins" eyebrow="Area admin" sub="Segna chi ha pagato la quota di iscrizione e la luxury tax. La tassa dovuta si calcola dal monte ingaggi (R-12); l'importo della quota non è ancora stato definito.">
@@ -16,6 +16,7 @@ export default async function AdminFeesPage() {
           payroll: t.finance.payroll,
           effectiveCap: t.finance.effectiveCap,
           taxEur: t.finance.luxuryTaxEur,
+          version: versions.teamSeason[t.team.id] ?? null,
           entryFeePaid: t.entryFeePaid,
           luxuryTaxPaid: t.luxuryTaxPaid,
         }))}

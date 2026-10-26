@@ -53,7 +53,7 @@ const loadLeagueData = cache(async () => {
       .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
     db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
     db.from("draft_picks").select("id,version,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
-    db.from("team_season").select("team_id,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
+    db.from("team_season").select("team_id,version,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
     db.from("rookie_draft").select("pick_no,team_id,original_team_id,note").eq("season_id", sid),
   ]);
   for (const r of [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie]) {
@@ -72,7 +72,9 @@ const loadLeagueData = cache(async () => {
     rookieDraft: rookie.data ?? [],
   };
   const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
-  const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data) };
+  const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data),
+    teamSeason: Object.fromEntries((teamSeason.data ?? []).map((r) => [r.team_id, r.version])),
+  };
   return { league: buildLeague(raw), versions };
 });
 

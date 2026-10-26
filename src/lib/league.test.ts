@@ -26,7 +26,7 @@ const raw: RawLeague = {
   cuts: [{ id: 1, team_id: "t1", player_id: 9, status: "cut", paid_salary: 3.5, years_left: 1, original_salary: null, original_slot: null, original_is_rookie: false, team_option: false, players: { first_name: "", last_name: "J.Collins", pos: "A", nba_team: null } }],
   talents: [],
   picks: [],
-  teamSeason: [{ team_id: "t1", bonus: -2, final_rank: null, entry_fee_paid: true, luxury_tax_paid: false }],
+  teamSeason: [{ team_id: "t1", version: 1, bonus: -2, final_rank: null, entry_fee_paid: true, luxury_tax_paid: false }],
   rookieDraft: [],
 };
 
