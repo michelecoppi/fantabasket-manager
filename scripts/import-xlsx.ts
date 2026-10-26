@@ -41,7 +41,7 @@ async function write(d: ImportData) {
   const errors = payloadErrors(payload);
   if (errors.length) throw new Error(`Payload non valido, nessuna scrittura:\n- ${errors.join("\n- ")}`);
 
-  // Una sola chiamata = una sola transazione (migrazione 20261026230000): se fallisce, il database resta com'era.
+  // Una sola chiamata = una sola transazione (migrazione 20261026201951): se fallisce, il database resta com'era.
   const { data, error } = await db.rpc("import_replace_season", { p_payload: payload });
   if (error) throw new Error(`import_replace_season (nessuna modifica applicata): ${error.message}`);
   console.log(`Import della stagione ${season} completato:`, JSON.stringify(data));

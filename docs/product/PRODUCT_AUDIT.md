@@ -76,7 +76,7 @@ Nessun elemento confermato. In particolare non è stato verificato un accesso an
 - **Complessità:** bassa. **Rischio/dipendenze:** nessuna modifica a R-57 o alla persistenza.
 - **Accettazione:** warning pick e errori rosa visibili; una squadra ancora sopra cap non viene mai detta “cap rispettato”; admin conserva conferma e override.
 
-#### P1-03 — Import non atomico e non limitato alla stagione — **implementata** (migrazione da applicare su Supabase)
+#### P1-03 — Import non atomico e non limitato alla stagione — **implementata** (migrazione applicata su Supabase)
 - **Tipo:** technical improvement / data integrity.
 - **Problema ed evidenza:** `scripts/import-xlsx.ts` elimina globalmente contratti, tagli, pick e altre righe, poi ricrea solo la stagione 2026 con richieste separate. Dopo una chiusura può cancellare storico; un errore intermedio può lasciare dati parziali.
 - **Soluzione:** import per stagione tramite una RPC transazionale o staging + sostituzione atomica, backup e prova di rollback su ambiente non produttivo.

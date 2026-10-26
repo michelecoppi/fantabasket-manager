@@ -1,4 +1,4 @@
-// Trasforma i dati parsati dal foglio nel payload della RPC `import_replace_season` (migrazione 20261026230000).
+// Trasforma i dati parsati dal foglio nel payload della RPC `import_replace_season` (migrazione 20261026201951).
 // Pura e senza rete: il payload è testabile e la scrittura vera avviene in una transazione sola lato Postgres.
 import { lettersOnly } from "./names";
 import type { ImportData, PlayerRef } from "./parse";
