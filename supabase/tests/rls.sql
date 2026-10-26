@@ -348,7 +348,7 @@ begin
 
   -- Firma della squadra col diritto (pareggio) tramite la RPC admin, senza passare restriction.
   perform rls_t.become('authenticated', rls_t.admin());
-  perform public.admin_sign_contract(900011, t1, 'starter', 2, false, 8, false, null, null);
+  perform public.admin_sign_contract(900011, t1, 'starter', 2, false, 8, false, null, null, (select roster_rev from teams where id = t1));
   perform rls_t.become('postgres');
   select id into cid from contracts where player_id = 900011 and season_id = sid;
   if (select restriction from contracts where id = cid) is distinct from 'unrestricted' then
