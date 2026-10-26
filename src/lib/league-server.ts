@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import type { LastContract } from "./cap";
 import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import type { CloseInput } from "./season-close";
@@ -136,7 +137,7 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
     db.from("cuts").select("player_id,team_id").eq("season_id", sid).in("status", ["pending", "cut"]),
     // In ordine di data: conta solo l'ultima scadenza di ogni giocatore (una successiva unrestricted cancella il diritto, R-24).
-    db.from("last_contracts").select("player_id,team_id,restricted").order("last_contract_on").order("id"),
+    db.from("last_contracts").select("player_id,team_id,restricted,salary,last_contract_on").order("last_contract_on").order("id"),
   ]);
   for (const r of [contracts, cuts, restricted]) if (r.error) throw new Error(r.error.message);
 
@@ -144,6 +145,8 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const cutBy = new Map((cuts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
   // PostgREST taglia a 1000 righe: last_contracts ne ha poche decine all'anno, quindi basta una richiesta.
   const restrictedBy = new Map((restricted.data ?? []).map((c) => [c.player_id as number, c.restricted ? (c.team_id as string | null) : null]));
+  // Stessa regola del restricted: l'ultima riga (per data, poi id) è quella che conta.
+  const lastBy = new Map((restricted.data ?? []).map((c) => [c.player_id as number, { salary: Number(c.salary), on: c.last_contract_on as string }]));
   return players.map((p) => ({
     id: p.id as number,
     name: `${p.first_name ?? ""} ${p.last_name}`.trim(),
@@ -153,5 +156,21 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     ownerTeamId: owner.get(p.id as number) ?? null,
     cutByTeamId: cutBy.get(p.id as number) ?? null,
     restrictedTeamId: restrictedBy.get(p.id as number) ?? null,
+    lastContract: lastBy.get(p.id as number) ?? null,
   }));
 });
+
+/** R-25: ultimo contratto di un giocatore (riga più recente di last_contracts), riletto dal database per i controlli server. */
+export async function loadLastContract(playerId: number): Promise<LastContract | null> {
+  const db = await createClient();
+  const r = await db
+    .from("last_contracts")
+    .select("salary,last_contract_on")
+    .eq("player_id", playerId)
+    .order("last_contract_on", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ salary: number | string; last_contract_on: string }>();
+  if (r.error) throw new Error(r.error.message);
+  return r.data ? { salary: Number(r.data.salary), on: r.data.last_contract_on } : null;
+}

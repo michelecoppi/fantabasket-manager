@@ -1,5 +1,5 @@
 // Listone giocatori Dunkest: filtri e ordinamento (puri, testabili).
-import type { Position } from "./cap";
+import type { LastContract, Position } from "./cap";
 
 export interface PlayerListItem {
   id: number;
@@ -12,6 +12,8 @@ export interface PlayerListItem {
   cutByTeamId: string | null;
   /** R-23: squadra che può pareggiare l'offerta più alta per un restricted (ex contratto scaduto a fine stagione). */
   restrictedTeamId: string | null;
+  /** R-25: ultimo contratto (riga più recente di last_contracts), da cui il minimo d'asta. */
+  lastContract: LastContract | null;
 }
 
 export type OwnerFilter = "all" | "free" | "taken";
