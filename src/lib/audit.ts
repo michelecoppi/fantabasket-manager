@@ -20,5 +20,24 @@ export interface AuditRow {
   id: number;
   at: string;
   action: string;
+  user_id: string | null;
   after: { summary?: string; cap_override_reason?: string | null } | null;
 }
+
+/** Riga di dettaglio di una transazione (stesso `at` della riga di riepilogo): una per contratto, pick o cut toccati. */
+export interface AuditDetail {
+  at: string;
+  user_id: string | null;
+  table_name: string;
+  row_id: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+}
+
+export const TABLE_LABELS: Record<string, string> = {
+  contracts: "Contratto",
+  cuts: "Taglio",
+  draft_picks: "Pick",
+  team_season: "Quote squadra",
+  trades: "Scambio",
+};

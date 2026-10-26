@@ -204,12 +204,22 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
     return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(" e ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
   }
 
+  // Le etichette restano nello storico anche se il giocatore viene poi tagliato (le RPC leggono solo id e version).
+  const players = new Map(league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => [p.id, p.name] as const)));
+  const label = (g: Gives) => ({
+    contracts: g.contracts.map((c) => ({ ...c, label: players.get(c.id) })),
+    picks: g.picks.map((p) => {
+      const pick = league.picks.find((x) => x.id === p.id);
+      return { ...p, label: pick ? `Draft ${pick.year} · ${pick.round}° giro (${league.teamNames.get(pick.original_team_id) ?? "?"})` : undefined };
+    }),
+  });
+
   const db = await createClient();
   const { error } = await db.rpc("admin_execute_trade", {
     p_team_a: input.teamA,
     p_team_b: input.teamB,
-    p_a_gives: input.aGives,
-    p_b_gives: input.bGives,
+    p_a_gives: label(input.aGives),
+    p_b_gives: label(input.bGives),
     p_approved_by: input.approvedBy,
     p_override_reason: ev.capBreakers.length ? reason : "",
   });
