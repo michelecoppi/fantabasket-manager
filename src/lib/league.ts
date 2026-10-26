@@ -184,6 +184,8 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     reserveMaxPerPosition: get("reserve_max_per_pos"),
     contractMaxYears: get("contract_max_years"),
     rookieMaxYears: get("rookie_max_years"),
+    lastContractMinFraction: get("last_contract_min_fraction"),
+    lastContractValidMonths: get("last_contract_valid_months"),
     maxPicksPerRound: get("max_picks_per_round"),
     pickHorizonYears: get("pick_horizon_years"),
     draftRounds: get("draft_rounds"),

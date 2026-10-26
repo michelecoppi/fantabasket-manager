@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button, Callout, Check, Field, inputClass, Segmented } from "@/components/controls";
 import type { SimTeam } from "@/components/trade-parts";
 import { Badge, Card, PosChip, StatChange } from "@/components/ui";
-import { contractDurations, evaluateSigning, teamOptionAllowed, type LeagueSettings } from "@/lib/cap";
+import { auctionFloor, auctionFloorErrors, contractDurations, evaluateSigning, teamOptionAllowed, type LeagueSettings } from "@/lib/cap";
 import { fmt } from "@/lib/format";
 import { filterPlayers, type PlayerListItem } from "@/lib/players";
 import { signContract } from "../actions";
@@ -40,7 +40,10 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
           settings,
         )
       : null;
-  const ready = !!team && !!player && !!ev && ev.errors.length === 0;
+  // R-25: minimo d'asta da ultimo contratto (il server lo ricontrolla).
+  const floor = player ? auctionFloor(player.lastContract, new Date().toISOString().slice(0, 10), settings) : null;
+  const floorErrors = auctionFloorErrors(amount, floor);
+  const ready = !!team && !!player && !!ev && ev.errors.length === 0 && floorErrors.length === 0;
 
   const pickPlayer = (p: PlayerListItem) => {
     setPlayer(p);
@@ -91,6 +94,11 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
                 <div className="text-xs text-muted">
                   {player.nbaTeam ?? "—"} · {player.credits !== null ? `${fmt(player.credits)} crediti Dunkest` : "crediti non indicati"}
                 </div>
+                {floor && (
+                  <div className="text-xs text-muted">
+                    Ultimo stipendio {fmt(floor.lastSalary)} · minimo d&apos;asta {fmt(floor.minimum)} fino al {floor.expiresOn} (R-25)
+                  </div>
+                )}
               </div>
               {player.cutByTeamId && <Badge tone="warn" title="È nell'elenco dei tagliati">tagliato</Badge>}
               <Button variant="ghost" className="px-2 text-base" onClick={() => setPlayer(null)}>Cambia</Button>
@@ -181,7 +189,7 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
                 <StatChange label="Riserve" before={ev.impact.before.reserveSpace} after={ev.impact.after.reserveSpace} worseWhenLower />
               </div>
               <div className="mt-3 space-y-2">
-                {ev.errors.map((e) => <Callout key={e} tone="bad">{e}</Callout>)}
+                {[...ev.errors, ...floorErrors].map((e) => <Callout key={e} tone="bad">{e}</Callout>)}
                 {ev.warnings.length > 0 && (
                   <Callout tone="warn" title="Da controllare (non bloccano)">
                     <ul className="list-disc pl-5">{ev.warnings.map((w) => <li key={w}>{w}</li>)}</ul>

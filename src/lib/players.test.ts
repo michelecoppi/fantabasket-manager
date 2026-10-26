@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { filterPlayers, parseFilters, type PlayerFilters, type PlayerListItem } from "./players";
 
 const mk = (id: number, name: string, over: Partial<PlayerListItem> = {}): PlayerListItem => ({
-  id, name, pos: "G", nbaTeam: "LAL", credits: 10, ownerTeamId: null, cutByTeamId: null, restrictedTeamId: null, ...over,
+  id, name, pos: "G", nbaTeam: "LAL", credits: 10, ownerTeamId: null, cutByTeamId: null, restrictedTeamId: null, lastContract: null, ...over,
 });
 const base: PlayerFilters = { q: "", pos: "", nbaTeam: "", owner: "all", sort: "credits" };
 

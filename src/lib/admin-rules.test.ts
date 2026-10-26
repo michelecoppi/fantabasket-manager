@@ -11,6 +11,8 @@ import {
   evaluateSigning,
   evaluateTrade,
   teamOptionAllowed,
+  auctionFloor,
+  auctionFloorErrors,
   type PickInfo,
   type TradeParty,
   type TradeSide,
@@ -23,6 +25,39 @@ const party = (name: string, s: TradeSide, picks: PickInfo[] = [], gives: { cont
   side: s,
   picks,
   gives: { contracts: new Set(gives.contracts ?? []), picks: new Set(gives.picks ?? []) },
+});
+
+describe("minimo d'asta da ultimo contratto (R-25)", () => {
+  const last = { salary: 10, on: "2026-07-01" };
+  it("è metà dell'ultimo stipendio, valido fino all'anniversario (escluso)", () => {
+    expect(auctionFloor(last, "2027-06-30", S)).toEqual({ lastSalary: 10, minimum: 5, expiresOn: "2027-07-01" });
+    expect(auctionFloor(last, "2027-07-01", S)).toBeNull();
+    expect(auctionFloor(null, "2026-10-26", S)).toBeNull();
+  });
+  it("accetta la metà esatta e rifiuta di meno", () => {
+    const floor = auctionFloor(last, "2026-10-26", S);
+    expect(auctionFloorErrors(5, floor)).toEqual([]);
+    expect(auctionFloorErrors(6, floor)).toEqual([]);
+    expect(auctionFloorErrors(4.9, floor)).toHaveLength(1);
+    expect(auctionFloorErrors(1, null)).toEqual([]);
+  });
+  it.each([
+    [5.5, 2.8],
+    [5, 2.5],
+    [3.5, 1.8],
+    [0.5, 0.3],
+  ])("quarti di credito: ultimo stipendio %s → minimo %s (per eccesso)", (salary, min) => {
+    expect(auctionFloor({ salary, on: "2026-07-01" }, "2026-10-26", S)?.minimum).toBe(min);
+  });
+  it("usa i parametri di lega, non valori fissi", () => {
+    const s = { ...S, lastContractMinFraction: 0.6, lastContractValidMonths: 6 };
+    expect(auctionFloor(last, "2026-12-31", s)?.minimum).toBe(6);
+    expect(auctionFloor(last, "2027-01-01", s)).toBeNull();
+  });
+  it("gestisce fine mese e cambio anno", () => {
+    expect(auctionFloor({ salary: 4, on: "2026-08-31" }, "2026-09-01", { ...S, lastContractValidMonths: 6 })?.expiresOn).toBe("2027-02-28");
+    expect(auctionFloor({ salary: 4, on: "2024-02-29" }, "2024-03-01", S)?.expiresOn).toBe("2025-02-28");
+  });
 });
 
 describe("cutShare (R-42)", () => {

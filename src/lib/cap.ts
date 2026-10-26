@@ -24,6 +24,10 @@ export interface LeagueSettings {
   contractMaxYears: number;
   /** R-26: durata massima di un contratto rookie (anno in corso incluso), team option compresa */
   rookieMaxYears: number;
+  /** R-25: il minimo d'asta di un ex-contratto è questa frazione dell'ultimo stipendio (0.5 = metà) */
+  lastContractMinFraction: number;
+  /** R-25: mesi di validità del minimo dopo la data dell'ultimo contratto (12 = 1 anno) */
+  lastContractValidMonths: number;
   /** R-33: massimo di pick per giro per squadra (ASSUNZIONE: contate per anno di draft) */
   maxPicksPerRound: number;
   /** R-34: le pick diventano di proprietà solo questi anni prima del draft */
@@ -233,6 +237,49 @@ export function cutShare(salary: number): number {
   return Math.round((salary / 3) * 2) / 2;
 }
 
+/** Ultimo contratto di un giocatore (riga più recente di `last_contracts`): stipendio e data `YYYY-MM-DD`. */
+export interface LastContract {
+  salary: number;
+  on: string;
+}
+
+export interface AuctionFloor {
+  lastSalary: number;
+  /** Stipendio minimo ammesso, arrotondato per eccesso al decimo (gli stipendi hanno al massimo un decimale). */
+  minimum: number;
+  /** Primo giorno in cui il minimo non vale più (`YYYY-MM-DD`). */
+  expiresOn: string;
+}
+
+/** Aggiunge `months` mesi a una data `YYYY-MM-DD` (UTC; il giorno si ferma a fine mese: 31/08 + 6 mesi = 28/02). */
+function addMonths(iso: string, months: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const total = m - 1 + Math.round(months);
+  const year = y + Math.floor(total / 12);
+  const month = ((total % 12) + 12) % 12;
+  const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(d, last))).toISOString().slice(0, 10);
+}
+
+/**
+ * R-25: minimo d'asta di un ex-contratto = frazione (metà) dell'ultimo stipendio, valido per `lastContractValidMonths` mesi
+ * dalla data dell'ultimo contratto. `today` è `YYYY-MM-DD`. Restituisce null se non c'è un ultimo contratto o il vincolo è scaduto.
+ * ASSUNZIONI (docs/OPEN-QUESTIONS.md): il minimo cade il giorno dell'anniversario (escluso); i quarti di credito si arrotondano per eccesso.
+ */
+export function auctionFloor(last: LastContract | null, today: string, s: LeagueSettings): AuctionFloor | null {
+  if (!last) return null;
+  const expiresOn = addMonths(last.on, s.lastContractValidMonths);
+  if (today >= expiresOn) return null;
+  const exact = Math.round(last.salary * s.lastContractMinFraction * 1000) / 1000;
+  return { lastSalary: last.salary, minimum: Math.ceil(Math.round(exact * 100) / 10) / 10, expiresOn };
+}
+
+/** R-25: errore bloccante se l'offerta è sotto il minimo (la metà esatta è accettata). */
+export function auctionFloorErrors(salary: number, floor: AuctionFloor | null): string[] {
+  if (!floor || !Number.isFinite(salary) || salary >= floor.minimum) return [];
+  return [`Sotto il minimo d'asta (R-25): ultimo stipendio ${floor.lastSalary}, minimo ${floor.minimum} fino al ${floor.expiresOn}.`];
+}
+
 /** R-20: durate ammesse alla firma = mezza stagione e gli interi fino al massimo di lega. */
 export function contractDurations(s: LeagueSettings): number[] {
   return [0.5, ...Array.from({ length: Math.floor(s.contractMaxYears) }, (_, i) => i + 1)];
@@ -346,6 +393,8 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   reserveMaxPerPosition: 3,
   contractMaxYears: 3,
   rookieMaxYears: 2,
+  lastContractMinFraction: 0.5,
+  lastContractValidMonths: 12,
   maxPicksPerRound: 2,
   pickHorizonYears: 3,
   draftRounds: 5,

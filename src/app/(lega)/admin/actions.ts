@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  auctionFloor,
+  auctionFloorErrors,
   contractTermsErrors,
   cutShare,
   evaluateContractEdit,
@@ -12,7 +14,7 @@ import {
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
-import { loadCloseInput, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
+import { loadCloseInput, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
 
@@ -66,7 +68,10 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
 
   const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary, isRookie: input.isRookie };
   const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
-  if (ev.errors.length) return fail(ev.errors.join(" "));
+  // R-25: vale per firma normale e asta dei tagliati, quindi si controlla prima di scegliere il percorso.
+  const floorErrors = auctionFloorErrors(input.salary, auctionFloor(await loadLastContract(input.playerId), new Date().toISOString().slice(0, 10), league.settings));
+  const errors = [...ev.errors, ...floorErrors];
+  if (errors.length) return fail(errors.join(" "));
   const name = [player.data.first_name, player.data.last_name].join(" ").trim();
 
   // Asta dei tagliati (R-41): se il giocatore è tagliato e ancora in attesa, la firma chiude anche il taglio nella stessa transazione.
