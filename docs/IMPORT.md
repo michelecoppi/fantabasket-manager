@@ -33,3 +33,21 @@ https://www.dunkest.com/api/stats/table?season_id=<id>&mode=nba&stats_type=avg
 Campi utili: `id`, `first_name`, `last_name`, `team_code`, `team_name`, `position` (G/F/C), `pdk`, `gp`, `min`. Elenca solo chi ha giocato almeno una partita (527 giocatori nel 2025-26). `team_name` scrive `LA Clippers`, il listone `Los Angeles Clippers`: lo snapshot usa il secondo.
 **I crediti non sono affidabili**: `cr` è 0.0 per 494 giocatori su 527 e i 33 valori diversi da zero non coincidono con `Cr 26/27` del foglio. I crediti restano dall'export del listone (`Foglio3`).
 Riempie `players` (squadra NBA, nome intero) e può dare statistiche, non i crediti.
+
+## Scrittura sul database (`--apply`)
+`npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply [--season=AAAA] [--force]`. Prima il report (stesso di sempre; si ferma se ci sono problemi, salvo `--force`), poi il controllo del payload (`payloadErrors` in `scripts/lib/payload.ts`: contratti senza giocatore, squadre sconosciute, foglio senza contratti), poi **una sola chiamata** alla RPC `import_replace_season` (migrazione `20261026201951`). Eseguibile solo con la `service_role`; la transazione è unica, quindi un errore in qualunque punto non lascia nessuna modifica (provato in `supabase/tests/import.sql`).
+
+Cosa viene sostituito, per la stagione `--season` (default 2026, deve esistere in `seasons`):
+
+| Dati | Regola |
+| --- | --- |
+| `contracts`, `cuts`, `rookie_draft`, `team_season` | sostituiti per quella stagione; le altre stagioni non si toccano |
+| `draft_picks` | sostituiti solo gli anni presenti nel foglio (es. 2027-2029) |
+| `talents` | non legata a una stagione: sostituita per intero con quella del foglio |
+| `last_contracts` | sostituite le righe dei giocatori presenti nel foglio; le altre (scadenze di `admin_close_season`) restano |
+| `players` | non si svuota: si aggiornano ruolo e crediti, si creano i nuovi, si tolgono solo quelli che nessuna tabella referenzia più |
+
+Il foglio è la fonte della stagione che si importa: dopo una chiusura di stagione non rilanciare l'import sulla stagione nuova senza un foglio aggiornato, perché ne sostituirebbe contratti e tagli. Il backup resta a carico di chi lancia `--apply` (copia delle tabelle o dump prima di scrivere sul database reale).
+
+### Provare l'import in locale (mai sul database reale)
+Stessa procedura di `supabase/tests/rls.sql`: Postgres `supabase/postgres:17.11.0.006` con migrazioni e seed, poi `psql -X -v ON_ERROR_STOP=1 -f supabase/tests/import.sql` (stagioni fittizie 2098/2099, tutto in una transazione annullata alla fine). In CI gira dopo il test RLS.
