@@ -27,6 +27,7 @@ export interface RoseCut {
   /** null = taglio importato dal foglio: non ricorda lo stipendio di partenza */
   originalSalary: number | null;
   originalSlot: "starter" | "reserve" | null;
+  originalIsRookie: boolean;
 }
 export interface RosePlayer {
   id: number;
@@ -56,7 +57,7 @@ function EditPanel({ team, p, settings, onDone }: { team: RoseTeam; p: RosePlaye
   const ev = evaluateContractEdit(
     { roster: team.players.map((x) => ({ id: x.id, position: x.pos, slot: x.slot, salary: x.salary })), cuts: activeCuts(team), bonus: team.bonus },
     p.id,
-    { ...terms, position: p.pos },
+    { ...terms, isRookie: p.rookie, position: p.pos },
     settings,
   );
   const errors = ev.errors;
@@ -245,7 +246,7 @@ function ResolveCutPanel({ team, cut, settings, onDone }: { team: RoseTeam; cut:
   const ev = Number.isFinite(amount)
     ? evaluateSigning(
         { roster, cuts: team.cuts.filter((c) => c.id !== cut.id).map((c) => ({ salary: c.paid })), bonus: team.bonus },
-        { position: cut.pos, slot, years, teamOption: false, salary: amount },
+        { position: cut.pos, slot, years, teamOption: false, salary: amount, isRookie: cut.originalIsRookie },
         settings,
       )
     : null;

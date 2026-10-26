@@ -36,7 +36,7 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
     team && player && Number.isFinite(amount)
       ? evaluateSigning(
           { roster: team.players.map((p) => ({ id: p.id, position: p.pos, slot: p.slot, salary: p.salary })), cuts: team.cuts, bonus: team.bonus },
-          { position: player.pos, slot, years, teamOption: teamOption && optionOk, salary: amount },
+          { position: player.pos, slot, years, teamOption: teamOption && optionOk, salary: amount, isRookie },
           settings,
         )
       : null;

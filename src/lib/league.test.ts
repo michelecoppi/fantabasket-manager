@@ -5,7 +5,7 @@ import { buildLeague, contractLabel, playerName, settingsFromRows, type RawLeagu
 const SETTING_ROWS: SettingRow[] = Object.entries({
   cap: 250, reserve_budget: 80, floor_divisor: 5, tax_credits_per_euro: 4, tax_max_over: 20,
   starters_g: 5, starters_a: 5, starters_c: 3, reserve_min: 3, reserve_max: 6, reserve_max_per_pos: 3,
-  contract_max_years: 3, max_picks_per_round: 2, pick_horizon_years: 3, draft_rounds: 5,
+  contract_max_years: 3, rookie_max_years: 2, max_picks_per_round: 2, pick_horizon_years: 3, draft_rounds: 5,
   rank_bonus_1: 5, rank_bonus_2: 4, rank_bonus_3: 3, rank_bonus_4: 2, rank_bonus_5: 0, rank_bonus_6: -1, rank_bonus_7: -2, rank_bonus_8: -3,
   lottery_teams: 4,
 }).map(([key, value]) => ({ key, value }));
@@ -23,7 +23,7 @@ const raw: RawLeague = {
     { id: 3, team_id: "t1", slot: "reserve", years_left: 1, team_option: false, salary: 6, restriction: null, is_rookie: false, players: { first_name: "", last_name: "Camara", pos: "A", nba_team: null } },
     { id: 4, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 260, restriction: null, is_rookie: false, players: null },
   ],
-  cuts: [{ id: 1, team_id: "t1", player_id: 9, status: "cut", paid_salary: 3.5, years_left: 1, original_salary: null, original_slot: null, team_option: false, players: { first_name: "", last_name: "J.Collins", pos: "A", nba_team: null } }],
+  cuts: [{ id: 1, team_id: "t1", player_id: 9, status: "cut", paid_salary: 3.5, years_left: 1, original_salary: null, original_slot: null, original_is_rookie: false, team_option: false, players: { first_name: "", last_name: "J.Collins", pos: "A", nba_team: null } }],
   talents: [],
   picks: [],
   teamSeason: [{ team_id: "t1", bonus: -2, final_rank: null, entry_fee_paid: true, luxury_tax_paid: false }],
