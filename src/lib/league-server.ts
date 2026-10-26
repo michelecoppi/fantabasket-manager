@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
+import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
@@ -118,12 +119,12 @@ export const loadProfile = cache(async () => {
   const claims = auth?.claims;
   if (!claims) return null;
   const email = typeof claims.email === "string" ? claims.email : "";
-  const { data } = await db
+  const { data, error } = await db
     .from("profiles")
     .select("display_name,role,team_id")
     .eq("id", claims.sub)
     .maybeSingle<{ display_name: string; role: "admin" | "viewer"; team_id: string | null }>();
-  return { email, ...(data ?? { display_name: email, role: "viewer" as const, team_id: null }) };
+  return resolveProfile(email, data, error);
 });
 
 /** Listone Dunkest con l'eventuale proprietario nella stagione corrente. */

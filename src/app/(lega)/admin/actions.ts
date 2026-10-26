@@ -23,8 +23,12 @@ const done = (message: string, warnings: string[] = []): ActionResult => ({ ok: 
 
 /** Ogni action ricontrolla il ruolo: la UI nasconde i bottoni, ma i permessi veri sono qui e nella RPC (is_admin). */
 async function requireAdmin(): Promise<string | null> {
-  const profile = await loadProfile();
-  return profile?.role === "admin" ? null : "Solo gli admin possono modificare i dati.";
+  try {
+    const profile = await loadProfile();
+    return profile?.role === "admin" ? null : "Solo gli admin possono modificare i dati.";
+  } catch {
+    return "Profilo non disponibile al momento: riprova tra poco. Non è stato salvato nulla.";
+  }
 }
 
 /** Traduce gli errori della RPC (prefissi FORBIDDEN / CONFLICT / INVALID, migrazione 0006) in testo per l'utente. */
