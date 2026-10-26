@@ -4,10 +4,10 @@ import { Badge, PageTitle, Scoreboard, Section, stagger } from "@/components/ui"
 import { loadLeague } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
-const ROUNDS = [1, 2, 3, 4, 5];
-
 export default async function DraftPage() {
   const league = await loadLeague();
+  const { draftRounds: roundCount, pickHorizonYears } = league.settings;
+  const ROUNDS = Array.from({ length: roundCount }, (_, i) => i + 1);
   const years = [...new Set(league.picks.map((p) => p.year))].sort();
   const name = (id: string | null) => (id ? league.teamNames.get(id) ?? "?" : "da definire");
   const colors = teamColors(league.teams.map((t) => t.team.id));
@@ -23,7 +23,7 @@ export default async function DraftPage() {
     return { teamId, note: teamId === r.original_team_id ? "" : `Da ${name(r.original_team_id)}` };
   };
   const perRound = Math.max(1, league.teams.length);
-  const draftRounds = [...new Set(league.rookieDraft.map((r) => Math.ceil(r.pick_no / perRound)))];
+  const orderRounds = [...new Set(league.rookieDraft.map((r) => Math.ceil(r.pick_no / perRound)))];
 
   return (
     <>
@@ -32,7 +32,7 @@ export default async function DraftPage() {
         eyebrow="Pick e rookie draft"
         sub={
           <>
-            5 giri, una scelta per squadra e per giro. Si scambiano solo le scelte dei prossimi 3 anni. Nella griglia il pallino grigio è una scelta ancora della
+            {roundCount} giri, una scelta per squadra e per giro. Si scambiano solo le scelte dei prossimi {pickHorizonYears === 1 ? "anno" : `${pickHorizonYears} anni`}. Nella griglia il pallino grigio è una scelta ancora della
             squadra; lo stemma indica il proprietario attuale.{hasPending && " Il ? segna le scelte da confermare."}
           </>
         }
@@ -122,7 +122,7 @@ export default async function DraftPage() {
       {league.rookieDraft.length > 0 && (
         <Section title={`Ordine del draft ${league.seasonYear}`} icon="trophy" aside={`${league.rookieDraft.length} scelte`}>
           <div className="space-y-6">
-            {draftRounds.map((round) => (
+            {orderRounds.map((round) => (
               <div key={round}>
                 <h3 className="eyebrow mb-2 text-muted">{round}° giro</h3>
                 <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
