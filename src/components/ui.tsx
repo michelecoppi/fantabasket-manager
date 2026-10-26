@@ -21,6 +21,7 @@ export function Badge({ tone = "neutral", children, title, icon }: { tone?: keyo
     <span title={title} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875rem] leading-4 font-bold tracking-wide whitespace-nowrap uppercase ${tones[tone]}`}>
       {icon && <Icon name={icon} size={12} strokeWidth={2.4} />}
       {children}
+      {title && <span className="sr-only"> ({title})</span>}
     </span>
   );
 }
@@ -166,7 +167,8 @@ export function PosChip({ pos }: { pos: string | null }) {
       title={pos ? POS_NAME[pos] : "Ruolo non indicato"}
       className={`font-display grid h-7 w-7 shrink-0 place-items-center rounded-md text-base leading-none font-black ${pos ? POS_STYLE[pos] : "border border-dashed border-line text-muted"}`}
     >
-      {pos ?? "?"}
+      <span aria-hidden>{pos ?? "?"}</span>
+      <span className="sr-only">{pos ? POS_NAME[pos] : "Ruolo non indicato"}</span>
     </span>
   );
 }
@@ -179,7 +181,8 @@ export function ContractPips({ years, option, label }: { years: number | null; o
   if (years === null) {
     return (
       <span title="Durata da fissare" className="inline-flex items-center gap-1.5 text-xs font-bold text-warning">
-        <span className="h-2.5 w-2.5 rounded-full border border-dashed border-current" />?
+        <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-dashed border-current" />?
+        <span className="sr-only">Durata da fissare</span>
       </span>
     );
   }
@@ -196,6 +199,7 @@ export function ContractPips({ years, option, label }: { years: number | null; o
         {option && <span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-dashed border-brand-blue" />}
       </span>
       <span className="tnum w-7 text-xs font-semibold text-muted">{label}</span>
+      <span className="sr-only">{title}</span>
     </span>
   );
 }

@@ -45,15 +45,19 @@ export default function LoginPage() {
             </div>
 
             <form action={pwAction} className="flex flex-col gap-3">
-              <label className="relative block">
-                <span className="sr-only">Email</span>
-                <Icon name="mail" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
-                <input name="email" type="email" autoComplete="email" spellCheck={false} placeholder="Email" className={field} />
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-white/80">Email</span>
+                <span className="relative block">
+                  <Icon name="mail" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
+                  <input name="email" type="email" autoComplete="email" spellCheck={false} placeholder="Email" className={field} />
+                </span>
               </label>
-              <label className="relative block">
-                <span className="sr-only">Password</span>
-                <Icon name="lock" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
-                <input name="password" type="password" autoComplete="current-password" placeholder="Password" className={field} />
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-white/80">Password</span>
+                <span className="relative block">
+                  <Icon name="lock" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
+                  <input name="password" type="password" autoComplete="current-password" placeholder="Password" className={field} />
+                </span>
               </label>
               <button disabled={pwPending} className={`${button} bg-gold text-nav shadow-[0_10px_30px_-12px_var(--gold)] hover:brightness-105`}>
                 {pwPending ? <Icon name="ball" size={18} strokeWidth={2} className="ball-spin" /> : <Icon name="arrow-right" size={18} strokeWidth={2.2} />}
@@ -74,10 +78,12 @@ export default function LoginPage() {
 
             <form action={mlAction} className="flex flex-col gap-3">
               <p className="text-sm text-white/60">Ricevi un link di accesso via email.</p>
-              <label className="relative block">
-                <span className="sr-only">Email per il link</span>
-                <Icon name="mail" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
-                <input name="email" type="email" autoComplete="email" spellCheck={false} placeholder="Email" className={field} />
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-white/80">Email per il link</span>
+                <span className="relative block">
+                  <Icon name="mail" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/45" />
+                  <input name="email" type="email" autoComplete="email" spellCheck={false} placeholder="Email" className={field} />
+                </span>
               </label>
               <button disabled={mlPending} className={`${button} border border-white/25 text-white hover:border-white hover:bg-white/8`}>
                 {mlPending ? <Icon name="ball" size={18} strokeWidth={2} className="ball-spin" /> : <Icon name="mail" size={18} />}

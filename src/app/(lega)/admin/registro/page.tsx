@@ -43,7 +43,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/admin/r
             key={key}
             href={href(1, key)}
             aria-current={key === action ? "page" : undefined}
-            className={`min-h-9 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap transition ${
+            className={`min-h-11 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap transition ${
               key === action ? "border-brand-blue bg-brand-blue text-white dark:text-nav" : "border-line bg-surface text-muted hover:border-brand-blue hover:text-foreground"
             }`}
           >

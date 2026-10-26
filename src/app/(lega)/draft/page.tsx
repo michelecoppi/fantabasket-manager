@@ -54,13 +54,14 @@ export default async function DraftPage() {
         const moved = picks.filter((p) => p.current_team_id !== p.original_team_id).length;
         return (
           <Section key={y} title={`Draft ${y}`} icon="ticket" aside={`${moved} scelte scambiate`}>
-            <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+            <div role="region" aria-label={`Pick del draft ${y} per squadra, scorri in orizzontale`} tabIndex={0} className="overflow-x-auto rounded-2xl border border-line bg-surface">
               <table className="w-full min-w-[46rem] border-collapse text-sm">
+                <caption className="sr-only">Chi possiede ora ogni pick del draft {y}, per squadra di origine e giro</caption>
                 <thead>
                   <tr className="eyebrow border-b border-line bg-surface-subtle/60 text-left text-muted">
-                    <th className="sticky left-0 z-[1] bg-surface-subtle px-4 py-2 font-bold">Pick di</th>
+                    <th scope="col" className="sticky left-0 z-[1] bg-surface-subtle px-4 py-2 font-bold">Pick di</th>
                     {ROUNDS.map((r) => (
-                      <th key={r} className="px-2 py-2 text-center font-bold">
+                      <th key={r} scope="col" className="px-2 py-2 text-center font-bold">
                         {r}° giro
                       </th>
                     ))}
@@ -69,10 +70,10 @@ export default async function DraftPage() {
                 <tbody className="divide-y divide-line">
                   {league.teams.map(({ team }, ti) => (
                     <tr key={team.id} className="rise" style={stagger(ti)}>
-                      <th className="sticky left-0 z-[1] bg-surface px-4 py-2 text-left font-semibold whitespace-nowrap">
-                        <Link href={`/squadre/${team.id}`} className="flex items-center gap-2 hover:underline">
+                      <th scope="row" className="sticky left-0 z-[1] border-r border-line bg-surface px-4 py-2 text-left font-semibold whitespace-nowrap">
+                        <Link href={`/squadre/${team.id}`} className="flex min-h-11 max-w-[11rem] items-center gap-2 hover:underline">
                           <TeamCrest name={team.name} color={color(team.id)} size="xs" />
-                          {team.name}
+                          <span className="truncate">{team.name}</span>
                         </Link>
                       </th>
                       {ROUNDS.map((r) => {
@@ -82,20 +83,28 @@ export default async function DraftPage() {
                             {!p ? (
                               <span className="text-muted">–</span>
                             ) : p.current_team_id === team.id ? (
-                              <span className="mx-auto block h-2 w-2 rounded-full bg-foreground/15" title="Ancora della squadra" />
+                              <>
+                                <span className="mx-auto block h-2 w-2 rounded-full bg-foreground/15" aria-hidden />
+                                <span className="sr-only">Ancora della squadra</span>
+                              </>
                             ) : p.current_team_id ? (
                               <Link
                                 href={`/squadre/${p.current_team_id}`}
-                                className="inline-flex max-w-full items-center gap-1.5 rounded-lg border py-1 pr-2 pl-1 text-xs font-bold transition-[filter] hover:brightness-95"
+                                className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-lg border py-1 pr-2 pl-1 text-xs font-bold transition-[filter] hover:brightness-95"
                                 style={{ borderColor: `color-mix(in oklab, ${color(p.current_team_id)} 45%, transparent)`, background: `color-mix(in oklab, ${color(p.current_team_id)} 12%, transparent)` }}
                               >
                                 <TeamCrest name={name(p.current_team_id)} color={color(p.current_team_id)} size="xs" />
                                 <span className="truncate">{name(p.current_team_id)}</span>
-                                {p.to_confirm && <span className="text-warning" title="Destinatario da confermare">?</span>}
+                                {p.to_confirm && (
+                                  <span className="text-warning">
+                                    <span aria-hidden>?</span>
+                                    <span className="sr-only">Destinatario da confermare</span>
+                                  </span>
+                                )}
                               </Link>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-xs text-muted italic">
-                                da definire {p.to_confirm && <Badge tone="warn">?</Badge>}
+                                da definire {p.to_confirm && <Badge tone="warn" title="Destinatario da confermare">?</Badge>}
                               </span>
                             )}
                           </td>

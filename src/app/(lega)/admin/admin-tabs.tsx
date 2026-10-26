@@ -19,7 +19,7 @@ export function AdminTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`font-display inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[1.0625rem] font-extrabold whitespace-nowrap transition-[background-color,border-color,color] ${
+            className={`font-display inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[1.0625rem] font-extrabold whitespace-nowrap transition-[background-color,border-color,color] ${
               active ? "border-nav bg-nav text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface text-muted hover:border-foreground/40 hover:text-foreground"
             }`}
           >

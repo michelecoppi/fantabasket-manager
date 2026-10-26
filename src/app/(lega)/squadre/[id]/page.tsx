@@ -65,7 +65,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
   return (
     <>
-      <Link href="/" className="mt-4 mb-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-brand-blue hover:underline sm:mt-0">
+      <Link href="/" className="mt-4 mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue hover:underline sm:mt-0">
         <Icon name="arrow-left" size={16} strokeWidth={2.2} />
         Lega
       </Link>
