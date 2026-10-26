@@ -319,6 +319,30 @@ begin
   perform rls_t.become('postgres');
 end $$;
 
+-- ---------- import_replace_season: solo service_role ----------
+-- Non è admin_*: niente guardia admin, ma nessun ruolo API può eseguirla (l'import cancella e riscrive una stagione).
+-- Il comportamento (atomicità, altre stagioni intatte) è provato in supabase/tests/import.sql.
+do $$
+declare r text;
+begin
+  perform rls_t.ok('import_replace_season non esiste', to_regprocedure('public.import_replace_season(jsonb)') is not null);
+  perform rls_t.ok('anon esegue import_replace_season', not has_function_privilege('anon', 'public.import_replace_season(jsonb)', 'execute'));
+  perform rls_t.ok('authenticated esegue import_replace_season', not has_function_privilege('authenticated', 'public.import_replace_season(jsonb)', 'execute'));
+  perform rls_t.ok('service_role non esegue import_replace_season', has_function_privilege('service_role', 'public.import_replace_season(jsonb)', 'execute'));
+  foreach r in array array['anon', 'viewer', 'admin'] loop
+    if r = 'anon' then perform rls_t.become('anon');
+    elsif r = 'viewer' then perform rls_t.become('authenticated', rls_t.viewer());
+    else perform rls_t.become('authenticated', rls_t.admin());
+    end if;
+    perform rls_t.chk(format('%s esegue import_replace_season', r), rls_t.try('select public.import_replace_season(null)'), array['denied']);
+  end loop;
+  perform rls_t.become('postgres');
+  grant usage on schema rls_t to service_role;
+  perform rls_t.become('service_role');
+  perform rls_t.chk('service_role con payload nullo', rls_t.try('select public.import_replace_season(null)'), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+end $$;
+
 do $$ begin
   raise notice 'RLS: tutti i test passati (% tabelle, % RPC)', (select count(*) from rls_t.tbl), (select count(*) from rls_t.rpc);
 end $$;

@@ -56,3 +56,5 @@ jobs:
           done
       - name: Test RLS
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
+      - name: Test import atomico (rollback e altre stagioni intatte)
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/import.sql
