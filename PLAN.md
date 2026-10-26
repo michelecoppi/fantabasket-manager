@@ -42,6 +42,7 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 - [x] **Giocatori**: listone Dunkest filtrabile (nome, ruolo, squadra NBA, libero/occupato, ordine) in `/giocatori`
 - [x] Layout mobile-first, tema chiaro/scuro automatico; grafica ispirata a NBA.com (barra scura, rosso/blu, titoli condensed)
 - [x] Strumenti per gli utenti (issue #13): griglia pick in `/draft`, contratti in scadenza in `/scadenze`, simulatore di scambio in sola lettura in `/scambio` (`tradeImpact` in `lib/cap.ts`, R-57), ordinamento/filtri sulla home, PWA installabile (`manifest.ts`, icone da `scripts/make-icons.mjs`; niente service worker, l'app è sempre online)
+- [x] Pagina `/account` (chiave nell'header): ogni utente si imposta o cambia la password da sé (`updateUser`), utile a chi entra col link email. 2026-10-26: creato il profilo admin di Luigi (Assago Farmers, `display_name` Amedeo) dopo l'invito da Supabase → Authentication; i profili non si creano da soli, serve una riga in `profiles`
 - [x] Logo della lega in header, login, favicon e icone PWA (`scripts/make-icons.mjs` lo ricava da `scripts/assets/logo-source.jpg`)
 - [x] Pulizia (issue #11): tolti gli svg del template, `CLAUDE.md` e `docs/STACK.md` riallineati, commento residuo in `next.config.ts`
 - [ ] **Verificare le pagine con dati su Vercel** (il login è provato in locale)
