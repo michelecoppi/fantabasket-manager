@@ -90,6 +90,8 @@ export interface Versions {
   cuts: Record<number, number>;
   /** per squadra (la riga delle quote può non esistere ancora) */
   teamSeason: Record<string, number>;
+  /** per squadra: contatore delle modifiche alla rosa, riletto dalla RPC dopo il lock di squadra (migrazione 0012) */
+  rosterRev: Record<string, number>;
 }
 
 export interface RawLeague {
