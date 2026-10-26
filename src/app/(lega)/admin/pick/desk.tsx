@@ -38,7 +38,7 @@ function PickRow({ pick, teams, onDone }: { pick: DeskPick; teams: Team[]; onDon
       </select>
       <Check checked={toConfirm} onChange={setToConfirm}>da confermare</Check>
       <Button
-        className="min-h-10 px-4"
+        className="min-h-11 px-4"
         disabled={!changed || invalid}
         pending={pending}
         onClick={() =>
@@ -98,7 +98,7 @@ export function PickDesk({
             <Button
               key={y}
               variant="secondary"
-              className="min-h-10"
+              className="min-h-11"
               pending={opening}
               onClick={() =>
                 startOpen(async () => {

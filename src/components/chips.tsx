@@ -30,7 +30,7 @@ export function ChipLinks({ label, options }: { label: string; options: { href: 
             href={o.href}
             scroll={false}
             aria-current={o.active ? "true" : undefined}
-            className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color] ${
+            className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color] ${
               o.active ? "border-nav bg-nav text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface text-foreground/80 hover:border-foreground/40"
             }`}
           >

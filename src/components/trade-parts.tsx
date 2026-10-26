@@ -96,7 +96,7 @@ export function TradePicker({ team, give, onChange, color = "#1d47b5" }: { team:
               return (
                 <label
                   key={p.id}
-                  className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-[background-color,border-color,color] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold ${
+                  className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-[background-color,border-color,color] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold ${
                     on ? "border-transparent text-white" : "border-line border-dashed hover:border-foreground/40"
                   }`}
                   style={on ? { background: color } : undefined}

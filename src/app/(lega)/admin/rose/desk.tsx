@@ -368,9 +368,9 @@ export function RoseDesk({ teams, settings }: { teams: RoseTeam[]; settings: Lea
                   )}
                   <span className="w-11 text-right font-semibold tabular-nums">{fmt(p.salary)}</span>
                   <span className="flex gap-1.5">
-                    <Button variant="secondary" className="min-h-9 px-3 text-base" aria-expanded={open?.id === p.id && open.mode === "edit"} onClick={() => toggle(p.id, "edit")}>Modifica</Button>
-                    <Button variant="secondary" className="min-h-9 px-3 text-base hover:border-brand-red hover:text-accent" aria-expanded={open?.id === p.id && open.mode === "cut"} onClick={() => toggle(p.id, "cut")}>Taglia</Button>
-                    <Button variant="ghost" className="min-h-9 px-2 text-base hover:text-accent" aria-label={`Rimuovi ${p.name} senza quota`} title="Rimuovi (correzione di un errore, nessuna quota)" aria-expanded={open?.id === p.id && open.mode === "remove"} onClick={() => toggle(p.id, "remove")}>✕</Button>
+                    <Button variant="secondary" className="min-h-11 px-3 text-base" aria-expanded={open?.id === p.id && open.mode === "edit"} onClick={() => toggle(p.id, "edit")}>Modifica</Button>
+                    <Button variant="secondary" className="min-h-11 px-3 text-base hover:border-brand-red hover:text-accent" aria-expanded={open?.id === p.id && open.mode === "cut"} onClick={() => toggle(p.id, "cut")}>Taglia</Button>
+                    <Button variant="ghost" className="min-h-11 px-2 text-base hover:text-accent" aria-label={`Rimuovi ${p.name} senza quota`} title="Rimuovi (correzione di un errore, nessuna quota)" aria-expanded={open?.id === p.id && open.mode === "remove"} onClick={() => toggle(p.id, "remove")}>✕</Button>
                   </span>
                 </div>
                 {open?.id === p.id && open.mode === "edit" && <EditPanel key={`${p.id}-${p.version}`} team={team} p={p} settings={settings} onDone={finish} />}
@@ -431,7 +431,7 @@ export function RoseDesk({ teams, settings }: { teams: RoseTeam[]; settings: Lea
                   )}
                   <span className="w-12 text-right tabular-nums">{fmt(c.paid)}</span>
                   {c.status === "pending" && (
-                    <Button variant="secondary" className="min-h-9 px-3 text-base" aria-expanded={open?.id === c.id && open.mode === "resolve"} onClick={() => toggle(c.id, "resolve")}>
+                    <Button variant="secondary" className="min-h-11 px-3 text-base" aria-expanded={open?.id === c.id && open.mode === "resolve"} onClick={() => toggle(c.id, "resolve")}>
                       Risolvi
                     </Button>
                   )}
