@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageTitle } from "@/components/ui";
 import { loadLeague } from "@/lib/league-server";
 import { simTeams } from "@/lib/sim-teams";
@@ -14,6 +15,9 @@ export default async function TradePage() {
       >
         Simulatore di scambio
       </PageTitle>
+      <p className="mb-4 text-sm">
+        <Link href="/storico-scambi" className="font-semibold text-brand-blue hover:underline">Vedi lo storico degli scambi →</Link>
+      </p>
       <TradeSimulator teams={simTeams(league)} settings={league.settings} />
     </>
   );
