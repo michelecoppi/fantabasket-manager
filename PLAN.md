@@ -67,8 +67,8 @@ Migrazioni in `supabase/migrations/`; in questo file e nei commenti del codice s
 ## Fase 4 — Rifiniture
 - [ ] Storico stagioni e scambi
 - [ ] Export CSV/Excel
-- [x] Keep-alive Supabase (`.github/workflows/keepalive.yml`; i secret su GitHub si aggiungono come in [docs/DEPLOY.md](docs/DEPLOY.md))
-- [x] Backup periodico del database (`.github/workflows/backup.yml`, dump cifrato come artifact; servono i secret `SUPABASE_DB_URL` e `BACKUP_PASSPHRASE`, da aggiungere a mano; ripristino in DEPLOY.md). Keep-alive anche con cron Vercel su `/api/keepalive`
+- [x] Keep-alive Supabase: cron Vercel su `/api/keepalive` (`vercel.json`); il workflow GitHub `keepalive.yml` è stato tolto il 2026-10-26 (si fermava dopo 60 giorni di inattività del repo)
+- [x] Backup periodico del database (`.github/workflows/backup.yml`, dump cifrato come artifact; servono i secret `SUPABASE_DB_URL` e `BACKUP_PASSPHRASE`, da aggiungere a mano; ripristino in DEPLOY.md).
 - [ ] Notifiche (opzionale)
 - [x] Redesign Phase 2: design system Front Office editoriale, shell responsive e dashboard `/` con cap line e league board; specifiche in `docs/design/DESIGN_SYSTEM.md`
 - [x] Redesign "Arena Night" (2026-10-26, branch `feat/redesign-arena`): palette dal logo, font Big Shoulders + Archivo, icone Tabler (MIT) a tema basket, stemmi squadra, ticker della lega, tab bar mobile, filtri a chip, trade machine, animazioni e view transition; specifiche in `docs/design/DESIGN_SYSTEM.md`, skill di design aggiornate in `.agents/skills/`. Nessuna modifica a dati, regole, action o RPC
