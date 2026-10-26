@@ -11,6 +11,7 @@ import {
   evaluateTrade,
   pickLimitWarnings,
   pickYearAllowed,
+  signingRestriction,
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
@@ -73,7 +74,11 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
   const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary, isRookie: input.isRookie };
   const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
   // R-25: vale per firma normale e asta dei tagliati, quindi si controlla prima di scegliere il percorso.
-  const floorErrors = auctionFloorErrors(input.salary, auctionFloor(await loadLastContract(input.playerId), new Date().toISOString().slice(0, 10), league.settings));
+  const last = await loadLastContract(input.playerId);
+  const floorErrors = auctionFloorErrors(input.salary, auctionFloor(last, new Date().toISOString().slice(0, 10), league.settings));
+  // R-24: con un diritto restricted aperto il contratto è unrestricted e il diritto si consuma; lo impone anche il trigger del database.
+  const restriction = signingRestriction(last, input.unrestricted);
+  const rightNote = restriction.consumesRight ? " Diritto di pareggio consumato: contratto unrestricted (R-24)." : "";
   const errors = [...ev.errors, ...floorErrors];
   if (errors.length) return fail(errors.join(" "));
   const name = [player.data.first_name, player.data.last_name].join(" ").trim();
@@ -94,12 +99,12 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
       p_team_option: input.teamOption,
       p_salary: input.salary,
       p_is_rookie: input.isRookie,
-      p_restriction: input.unrestricted ? "unrestricted" : null,
+      p_restriction: restriction.unrestricted ? "unrestricted" : null,
       p_notes: input.notes,
     });
     if (error) return rpcError(error.message);
     refresh();
-    return done(`${name} preso da ${team.team.name} all'asta dei tagliati: ${pendingCut.team.team.name} non paga più la quota.`, ev.warnings);
+    return done(`${name} preso da ${team.team.name} all'asta dei tagliati: ${pendingCut.team.team.name} non paga più la quota.${rightNote}`, ev.warnings);
   }
 
   const { error } = await db.rpc("admin_sign_contract", {
@@ -110,12 +115,12 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
     p_team_option: input.teamOption,
     p_salary: input.salary,
     p_is_rookie: input.isRookie,
-    p_restriction: input.unrestricted ? "unrestricted" : null,
+    p_restriction: restriction.unrestricted ? "unrestricted" : null,
     p_notes: input.notes,
   });
   if (error) return rpcError(error.message);
   refresh();
-  return done(`${name} firmato da ${team.team.name}.`, ev.warnings);
+  return done(`${name} firmato da ${team.team.name}.${rightNote}`, ev.warnings);
 }
 
 // ---------- Modifica contratto ----------

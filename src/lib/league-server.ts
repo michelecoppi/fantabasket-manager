@@ -168,12 +168,12 @@ export async function loadLastContract(playerId: number): Promise<LastContract |
   const db = await createClient();
   const r = await db
     .from("last_contracts")
-    .select("salary,last_contract_on")
+    .select("salary,last_contract_on,restricted")
     .eq("player_id", playerId)
     .order("last_contract_on", { ascending: false })
     .order("id", { ascending: false })
     .limit(1)
-    .maybeSingle<{ salary: number | string; last_contract_on: string }>();
+    .maybeSingle<{ salary: number | string; last_contract_on: string; restricted: boolean }>();
   if (r.error) throw new Error(r.error.message);
-  return r.data ? { salary: Number(r.data.salary), on: r.data.last_contract_on } : null;
+  return r.data ? { salary: Number(r.data.salary), on: r.data.last_contract_on, restricted: r.data.restricted } : null;
 }

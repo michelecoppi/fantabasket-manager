@@ -4,6 +4,7 @@ import {
   luxuryTaxEur,
   rosterWarnings,
   salaryFloor,
+  signingRestriction,
   teamFinance,
   type RosterEntry,
 } from "./cap";
@@ -123,5 +124,16 @@ describe("rosterWarnings", () => {
   it("max 3 riserve per ruolo (R-03)", () => {
     const roster = Array.from({ length: 4 }, () => entry("reserve", 1, "A"));
     expect(rosterWarnings(roster, S)).toContain("Riserve A: 4 (max 3)");
+  });
+});
+
+describe("signingRestriction (R-24)", () => {
+  it("con il diritto di pareggio aperto il contratto è unrestricted e consuma il diritto, anche senza checkbox", () => {
+    expect(signingRestriction({ salary: 10, on: "2026-09-30", restricted: true }, false)).toEqual({ unrestricted: true, consumesRight: true });
+  });
+  it("senza diritto aperto (consumato, unrestricted o nessun ultimo contratto) decide solo il checkbox", () => {
+    expect(signingRestriction({ salary: 10, on: "2026-09-30", restricted: false }, false)).toEqual({ unrestricted: false, consumesRight: false });
+    expect(signingRestriction(null, false)).toEqual({ unrestricted: false, consumesRight: false });
+    expect(signingRestriction(null, true)).toEqual({ unrestricted: true, consumesRight: false });
   });
 });

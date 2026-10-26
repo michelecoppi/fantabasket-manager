@@ -319,6 +319,52 @@ begin
   perform rls_t.become('postgres');
 end $$;
 
+-- ---------- R-24 (P2-04): la firma consuma il diritto di pareggio e il contratto è unrestricted ----------
+do $$
+declare
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  sid int := (select id from seasons where is_current);
+  cid int; r last_contracts%rowtype; res text;
+begin
+  insert into players (id, first_name, last_name, pos, nba_team) values (900011, 'RLS', 'Pareggio', 'G', 'TST'), (900012, 'RLS', 'Libero', 'G', 'TST');
+  insert into last_contracts (id, player_id, team_id, salary, last_contract_on, restricted)
+    values (900011, 900011, t1, 8, date '2026-09-30', true), (900012, 900012, t1, 4, date '2026-09-30', false);
+
+  -- Firma della squadra col diritto (pareggio) tramite la RPC admin, senza passare restriction.
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_sign_contract(900011, t1, 'starter', 2, false, 8, false, null, null);
+  perform rls_t.become('postgres');
+  select id into cid from contracts where player_id = 900011 and season_id = sid;
+  if (select restriction from contracts where id = cid) is distinct from 'unrestricted' then
+    raise exception 'RLS: il secondo contratto dopo un pareggio deve essere unrestricted (R-24)';
+  end if;
+  select * into r from last_contracts where id = 900011;
+  if r.restricted or r.consumed_by_contract_id is distinct from cid or r.consumed_at is null then
+    raise exception 'RLS: la firma deve consumare il diritto e registrarne l''esito';
+  end if;
+
+  -- Dopo un taglio successivo il vecchio diritto non riemerge: l'ultima riga resta non restricted.
+  delete from contracts where id = cid;
+  if exists (select 1 from last_contracts where player_id = 900011 and restricted) then
+    raise exception 'RLS: il vecchio diritto è riemerso';
+  end if;
+
+  -- Un'altra squadra che vince l'asta ottiene comunque un contratto unrestricted (confermato dall'utente).
+  insert into last_contracts (id, player_id, team_id, salary, last_contract_on, restricted) values (900013, 900011, t1, 8, date '2026-10-01', true);
+  insert into contracts (season_id, team_id, player_id, slot, years_left, salary) values (sid, t2, 900011, 'starter', 1, 9) returning id into cid;
+  if (select restriction from contracts where id = cid) is distinct from 'unrestricted'
+     or (select restricted from last_contracts where id = 900013) then
+    raise exception 'RLS: la firma di un''altra squadra deve consumare il diritto e dare un contratto unrestricted';
+  end if;
+
+  -- Senza diritto aperto la restriction scelta resta com''è.
+  insert into contracts (season_id, team_id, player_id, slot, years_left, salary) values (sid, t2, 900012, 'starter', 1, 4) returning id into cid;
+  if (select restriction from contracts where id = cid) is not null then
+    raise exception 'RLS: senza diritto aperto il contratto non deve diventare unrestricted';
+  end if;
+end $$;
+
 do $$ begin
   raise notice 'RLS: tutti i test passati (% tabelle, % RPC)', (select count(*) from rls_t.tbl), (select count(*) from rls_t.rpc);
 end $$;

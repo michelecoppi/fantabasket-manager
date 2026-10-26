@@ -150,13 +150,14 @@ Nessun elemento confermato. In particolare non è stato verificato un accesso an
 - **Complessità:** media. **Rischio/dipendenze:** migrazione coordinata e test RLS ampliati.
 - **Accettazione:** versioni mancanti/stale rifiutate, audit intatto, update concorrenti dei pagamenti rilevati, privilegi minimi verificati in CI.
 
-#### P2-04 — R-24 e consumo dei diritti restricted — **rinviata**
+#### P2-04 — R-24 e consumo dei diritti restricted — **fatta** (branch `feat/restricted-r24`, migrazione `20261026230000_restricted_rights.sql` da applicare)
 - **Tipo:** bug fix / workflow.
 - **Problema ed evidenza:** dopo un pareggio l'admin deve ricordare il checkbox `unrestricted`; la vecchia riga `last_contracts` non viene consumata e può ricomparire dopo un successivo taglio.
 - **Soluzione:** derivare il secondo contratto dalla storia, registrare l'esito dell'asta e aggiornare i diritti nella stessa transazione.
 - **Valore:** evita due prelazioni consecutive e badge obsoleti.
 - **Complessità:** media/alta. **Rischio/dipendenze:** modello del ciclo asta e migrazione; non risolvere con un default UI.
 - **Accettazione:** secondo contratto sempre unrestricted, vecchio diritto non riemerge, chiusura successiva coerente.
+- **Esito:** trigger `contracts_consume_right` su `contracts` (stessa transazione di firma e asta dei tagliati, RPC invariate): se l'ultima riga di `last_contracts` è restricted, il nuovo contratto è unrestricted e la riga passa a `restricted = false` con `consumed_by_contract_id`/`consumed_at`. `signingRestriction` in `cap.ts` e il checkbox bloccato in /admin/firma avvisano l'admin; test in `cap.test.ts` e `rls.sql`.
 
 #### P2-05 — Navigazione completa del listone — **rinviata**
 - **Tipo:** UX improvement.
