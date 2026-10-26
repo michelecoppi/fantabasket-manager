@@ -5,6 +5,7 @@ import { Button, Callout, Field, inputClass } from "@/components/controls";
 import { emptyGive, ImpactCard, TradePicker, type Give, type SimTeam } from "@/components/trade-parts";
 import { Card } from "@/components/ui";
 import { evaluateTrade, type LeagueSettings } from "@/lib/cap";
+import { teamColors } from "@/lib/team-colors";
 import { toParty } from "../../scambio/simulator";
 import { executeTrade } from "../actions";
 
@@ -50,6 +51,7 @@ export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: Lea
   const a = teams.find((t) => t.id === aId);
   const b = teams.find((t) => t.id === bId);
   if (!a || !b) return <p className="text-sm text-muted">Servono almeno due squadre.</p>;
+  const colors = teamColors(teams.map((t) => t.id));
 
   const reset = () => {
     setGiveA(emptyGive());
@@ -107,21 +109,21 @@ export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: Lea
       </Card>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <TradePicker team={a} give={giveA} onChange={edit(setGiveA)} />
-        <TradePicker team={b} give={giveB} onChange={edit(setGiveB)} />
+        <TradePicker team={a} give={giveA} onChange={edit(setGiveA)} color={colors.get(a.id)} />
+        <TradePicker team={b} give={giveB} onChange={edit(setGiveB)} color={colors.get(b.id)} />
       </div>
 
       {!empty && (
         <>
-          <h2 className="font-display mt-8 mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">Effetto sul cap</h2>
+          <h2 className="font-display mt-8 mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">Effetto sul cap</h2>
           <div className="grid gap-3 md:grid-cols-2">
-            <ImpactCard name={a.name} impact={ev.impacts[0]} give={giveA} receive={giveB} />
-            <ImpactCard name={b.name} impact={ev.impacts[1]} give={giveB} receive={giveA} />
+            <ImpactCard name={a.name} impact={ev.impacts[0]} give={giveA} receive={giveB} color={colors.get(a.id)} />
+            <ImpactCard name={b.name} impact={ev.impacts[1]} give={giveB} receive={giveA} color={colors.get(b.id)} />
           </div>
         </>
       )}
 
-      <h2 className="font-display mt-8 mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">Ufficializza</h2>
+      <h2 className="font-display mt-8 mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">Ufficializza</h2>
       <Card className="space-y-4 p-4">
         {empty ? (
           <p className="text-sm text-muted">Seleziona giocatori o pick da scambiare per vedere il riepilogo.</p>

@@ -35,7 +35,7 @@ export default async function AdminLogPage({ searchParams }: PageProps<"/admin/r
 
   return (
     <>
-      <PageTitle sub="Tutte le operazioni degli admin, dalla più recente. Ogni riga è una transazione completa.">Registro operazioni</PageTitle>
+      <PageTitle icon="ledger" eyebrow="Area admin" sub="Tutte le operazioni degli admin, dalla più recente. Ogni riga è una transazione completa.">Registro operazioni</PageTitle>
 
       <nav aria-label="Filtra per tipo" className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {[["", "Tutte"], ...Object.entries(AUDIT_ACTIONS)].map(([key, label]) => (

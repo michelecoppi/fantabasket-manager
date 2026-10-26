@@ -1,5 +1,13 @@
 # Roadmap design e visual QA
 
+## Arena Night — 2026-10-26
+
+Redesign completo della parte grafica (vedi `DESIGN_SYSTEM.md`): shell con ticker e tab bar, home, squadra, giocatori, draft, scadenze, simulatore, login, stati di errore/404/caricamento, panoramica e tab admin; i desk admin ereditano token, primitive e titoli. 
+**Verificato (2026-10-26, Chrome dell'utente autenticato, dati reali, nessuna scrittura):** home, squadra, giocatori, draft, scadenze, simulatore (selezione di due giocatori, impatto e stato "in regola"), panoramica admin e `/admin/rose` a 1568 px in scuro; home e squadra in chiaro; 14 pagine (viewer e admin) a 390 px senza scroll orizzontale; login con Chrome headless a 1440 e 390 px. Corretti durante il QA: testo a contorno invisibile, etichette troncate nei tabelloni da 4 valori, titolo di sezione che sbordava su telefono, colonna NBA che andava a capo. Test (121), typecheck, lint e build verdi.
+
+**Non verificato:** tablet 768 px, tema chiaro su tutte le pagine, `prefers-reduced-motion` nel browser, stati di errore/404 con dati reali, desk admin oltre `/admin/rose` e `/admin/firma` (solo layout), Safari/iOS (view transition e safe area). Resta in console il diagnostico dev `Date.now()` di `UserBadge`, preesistente.
+
+
 ## Stato Phase 3 — 2026-10-25
 
 **QA autenticato della dashboard completato.** Il Chrome QA isolato, collegato via CDP sulla porta 9222, mostra `http://localhost:3000/`, la headline “Il cap detta il gioco” e le otto franchigie reali. La Phase 4 può partire; restano i limiti espliciti sotto.

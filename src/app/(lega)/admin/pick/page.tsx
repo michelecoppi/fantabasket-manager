@@ -20,7 +20,7 @@ export default async function AdminPickPage() {
   const openable = Array.from({ length: settings.pickHorizonYears }, (_, i) => seasonYear + 1 + i).filter((y) => !existing.has(y) && pickYearAllowed(y, seasonYear, settings));
   return (
     <>
-      <PageTitle sub="Correggi il proprietario delle pick o chiudi i dubbi «da confermare». Si possono possedere solo le pick dei prossimi draft (R-34); ogni squadra ne tiene al massimo 2 per giro (R-33, avviso).">
+      <PageTitle icon="ticket" eyebrow="Area admin" sub="Correggi il proprietario delle pick o chiudi i dubbi «da confermare». Si possono possedere solo le pick dei prossimi draft (R-34); ogni squadra ne tiene al massimo 2 per giro (R-33, avviso).">
         Gestione pick
       </PageTitle>
       <PickDesk

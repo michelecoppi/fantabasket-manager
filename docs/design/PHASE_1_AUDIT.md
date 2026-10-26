@@ -1,5 +1,7 @@
 # Fantabasket Redesign — Phase 1 Audit
 
+> Documento storico. La direzione attuale è "Arena Night" in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md): i vincoli di questa fase (niente gradienti, niente rosso e blu insieme, raggi 0–6 px) non valgono più.
+
 Data: 2026-10-23 · Ambito: audit, ricerca e direzione; nessuna modifica all'applicazione.
 
 ## 1. Repository e aggiornamento

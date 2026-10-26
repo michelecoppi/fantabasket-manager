@@ -1,16 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Geist } from "next/font/google";
+import { Archivo, Big_Shoulders } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Testo: Archivo (grottesco sportivo, leggibile anche piccolo). Titoli e cifre: Big Shoulders (stile tabellone).
+const body = Archivo({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-const display = Barlow_Condensed({
+const display = Big_Shoulders({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -20,11 +21,11 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Fantabasket", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0a0d14" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#060a14", viewportFit: "cover" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${geistSans.variable} ${display.variable} h-full antialiased`}>
+    <html lang="it" className={`${body.variable} ${display.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
