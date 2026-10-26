@@ -7,7 +7,7 @@ export default async function AdminTradePage() {
   const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
   return (
     <>
-      <PageTitle sub="Scegli le due squadre e ciò che cedono: il cap (R-57) è controllato prima di salvare, poi rose, pick e registro cambiano insieme o per niente.">
+      <PageTitle icon="swap" eyebrow="Area admin" sub="Scegli le due squadre e ciò che cedono: il cap (R-57) è controllato prima di salvare, poi rose, pick e registro cambiano insieme o per niente.">
         Registra uno scambio
       </PageTitle>
       <TradeDesk teams={simTeams(league, versions)} settings={league.settings} />

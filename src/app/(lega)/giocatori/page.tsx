@@ -1,13 +1,17 @@
 import Form from "next/form";
 import Link from "next/link";
 import { SubmitButton } from "@/components/controls";
-import { Badge, Card, PageTitle } from "@/components/ui";
+import { TeamCrest } from "@/components/crest";
+import { Icon } from "@/components/icons";
+import { Badge, Empty, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
 import { fmt, POS_LABEL } from "@/lib/format";
 import { loadLeague, loadPlayers } from "@/lib/league-server";
 import { filterPlayers, parseFilters } from "@/lib/players";
+import { teamColors } from "@/lib/team-colors";
 
 const MAX_ROWS = 100;
-const control = "w-full rounded border border-line bg-surface px-3 py-2 text-base";
+const control = "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15";
+const cols = "md:grid md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_4.5rem] md:items-center md:gap-4";
 
 export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const filters = parseFilters(await props.searchParams);
@@ -16,21 +20,49 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const rows = filterPlayers(players, filters);
   const shown = rows.slice(0, MAX_ROWS);
   const free = players.filter((p) => !p.ownerTeamId).length;
+  const colors = teamColors(league.teams.map((t) => t.team.id));
 
   return (
     <>
-      <PageTitle sub={`${players.length} giocatori nel listone Dunkest · ${free} liberi`}>Giocatori</PageTitle>
+      <PageTitle
+        icon="jersey"
+        eyebrow="Listone Dunkest"
+        sub="Tutti i giocatori con crediti, squadra NBA e proprietario nella lega. Filtra per ruolo, squadra o stato."
+        aside={
+          <Scoreboard
+            items={[
+              { label: "Giocatori", value: players.length },
+              { label: "Liberi", value: free, tone: "gold" },
+              { label: "In rosa", value: players.length - free },
+            ]}
+          />
+        }
+      >
+        Giocatori
+      </PageTitle>
 
-      <Card className="p-3">
-        <Form className="grid grid-cols-2 gap-2 sm:grid-cols-6" action="/giocatori">
-          <input name="q" defaultValue={filters.q} placeholder="Cerca per nome" className={`${control} col-span-2`} />
+      <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 shadow-[0_12px_30px_-24px_rgb(6_10_20/0.6)] backdrop-blur-md md:sticky md:top-[4.5rem]">
+        <Form className="grid grid-cols-2 gap-2 lg:grid-cols-[minmax(14rem,1.6fr)_repeat(4,minmax(8rem,1fr))_auto_auto]" action="/giocatori">
+          <label className="relative col-span-2 lg:col-span-1">
+            <span className="sr-only">Cerca per nome</span>
+            <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
+            <input name="q" defaultValue={filters.q} placeholder="Cerca per nome…" autoComplete="off" spellCheck={false} className={`${control} pl-10`} />
+          </label>
           <select name="ruolo" defaultValue={filters.pos} className={control} aria-label="Ruolo">
             <option value="">Tutti i ruoli</option>
-            {(["G", "A", "C"] as const).map((p) => <option key={p} value={p}>{POS_LABEL[p]}</option>)}
+            {(["G", "A", "C"] as const).map((p) => (
+              <option key={p} value={p}>
+                {POS_LABEL[p]}
+              </option>
+            ))}
           </select>
           <select name="nba" defaultValue={filters.nbaTeam} className={control} aria-label="Squadra NBA">
             <option value="">Tutte le NBA</option>
-            {nbaTeams.map((t) => <option key={t} value={t}>{t}</option>)}
+            {nbaTeams.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
           </select>
           <select name="stato" defaultValue={filters.owner} className={control} aria-label="Stato">
             <option value="all">Liberi e occupati</option>
@@ -41,44 +73,76 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
             <option value="credits">Per crediti</option>
             <option value="name">Per nome</option>
           </select>
-          <SubmitButton className="col-span-2 sm:col-span-5">Filtra</SubmitButton>
-          <Link href="/giocatori" className="font-display col-span-2 rounded border border-line px-3 py-2 text-center text-lg font-bold sm:col-span-1">Azzera</Link>
+          <SubmitButton icon="sliders">Filtra</SubmitButton>
+          <Link
+            href="/giocatori"
+            className="font-display inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-lg font-extrabold transition-colors hover:border-foreground/40"
+          >
+            Azzera
+          </Link>
         </Form>
-      </Card>
+      </div>
 
-      <p className="mt-4 mb-2 text-sm text-muted">
+      <p className="mt-5 mb-2 text-sm font-semibold text-muted">
         {rows.length} risultati{rows.length > MAX_ROWS && ` · mostrati i primi ${MAX_ROWS}, restringi i filtri`}
       </p>
 
       {shown.length === 0 ? (
-        <p className="text-sm text-muted">Nessun giocatore con questi filtri.</p>
+        <Empty title="Nessun giocatore" icon="search">
+          Nessun giocatore con questi filtri.
+        </Empty>
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-          {shown.map((p) => (
-            <li key={p.id} className="flex items-center gap-3 px-3 py-2">
-              <span className="font-display w-6 text-center text-xl font-bold text-brand-blue">{p.pos ?? "?"}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{p.name}</span>
-                <span className="block text-xs text-muted">
-                  {p.nbaTeam ?? "NBA n.d."}
-                  {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className={`eyebrow hidden border-b border-line bg-surface-subtle/60 px-4 py-2 text-muted ${cols}`}>
+            <span>#</span>
+            <span>Giocatore</span>
+            <span>NBA</span>
+            <span>Stato</span>
+            <span className="text-right text-brand-blue">Crediti</span>
+          </div>
+          <ul className="divide-y divide-line">
+            {shown.map((p, i) => (
+              <li key={p.id} className={`rise flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60 sm:px-4 ${cols}`} style={stagger(i)}>
+                <span className="tnum hidden text-sm font-semibold text-muted md:block">{i + 1}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <PosChip pos={p.pos} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{p.name}</span>
+                    <span className="block truncate text-xs text-muted md:hidden">
+                      {p.nbaTeam ?? "NBA n.d."}
+                      {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
+                    </span>
+                    {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && (
+                      <span className="hidden truncate text-xs text-muted md:block">può pareggiare {league.teamNames.get(p.restrictedTeamId) ?? "?"}</span>
+                    )}
+                  </span>
                 </span>
-              </span>
-              {p.ownerTeamId ? (
-                <Link href={`/squadre/${p.ownerTeamId}`}>
-                  <Badge tone="accent">{league.teamNames.get(p.ownerTeamId) ?? "?"}</Badge>
-                </Link>
-              ) : p.cutByTeamId ? (
-                <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>tagliato</Badge>
-              ) : p.restrictedTeamId ? (
-                <Badge tone="warn" title="Restricted: il vecchio proprietario può pareggiare l'offerta più alta (R-23)">restricted</Badge>
-              ) : (
-                <Badge tone="good">libero</Badge>
-              )}
-              <span className="font-display w-12 text-right text-2xl font-bold tabular-nums">{p.credits === null ? "–" : fmt(p.credits)}</span>
-            </li>
-          ))}
-        </ul>
+                <span className="hidden truncate text-sm font-semibold text-muted md:block">{p.nbaTeam ?? "n.d."}</span>
+                <span className="min-w-0 shrink-0">
+                  {p.ownerTeamId ? (
+                    <Link href={`/squadre/${p.ownerTeamId}`} className="inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
+                      <TeamCrest name={league.teamNames.get(p.ownerTeamId) ?? "?"} color={colors.get(p.ownerTeamId) ?? "#555"} size="xs" />
+                      <span className="hidden max-w-28 truncate sm:inline">{league.teamNames.get(p.ownerTeamId) ?? "?"}</span>
+                    </Link>
+                  ) : p.cutByTeamId ? (
+                    <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>
+                      tagliato
+                    </Badge>
+                  ) : p.restrictedTeamId ? (
+                    <Badge tone="warn" title="Restricted: il vecchio proprietario può pareggiare l'offerta più alta (R-23)">
+                      restricted
+                    </Badge>
+                  ) : (
+                    <Badge tone="good" icon="check">
+                      libero
+                    </Badge>
+                  )}
+                </span>
+                <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black md:w-auto">{p.credits === null ? "–" : fmt(p.credits)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button, Callout, Check, Field, inputClass, Segmented } from "@/components/controls";
-import { Badge, Card, RestrictionBadge, Stat, StatChange } from "@/components/ui";
+import { Badge, Card, PosChip, RestrictionBadge, Stat, StatChange } from "@/components/ui";
 import { contractDurations, cutShare, evaluateContractEdit, evaluateSigning, teamFinance, teamOptionAllowed, type LeagueSettings, type Position } from "@/lib/cap";
 import { contractLabel } from "@/lib/league";
 import { fmt } from "@/lib/format";
@@ -189,14 +189,14 @@ function DurationsPanel({ team, settings, onDone }: { team: RoseTeam; settings: 
   const ready = missing.filter((p) => chosen[p.id] != null);
   return (
     <section className="mt-6">
-      <h2 className="font-display mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">
+      <h2 className="font-display mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">
         Durate da fissare <span className="text-base font-semibold text-muted">{missing.length}</span>
       </h2>
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
         <ul className="divide-y divide-line">
           {missing.map((p) => (
             <li key={p.id} className="flex items-center gap-3 px-3 py-2">
-              <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
+              <PosChip pos={p.pos} />
               <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
               <span className="w-11 text-right text-sm tabular-nums">{fmt(p.salary)}</span>
               <select
@@ -347,7 +347,7 @@ export function RoseDesk({ teams, settings }: { teams: RoseTeam[]; settings: Lea
     const list = team.players.filter((p) => p.slot === slot);
     return (
       <section className="mt-6">
-        <h2 className="font-display mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">
+        <h2 className="font-display mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">
           {title} <span className="text-base font-semibold text-muted">{list.length}</span>
         </h2>
         {list.length === 0 ? (
@@ -357,7 +357,7 @@ export function RoseDesk({ teams, settings }: { teams: RoseTeam[]; settings: Lea
             {list.map((p) => (
               <li key={p.id}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-                  <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
+                  <PosChip pos={p.pos} />
                   <span className="min-w-0 flex-1 basis-32 truncate font-medium">{p.name}</span>
                   <RestrictionBadge rookie={p.rookie} restriction={p.unrestricted ? "unrestricted" : null} />
                   {p.years === null ? (
@@ -417,7 +417,7 @@ export function RoseDesk({ teams, settings }: { teams: RoseTeam[]; settings: Lea
 
       {team.cuts.length > 0 && (
         <section className="mt-6">
-          <h2 className="font-display mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">Tagliati</h2>
+          <h2 className="font-display mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">Tagliati</h2>
           <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
             {team.cuts.map((c) => (
               <li key={c.id}>

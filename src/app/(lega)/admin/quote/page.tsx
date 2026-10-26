@@ -6,7 +6,7 @@ export default async function AdminFeesPage() {
   const league = await loadLeague();
   return (
     <>
-      <PageTitle sub="Segna chi ha pagato la quota di iscrizione e la luxury tax. La tassa dovuta si calcola dal monte ingaggi (R-12); l'importo della quota non è ancora stato definito.">
+      <PageTitle icon="coins" eyebrow="Area admin" sub="Segna chi ha pagato la quota di iscrizione e la luxury tax. La tassa dovuta si calcola dal monte ingaggi (R-12); l'importo della quota non è ancora stato definito.">
         Quote e luxury tax
       </PageTitle>
       <QuoteDesk

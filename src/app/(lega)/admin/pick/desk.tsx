@@ -139,7 +139,7 @@ export function PickDesk({
         if (list.length === 0) return null;
         return (
           <section key={round} className="mt-6">
-            <h2 className="font-display mb-2 border-l-4 border-brand-red pl-3 text-2xl font-bold">
+            <h2 className="font-display mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">
               {round}° giro <span className="text-base font-semibold text-muted">{list.length}</span>
               {list.some((p) => p.toConfirm) && <span className="ml-2 align-middle"><Badge tone="warn">da confermare</Badge></span>}
             </h2>

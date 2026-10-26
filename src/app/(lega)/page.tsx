@@ -1,162 +1,301 @@
-import Form from "next/form";
 import Link from "next/link";
 import { CapLine } from "@/components/cap-line";
-import { SubmitButton } from "@/components/controls";
-import { Badge } from "@/components/ui";
+import { ChipLinks } from "@/components/chips";
+import { CountUp } from "@/components/count-up";
+import { TeamCrest } from "@/components/crest";
+import { Icon, type IconName } from "@/components/icons";
+import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtEuro } from "@/lib/format";
 import { loadLeague, loadProfile } from "@/lib/league-server";
-import { listTeams, parseTeamListOptions } from "@/lib/teams-list";
+import { teamColors } from "@/lib/team-colors";
+import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
-const control = "min-h-11 w-full rounded-[2px] border border-line bg-surface px-3 text-base text-foreground";
+/** Link del board con ordinamento/filtro; i valori di default restano fuori dall'URL. */
+function boardHref(o: TeamListOptions) {
+  const q = new URLSearchParams();
+  if (o.sort !== "nome") q.set("ordina", o.sort);
+  if (o.filter !== "tutte") q.set("mostra", o.filter);
+  const s = q.toString();
+  return s ? `/?${s}` : "/";
+}
 
-function monogram(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+function PulseTile({ icon, label, value, tone, i }: { icon: IconName; label: string; value: string; tone?: "bad" | "warn" | "good"; i: number }) {
+  const color = tone === "bad" ? "text-danger bg-danger/10" : tone === "warn" ? "text-warning bg-warning/12" : tone === "good" ? "text-success bg-success/10" : "text-brand-blue bg-brand-blue/10";
+  return (
+    <div className="rise flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 sm:p-4" style={stagger(i)}>
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${color}`}>
+        <Icon name={icon} size={20} strokeWidth={2} />
+      </span>
+      <div className="min-w-0">
+        <div className="font-display tnum text-3xl leading-none font-black">{value}</div>
+        <div className="mt-0.5 truncate text-xs font-semibold text-muted">{label}</div>
+      </div>
+    </div>
+  );
 }
 
 export default async function Home(props: PageProps<"/">) {
   const options = parseTeamListOptions(await props.searchParams);
   const [league, profile] = await Promise.all([loadLeague(), loadProfile()]);
   const { settings } = league;
+  const colors = teamColors(league.teams.map((t) => t.team.id));
   const teams = listTeams(league.teams, options);
   const myTeam = league.teams.find((t) => t.team.id === profile?.team_id);
   const overCap = league.teams.filter((t) => t.finance.overCap).length;
+  const belowFloor = league.teams.filter((t) => t.finance.belowFloor).length;
   const incomplete = league.teams.filter((t) => t.warnings.length > 0).length;
+  const taxDue = league.teams.reduce((sum, t) => sum + (t.luxuryTaxPaid ? 0 : t.finance.luxuryTaxEur), 0);
   const myPicks = myTeam ? league.picks.filter((p) => p.current_team_id === myTeam.team.id).length : 0;
+  const startersTotal = settings.starters.G + settings.starters.A + settings.starters.C;
+  const count = (filter: TeamFilter) => listTeams(league.teams, { sort: "nome", filter }).length;
+
+  const sorts: { value: TeamSort; label: string }[] = [
+    { value: "nome", label: "Nome" },
+    { value: "monte", label: "Monte ingaggi" },
+    { value: "spazio", label: "Spazio" },
+  ];
+  const filters: { value: TeamFilter; label: string }[] = [
+    { value: "tutte", label: "Tutte" },
+    { value: "sforate", label: "Sforate" },
+    { value: "floor", label: "Sotto floor" },
+    { value: "incomplete", label: "Rose incomplete" },
+  ];
 
   return (
     <>
-      <section className="overflow-hidden border border-nav bg-nav text-white lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(25rem,0.92fr)]" aria-labelledby="dashboard-title">
-        <div className="flex flex-col px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
-          <div>
-            <p className="eyebrow text-neutral-400">Front office · Lega {league.seasonYear}</p>
-            <h1 id="dashboard-title" className="font-display mt-5 text-[clamp(3.5rem,8vw,7.5rem)] leading-[0.78] font-extrabold tracking-[-0.025em]">
-              Il cap detta<br /><span className="text-neutral-500">il gioco.</span>
-            </h1>
-            <p className="mt-6 max-w-md text-sm leading-6 text-neutral-300 sm:text-base">
-              Payroll, contratti e pick delle {league.teams.length} franchigie. Ogni scelta parte da qui.
-            </p>
+      <section className="arena sweep -mx-4 sm:mx-0 sm:rounded-3xl lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(24rem,0.9fr)]" aria-labelledby="dashboard-title">
+        <div className="relative z-[2] flex flex-col px-5 py-8 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
+          <p className="rise eyebrow flex items-center gap-2 text-white/60">
+            <span className="h-2 w-2 rounded-full bg-gold shadow-[0_0_10px_var(--gold)]" />
+            Front office · Stagione {league.seasonYear}
+          </p>
+          <h1 id="dashboard-title" className="rise font-display mt-5 text-[clamp(3.6rem,8.5vw,7.25rem)] leading-[0.86] font-black tracking-[-0.01em]" style={stagger(1)}>
+            <span className="block">Il cap detta</span>
+            <span className="outline-text mt-2 block text-gold sm:mt-3">il gioco.</span>
+          </h1>
+          <p className="rise mt-6 max-w-md text-sm leading-6 text-white/70 sm:text-base" style={stagger(2)}>
+            Payroll, contratti e pick delle {league.teams.length} franchigie. Ogni mossa di mercato parte da qui.
+          </p>
+          <div className="rise mt-7 flex flex-wrap gap-3" style={stagger(3)}>
+            <Link
+              href="/scambio"
+              className="group font-display inline-flex min-h-12 items-center gap-2 rounded-lg bg-gold px-5 text-lg font-extrabold text-nav shadow-[0_10px_30px_-12px_var(--gold)] transition-[filter,transform] hover:brightness-105 active:scale-[0.97]"
+            >
+              <Icon name="swap" size={19} strokeWidth={2.2} />
+              Simula uno scambio
+              <Icon name="arrow-right" size={18} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/giocatori"
+              className="font-display inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/25 px-5 text-lg font-extrabold transition-colors hover:border-white hover:bg-white/8"
+            >
+              <Icon name="jersey" size={19} />
+              Apri il listone
+            </Link>
           </div>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/scambio" className="font-display inline-flex min-h-11 items-center bg-brand-red px-5 text-lg font-bold text-white transition-colors hover:bg-accent hover:text-nav">Simula uno scambio <span className="ml-3" aria-hidden>→</span></Link>
-            <Link href="/giocatori" className="font-display inline-flex min-h-11 items-center border border-white/30 px-5 text-lg font-bold transition-colors hover:border-white hover:bg-white/5">Apri il listone</Link>
+          <div className="rise mt-9" style={stagger(4)}>
+            <Scoreboard
+              items={[
+                { label: "Cap base", value: fmt(settings.cap) },
+                { label: "Salary floor", value: fmt(settings.cap - settings.cap / settings.floorDivisor) },
+                { label: "Riserve", value: fmt(settings.reserveBudget) },
+              ]}
+            />
           </div>
-          <dl className="mt-8 grid grid-cols-3 gap-3 border-t border-white/15 pt-4 text-xs text-neutral-400">
-            <div><dt className="eyebrow">Cap base</dt><dd className="mt-1 font-semibold text-white tabular-nums">{fmt(settings.cap)} crediti</dd></div>
-            <div><dt className="eyebrow">Salary floor</dt><dd className="mt-1 font-semibold text-white tabular-nums">{fmt(settings.cap - settings.cap / settings.floorDivisor)}</dd></div>
-            <div><dt className="eyebrow">Riserve</dt><dd className="mt-1 font-semibold text-white tabular-nums">{fmt(settings.reserveBudget)} crediti</dd></div>
-          </dl>
         </div>
 
-        <div className="border-t border-white/15 bg-white/[0.035] px-5 py-7 sm:px-8 lg:border-t-0 lg:border-l lg:px-8 lg:py-9">
+        <div className="relative z-[2] border-t border-white/10 bg-black/20 px-5 py-8 backdrop-blur-[2px] sm:px-9 lg:border-t-0 lg:border-l lg:px-9 lg:py-12">
           {myTeam ? (
-            <div className="flex h-full flex-col">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="eyebrow text-neutral-400">La tua franchigia</p>
-                  <Link href={`/squadre/${myTeam.team.id}`} className="font-display mt-2 inline-block text-4xl leading-none font-bold hover:underline">{myTeam.team.name}</Link>
-                  <p className="mt-2 text-sm text-neutral-400">{myTeam.team.owner_name}</p>
+            <div className="flex h-full flex-col justify-center">
+              <div className="flex items-center gap-4">
+                <span className="pop" style={stagger(2)}>
+                  <TeamCrest name={myTeam.team.name} color={colors.get(myTeam.team.id) ?? "#1d47b5"} size="lg" mine />
+                </span>
+                <div className="min-w-0">
+                  <p className="eyebrow text-gold">La tua franchigia</p>
+                  <Link href={`/squadre/${myTeam.team.id}`} className="font-display mt-1 block truncate text-4xl leading-none font-black hover:underline">
+                    {myTeam.team.name}
+                  </Link>
+                  <p className="mt-1 truncate text-sm text-white/60">{myTeam.team.owner_name}</p>
                 </div>
-                <span className="grid h-12 w-12 shrink-0 place-items-center border border-white/30 font-display text-xl font-bold">{monogram(myTeam.team.name)}</span>
               </div>
-              <div className="my-7 border-y border-white/15 py-5">
-                <p className="eyebrow text-neutral-400">{myTeam.finance.overCap ? "Oltre il cap" : "Spazio salariale"}</p>
-                <p className="font-display mt-1 text-7xl leading-none font-extrabold tabular-nums sm:text-8xl">{fmt(myTeam.finance.capSpace)}</p>
-                <p className="mt-2 text-xs text-neutral-400">crediti · cap effettivo {fmt(myTeam.finance.effectiveCap)}</p>
+              <div className="my-7 rounded-2xl border border-white/10 bg-black/30 px-5 py-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+                <p className="eyebrow text-white/60">{myTeam.finance.overCap ? "Oltre il cap" : "Spazio salariale"}</p>
+                <p className={`font-display tnum mt-1 text-[clamp(4.5rem,11vw,7rem)] leading-[0.85] font-black ${myTeam.finance.overCap ? "text-[#ff8a95]" : "jumbo"}`}>
+                  <CountUp value={myTeam.finance.capSpace} />
+                </p>
+                <p className="mt-2 mb-4 text-xs text-white/55">crediti · cap effettivo {fmt(myTeam.finance.effectiveCap)}</p>
+                <CapLine payroll={myTeam.finance.payroll} cap={myTeam.finance.effectiveCap} floor={myTeam.finance.floor} dark />
               </div>
-              <CapLine payroll={myTeam.finance.payroll} cap={myTeam.finance.effectiveCap} dark />
-              <dl className="mt-auto grid grid-cols-3 gap-3 pt-7">
-                <div><dt className="eyebrow text-neutral-400">Titolari</dt><dd className="font-display mt-1 text-3xl font-bold tabular-nums">{myTeam.starters.length}<span className="text-lg text-neutral-500">/{settings.starters.G + settings.starters.A + settings.starters.C}</span></dd></div>
-                <div><dt className="eyebrow text-neutral-400">Riserve</dt><dd className="font-display mt-1 text-3xl font-bold tabular-nums">{myTeam.reserves.length}</dd></div>
-                <div><dt className="eyebrow text-neutral-400">Pick</dt><dd className="font-display mt-1 text-3xl font-bold tabular-nums">{myPicks}</dd></div>
+              <dl className="grid grid-cols-3 gap-3">
+                <div>
+                  <dt className="eyebrow text-white/55">Titolari</dt>
+                  <dd className="font-display tnum mt-0.5 text-4xl leading-none font-black">
+                    {myTeam.starters.length}
+                    <span className="text-xl text-white/40">/{startersTotal}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="eyebrow text-white/55">Riserve</dt>
+                  <dd className="font-display tnum mt-0.5 text-4xl leading-none font-black">{myTeam.reserves.length}</dd>
+                </div>
+                <div>
+                  <dt className="eyebrow text-white/55">Pick</dt>
+                  <dd className="font-display tnum mt-0.5 text-4xl leading-none font-black">{myPicks}</dd>
+                </div>
               </dl>
             </div>
           ) : (
             <div className="flex h-full flex-col">
-              <p className="eyebrow text-neutral-400">League pulse</p>
-              <h2 className="font-display mt-2 text-5xl leading-[0.9] font-extrabold">La lega<br />in numeri.</h2>
-              <dl className="my-7 divide-y divide-white/15 border-y border-white/15">
-                <div className="flex items-end justify-between gap-4 py-4"><dt className="text-sm text-neutral-400">Franchigie</dt><dd className="font-display text-4xl font-bold tabular-nums">{league.teams.length}</dd></div>
-                <div className="flex items-end justify-between gap-4 py-4"><dt className="text-sm text-neutral-400">Sopra il cap</dt><dd className="font-display text-4xl font-bold tabular-nums">{overCap}</dd></div>
-                <div className="flex items-end justify-between gap-4 py-4"><dt className="text-sm text-neutral-400">Rose da completare</dt><dd className="font-display text-4xl font-bold tabular-nums">{incomplete}</dd></div>
+              <p className="eyebrow text-gold">League pulse</p>
+              <h2 className="font-display mt-2 text-6xl leading-[0.85] font-black">
+                La lega
+                <br />
+                in numeri.
+              </h2>
+              <dl className="my-7 divide-y divide-white/12 border-y border-white/12">
+                {[
+                  ["Franchigie", league.teams.length],
+                  ["Sopra il cap", overCap],
+                  ["Rose da completare", incomplete],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-end justify-between gap-4 py-4">
+                    <dt className="text-sm text-white/60">{label}</dt>
+                    <dd className="font-display tnum text-5xl leading-none font-black">{value}</dd>
+                  </div>
+                ))}
               </dl>
-              <p className="mt-auto text-sm leading-6 text-neutral-400">Il board mette a confronto budget e asset. Non è una classifica di campionato.</p>
+              <p className="mt-auto text-sm leading-6 text-white/55">Il board mette a confronto budget e asset. Non è una classifica di campionato.</p>
             </div>
           )}
         </div>
       </section>
 
-      <section className="mt-10" aria-labelledby="league-board-title">
-        <div className="flex flex-col gap-2 border-b-2 border-foreground pb-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Situazione della lega">
+        <PulseTile i={1} icon="flame" label="Sopra il cap" value={String(overCap)} tone={overCap > 0 ? "bad" : "good"} />
+        <PulseTile i={2} icon="alert" label="Sotto il salary floor" value={String(belowFloor)} tone={belowFloor > 0 ? "warn" : "good"} />
+        <PulseTile i={3} icon="clipboard" label="Rose incomplete" value={String(incomplete)} tone={incomplete > 0 ? "warn" : "good"} />
+        <PulseTile i={4} icon="coins" label="Luxury tax da incassare" value={`${fmtEuro(taxDue)} €`} />
+      </div>
+
+      <section className="mt-12" aria-labelledby="league-board-title">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div>
             <p className="eyebrow text-muted">League board · {league.seasonYear}</p>
-            <h2 id="league-board-title" className="font-display mt-1 text-4xl leading-none font-extrabold">Squadra per squadra.</h2>
+            <h2 id="league-board-title" className="font-display mt-1 text-5xl leading-none font-black">
+              Squadra per squadra
+            </h2>
           </div>
-          <p className="text-xs text-muted">{teams.length} di {league.teams.length} franchigie · non è una classifica</p>
+          <p className="text-xs font-semibold text-muted">
+            {teams.length} di {league.teams.length} franchigie · non è una classifica
+          </p>
         </div>
 
-        <Form key={`${options.sort}-${options.filter}`} action="/" className="grid grid-cols-2 gap-3 border-b border-line py-4 sm:grid-cols-[minmax(10rem,1fr)_minmax(10rem,1fr)_auto_auto] sm:items-end">
-          <label className="text-xs font-semibold text-muted">Ordina per
-            <select name="ordina" defaultValue={options.sort} className={`${control} mt-1`}>
-              <option value="nome">Nome</option>
-              <option value="monte">Monte ingaggi</option>
-              <option value="spazio">Spazio salariale</option>
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-muted">Mostra
-            <select name="mostra" defaultValue={options.filter} className={`${control} mt-1`}>
-              <option value="tutte">Tutte le squadre</option>
-              <option value="sforate">Solo sforate</option>
-              <option value="floor">Solo sotto floor</option>
-              <option value="incomplete">Solo rose incomplete</option>
-            </select>
-          </label>
-          <SubmitButton className="font-display min-h-11 rounded-[2px] bg-brand-red px-5 text-lg font-bold text-white transition-colors hover:bg-accent hover:text-nav">Applica</SubmitButton>
-          <Link href="/" className="font-display inline-flex min-h-11 items-center justify-center rounded-[2px] border border-line px-5 text-lg font-bold transition-colors hover:border-foreground hover:bg-surface">Azzera</Link>
-        </Form>
+        <div className="mt-5 flex flex-col gap-2 border-y border-line py-3 lg:flex-row lg:items-center lg:justify-between">
+          <ChipLinks label="Ordina" options={sorts.map((s) => ({ href: boardHref({ ...options, sort: s.value }), label: s.label, active: options.sort === s.value }))} />
+          <ChipLinks
+            label="Mostra"
+            options={filters.map((f) => ({ href: boardHref({ ...options, filter: f.value }), label: f.label, active: options.filter === f.value, count: count(f.value) }))}
+          />
+        </div>
 
         {teams.length === 0 ? (
-          <div className="border-b border-line px-4 py-12 text-center">
-            <h3 className="font-display text-3xl font-bold">Nessuna franchigia trovata.</h3>
-            <p className="mt-2 text-sm text-muted">Cambia il filtro oppure torna alla panoramica completa.</p>
-            <Link href="/" className="mt-4 inline-flex min-h-11 items-center font-semibold text-brand-blue underline underline-offset-4">Azzera i filtri</Link>
+          <div className="mt-6">
+            <Empty title="Nessuna franchigia trovata" icon="search">
+              Cambia il filtro oppure{" "}
+              <Link href="/" className="font-semibold text-brand-blue underline underline-offset-4">
+                torna alla panoramica completa
+              </Link>
+              .
+            </Empty>
           </div>
         ) : (
-          <div>
-            <div className="eyebrow hidden grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(6rem,0.6fr))] gap-5 border-b border-line px-4 py-3 text-muted md:grid">
-              <span>Franchigia / cap effettivo</span><span className="text-right">Payroll</span><span className="text-right">Spazio</span><span className="text-right">Riserve</span>
+          <>
+            <div className="eyebrow hidden grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(6rem,0.5fr))] gap-6 px-5 pt-5 pb-2 text-muted md:grid">
+              <span>Franchigia · cap effettivo</span>
+              <span className="text-right">Payroll</span>
+              <span className="text-right">Spazio</span>
+              <span className="text-right">Riserve</span>
             </div>
-            <ul>
-              {teams.map((t) => {
+            <ul className="mt-3 space-y-2.5 md:mt-0">
+              {teams.map((t, i) => {
                 const f = t.finance;
                 const mine = profile?.team_id === t.team.id;
+                const color = colors.get(t.team.id) ?? "#1d47b5";
                 return (
-                  <li key={t.team.id}>
-                    <Link href={`/squadre/${t.team.id}`} className={`group block border-b border-line px-3 py-5 transition-colors hover:bg-surface sm:px-4 ${mine ? "border-l-2 border-l-highlight bg-highlight/[0.06]" : ""}`}>
-                      <div className="grid gap-5 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(6rem,0.6fr))] md:items-center md:gap-5">
+                  <li key={t.team.id} className="rise" style={stagger(i)}>
+                    <Link
+                      href={`/squadre/${t.team.id}`}
+                      className={`group lift relative block overflow-hidden rounded-2xl border bg-surface px-4 py-4 sm:px-5 ${mine ? "border-gold/70 ring-1 ring-gold/40" : "border-line hover:border-foreground/25"}`}
+                    >
+                      <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: color }} />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                        style={{ background: `linear-gradient(90deg, color-mix(in oklab, ${color} 10%, transparent), transparent 55%)` }}
+                      />
+                      <div className="relative grid gap-4 md:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(6rem,0.5fr))] md:items-center md:gap-6">
                         <div className="min-w-0">
                           <div className="flex items-center gap-3">
-                            <span className="grid h-11 w-11 shrink-0 place-items-center border border-line bg-nav font-display text-lg font-bold text-white">{monogram(t.team.name)}</span>
+                            <TeamCrest name={t.team.name} color={color} size="md" mine={mine} morphId={t.team.id} />
                             <div className="min-w-0">
-                              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                                <h3 className="font-display text-2xl leading-none font-bold group-hover:underline">{t.team.name}</h3>
-                                {mine && <span className="eyebrow text-highlight">La tua</span>}
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <h3 className="font-display truncate text-[1.75rem] leading-none font-black">{t.team.name}</h3>
+                                {mine && (
+                                  <Badge tone="gold" icon="crown">
+                                    La tua
+                                  </Badge>
+                                )}
                               </div>
-                              <p className="mt-1 truncate text-xs text-muted">{t.team.owner_name} · bonus {t.bonus > 0 ? "+" : ""}{t.bonus}</p>
+                              <p className="mt-1 truncate text-xs text-muted">
+                                {t.team.owner_name} · bonus {t.bonus > 0 ? "+" : ""}
+                                {t.bonus}
+                              </p>
                             </div>
+                            <Icon name="chevron" size={18} className="ml-auto shrink-0 text-muted transition-transform group-hover:translate-x-1 md:hidden" />
                           </div>
-                          <div className="mt-4 max-w-sm"><CapLine payroll={f.payroll} cap={f.effectiveCap} /></div>
+                          <div className="mt-4 max-w-md">
+                            <CapLine payroll={f.payroll} cap={f.effectiveCap} floor={f.floor} />
+                          </div>
                           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                            {f.overCap && <Badge tone="bad">Budget sforato</Badge>}
-                            {f.belowFloor && <Badge tone="warn" title={`Sotto il salary floor (${fmt(f.floor)})`}>Sotto floor</Badge>}
-                            {t.warnings.length > 0 && <Badge title={t.warnings.join(" · ")}>Rosa incompleta</Badge>}
-                            <span className={`text-xs ${t.entryFeePaid ? "text-success" : "text-muted"}`}>Quota {t.entryFeePaid ? "pagata" : "da pagare"}</span>
-                            {f.luxuryTaxEur > 0 && <span className={`text-xs ${t.luxuryTaxPaid ? "text-success" : "text-danger"}`}>· Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}</span>}
+                            {f.overCap && (
+                              <Badge tone="bad" icon="flame">
+                                Budget sforato
+                              </Badge>
+                            )}
+                            {f.belowFloor && (
+                              <Badge tone="warn" icon="alert" title={`Sotto il salary floor (${fmt(f.floor)})`}>
+                                Sotto floor
+                              </Badge>
+                            )}
+                            {t.warnings.length > 0 && (
+                              <Badge title={t.warnings.join(" · ")} icon="clipboard">
+                                Rosa incompleta
+                              </Badge>
+                            )}
+                            <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
+                              Quota {t.entryFeePaid ? "pagata" : "da pagare"}
+                            </Badge>
+                            {f.luxuryTaxEur > 0 && (
+                              <Badge tone={t.luxuryTaxPaid ? "good" : "bad"} icon="coins">
+                                Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-3 border-t border-line pt-4 md:contents md:border-0 md:pt-0">
-                          <div className="md:text-right"><div className="eyebrow text-muted md:hidden">Payroll</div><div className="font-display mt-1 text-3xl font-bold tabular-nums md:mt-0">{fmt(f.payroll)}</div></div>
-                          <div className="md:text-right"><div className="eyebrow text-muted md:hidden">Spazio</div><div className={`font-display mt-1 text-3xl font-bold tabular-nums md:mt-0 ${f.overCap ? "text-danger" : ""}`}>{fmt(f.capSpace)}</div></div>
-                          <div className="md:text-right"><div className="eyebrow text-muted md:hidden">Riserve</div><div className="font-display mt-1 text-3xl font-bold tabular-nums md:mt-0">{fmt(f.reserveSpace)}</div></div>
+                        <div className="grid grid-cols-3 gap-3 rounded-xl bg-surface-subtle/70 p-3 md:contents">
+                          <div className="md:text-right">
+                            <div className="eyebrow text-muted md:hidden">Payroll</div>
+                            <div className="font-display tnum text-3xl leading-none font-black md:text-4xl">{fmt(f.payroll)}</div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="eyebrow text-muted md:hidden">Spazio</div>
+                            <div className={`font-display tnum text-3xl leading-none font-black md:text-4xl ${f.overCap ? "text-danger" : "text-success"}`}>{fmt(f.capSpace)}</div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="eyebrow text-muted md:hidden">Riserve</div>
+                            <div className="font-display tnum text-3xl leading-none font-black md:text-4xl">{fmt(f.reserveSpace)}</div>
+                          </div>
                         </div>
                       </div>
                     </Link>
@@ -164,7 +303,7 @@ export default async function Home(props: PageProps<"/">) {
                 );
               })}
             </ul>
-          </div>
+          </>
         )}
       </section>
     </>

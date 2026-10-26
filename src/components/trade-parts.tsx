@@ -1,6 +1,9 @@
 "use client";
 
-import { Badge, Card, StatChange } from "@/components/ui";
+import { CapLine } from "@/components/cap-line";
+import { TeamCrest } from "@/components/crest";
+import { Icon } from "@/components/icons";
+import { Badge, PosChip, StatChange } from "@/components/ui";
 import type { Position, Slot, TradeImpact } from "@/lib/cap";
 import { fmt } from "@/lib/format";
 
@@ -26,61 +29,140 @@ function toggle(set: Set<number>, id: number): Set<number> {
   return next;
 }
 
-export function TradePicker({ team, give, onChange }: { team: SimTeam; give: Give; onChange: (g: Give) => void }) {
+/** Riga selezionabile: il checkbox nativo resta (tastiera e lettori di schermo), la grafica è la casella a destra. */
+function ToggleRow({ checked, onChange, color, children }: { checked: boolean; onChange: () => void; color: string; children: React.ReactNode }) {
   return (
-    <Card className="p-3">
-      <h3 className="font-display text-xl font-bold">{team.name} cede</h3>
-      <ul className="mt-2 divide-y divide-line">
+    <label
+      className={`relative flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-2.5 py-1.5 transition-[background-color,border-color] ${
+        checked ? "border-transparent" : "border-transparent hover:bg-surface-subtle"
+      }`}
+      style={checked ? { background: `color-mix(in oklab, ${color} 13%, transparent)`, borderColor: `color-mix(in oklab, ${color} 45%, transparent)` } : undefined}
+    >
+      <input type="checkbox" className="peer sr-only" checked={checked} onChange={onChange} />
+      {children}
+      <span
+        aria-hidden
+        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-[background-color,border-color,transform] peer-focus-visible:ring-2 peer-focus-visible:ring-gold peer-focus-visible:ring-offset-2 ${
+          checked ? "scale-110 border-transparent text-white" : "border-line text-transparent"
+        }`}
+        style={checked ? { background: color } : undefined}
+      >
+        <Icon name="check" size={14} strokeWidth={3} />
+      </span>
+    </label>
+  );
+}
+
+export function TradePicker({ team, give, onChange, color = "#1d47b5" }: { team: SimTeam; give: Give; onChange: (g: Give) => void; color?: string }) {
+  const out = team.players.filter((p) => give.players.has(p.id)).reduce((n, p) => n + p.salary, 0);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <div className="flex items-center gap-3 border-b border-line px-4 py-3" style={{ background: `linear-gradient(90deg, color-mix(in oklab, ${color} 14%, transparent), transparent)` }}>
+        <TeamCrest name={team.name} color={color} size="sm" />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display truncate text-2xl leading-none font-black">{team.name}</h3>
+          <p className="eyebrow text-muted">cede</p>
+        </div>
+        <div className="text-right">
+          <div className="font-display tnum text-2xl leading-none font-black">{fmt(out)}</div>
+          <div className="eyebrow text-muted">
+            {give.players.size} gioc. · {give.picks.size} pick
+          </div>
+        </div>
+      </div>
+      <ul className="max-h-[28rem] space-y-0.5 overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:thin]">
         {team.players.map((p) => (
           <li key={p.id}>
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 py-1.5">
-              <input type="checkbox" className="h-5 w-5 accent-[var(--brand-red)]" checked={give.players.has(p.id)} onChange={() => onChange({ ...give, players: toggle(give.players, p.id) })} />
-              <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
-              <span className="min-w-0 flex-1 truncate">{p.name}</span>
-              <span className="text-xs text-muted">{p.slot === "reserve" ? "riserva" : "titolare"}</span>
-              <span className="w-10 text-right font-medium tabular-nums">{fmt(p.salary)}</span>
-            </label>
+            <ToggleRow checked={give.players.has(p.id)} color={color} onChange={() => onChange({ ...give, players: toggle(give.players, p.id) })}>
+              <PosChip pos={p.pos} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{p.name}</span>
+                <span className="block text-xs text-muted">{p.slot === "reserve" ? "riserva" : "titolare"}</span>
+              </span>
+              <span className="font-display tnum w-10 text-right text-xl leading-none font-black">{fmt(p.salary)}</span>
+            </ToggleRow>
           </li>
         ))}
       </ul>
       {team.picks.length > 0 && (
-        <>
-          <h4 className="mt-3 text-xs font-medium tracking-wide text-muted uppercase">Pick</h4>
-          <ul className="divide-y divide-line">
-            {team.picks.map((p) => (
-              <li key={p.id}>
-                <label className="flex min-h-11 cursor-pointer items-center gap-3 py-1.5">
-                  <input type="checkbox" className="h-5 w-5 accent-[var(--brand-red)]" checked={give.picks.has(p.id)} onChange={() => onChange({ ...give, picks: toggle(give.picks, p.id) })} />
-                  <span className="text-sm">{p.label}</span>
+        <div className="border-t border-line p-3">
+          <h4 className="eyebrow mb-2 flex items-center gap-1.5 text-muted">
+            <Icon name="ticket" size={14} />
+            Pick
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {team.picks.map((p) => {
+              const on = give.picks.has(p.id);
+              return (
+                <label
+                  key={p.id}
+                  className={`inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-[background-color,border-color,color] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold ${
+                    on ? "border-transparent text-white" : "border-line border-dashed hover:border-foreground/40"
+                  }`}
+                  style={on ? { background: color } : undefined}
+                >
+                  <input type="checkbox" className="sr-only" checked={on} onChange={() => onChange({ ...give, picks: toggle(give.picks, p.id) })} />
+                  {on && <Icon name="check" size={13} strokeWidth={3} />}
+                  {p.label}
                 </label>
-              </li>
-            ))}
-          </ul>
-        </>
+              );
+            })}
+          </div>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
 
 /** Effetto dello scambio su una squadra: monte ingaggi, spazio e riserve prima → dopo. */
-export function ImpactCard({ name, impact, give, receive }: { name: string; impact: TradeImpact; give: Give; receive: Give }) {
+export function ImpactCard({ name, impact, give, receive, color = "#1d47b5" }: { name: string; impact: TradeImpact; give: Give; receive: Give; color?: string }) {
   const r = impact;
   return (
-    <Card className={`border-t-4 p-4 ${r.after.overCap ? "border-t-brand-red" : "border-t-brand-blue"}`}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-display text-2xl leading-none font-bold">{name}</h3>
-        {r.breaksCap ? <Badge tone="bad">richiede eccezione</Badge> : r.after.overCap ? <Badge tone="warn">ancora sopra cap</Badge> : <Badge tone="good">sotto cap</Badge>}
+    <div className={`pop relative overflow-hidden rounded-2xl border bg-surface p-4 sm:p-5 ${r.breaksCap ? "border-danger/60" : "border-line"}`}>
+      <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: r.breaksCap ? "var(--danger)" : color }} />
+      <div className="flex items-center gap-3">
+        <TeamCrest name={name} color={color} size="sm" />
+        <h3 className="font-display min-w-0 flex-1 truncate text-2xl leading-none font-black">{name}</h3>
+        {r.breaksCap ? (
+          <Badge tone="bad" icon="alert">
+            richiede eccezione
+          </Badge>
+        ) : r.after.overCap ? (
+          <Badge tone="warn" icon="flame">
+            ancora sopra cap
+          </Badge>
+        ) : (
+          <Badge tone="good" icon="check">
+            sotto cap
+          </Badge>
+        )}
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-3">
         <StatChange label="Monte ingaggi" before={r.before.payroll} after={r.after.payroll} />
         <StatChange label="Spazio" before={r.before.capSpace} after={r.after.capSpace} worseWhenLower bad={r.after.overCap} />
         <StatChange label="Riserve" before={r.before.reserveSpace} after={r.after.reserveSpace} worseWhenLower />
       </div>
-      <p className="mt-2 text-xs text-muted">Pick: {receive.picks.size} in entrata, {give.picks.size} in uscita</p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {r.after.belowFloor && <Badge tone="warn" title="Il floor non blocca lo scambio (R-57)">sotto floor ({fmt(r.after.floor)})</Badge>}
-        {r.warnings.map((w) => <Badge key={w} title="Composizione della rosa dopo lo scambio">{w}</Badge>)}
+      <div className="mt-4">
+        <CapLine payroll={r.after.payroll} cap={r.after.effectiveCap} floor={r.after.floor} />
       </div>
-    </Card>
+      <p className="mt-3 flex items-center gap-1.5 text-xs text-muted">
+        <Icon name="ticket" size={14} />
+        Pick: {receive.picks.size} in entrata, {give.picks.size} in uscita
+      </p>
+      {(r.after.belowFloor || r.warnings.length > 0) && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {r.after.belowFloor && (
+            <Badge tone="warn" title="Il floor non blocca lo scambio (R-57)">
+              sotto floor ({fmt(r.after.floor)})
+            </Badge>
+          )}
+          {r.warnings.map((w) => (
+            <Badge key={w} title="Composizione della rosa dopo lo scambio">
+              {w}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

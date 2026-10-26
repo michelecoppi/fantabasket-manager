@@ -1,38 +1,53 @@
 @import "tailwindcss";
 
+/*
+ * Design system "Arena Night" (docs/design/DESIGN_SYSTEM.md).
+ * Palette ricavata dal logo della lega: blu reale dello scudo, rosso del pallone, oro della corona.
+ * I nomi dei token restano quelli usati da tutte le pagine (brand-red, brand-blue, accent...): cambiano i valori, non le API.
+ */
 :root {
-  --background: #f4f2ed;
-  --foreground: #181a1b;
-  --surface: #fffefb;
-  --surface-subtle: #e9e7e0;
-  --line: #d5d2c8;
-  --muted: #62625d;
-  --nav: #111315;
-  --brand-blue: #28566d;
-  --brand-red: #b63d24;
-  --accent: #b63d24;
-  --highlight: #80530f;
-  --success: #28734c;
-  --warning: #875b0b;
-  --danger: #b63d24;
+  color-scheme: light;
+  --background: #eef1f6;
+  --foreground: #0b1220;
+  --surface: #ffffff;
+  --surface-subtle: #e5e9f1;
+  --line: #d3d9e4;
+  --muted: #566176;
+  /* Header, hero e superfici "arena": scure in entrambi i temi. */
+  --nav: #060a14;
+  --arena: #0b1226;
+  --brand-blue: #1d47b5;
+  --brand-red: #cf2338;
+  --accent: #cf2338;
+  /* Oro della corona: riempimenti (con testo inchiostro) e dettagli "la tua squadra". Come testo su chiaro si usa --highlight. */
+  --gold: #f4b42a;
+  --highlight: #8a5a00;
+  --success: #12784f;
+  --warning: #8a5a00;
+  --danger: #cf2338;
+  --ease-out: cubic-bezier(0.2, 0.75, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #111315;
-    --foreground: #f1efe7;
-    --surface: #1a1d20;
-    --surface-subtle: #24282b;
-    --line: #383d40;
-    --muted: #a9aaa3;
-    --nav: #090b0c;
-    --brand-blue: #79b7d0;
-    --brand-red: #c7472a;
-    --accent: #ff7958;
-    --highlight: #e3b85f;
-    --success: #79c99b;
-    --warning: #e3b85f;
-    --danger: #ff7958;
+    color-scheme: dark;
+    --background: #070b14;
+    --foreground: #eef2fb;
+    --surface: #0f1627;
+    --surface-subtle: #18213a;
+    --line: #26314f;
+    --muted: #97a3bd;
+    --nav: #03060d;
+    --arena: #0a1022;
+    --brand-blue: #7aa0ff;
+    --brand-red: #e43a4e;
+    --accent: #ff6170;
+    --gold: #f8c24a;
+    --highlight: #f8c24a;
+    --success: #4fd39a;
+    --warning: #f8c24a;
+    --danger: #ff6170;
   }
 }
 
@@ -44,41 +59,128 @@
   --color-line: var(--line);
   --color-muted: var(--muted);
   --color-nav: var(--nav);
+  --color-arena: var(--arena);
   --color-brand-blue: var(--brand-blue);
   --color-brand-red: var(--brand-red);
   --color-accent: var(--accent);
+  --color-gold: var(--gold);
   --color-highlight: var(--highlight);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
   text-rendering: optimizeLegibility;
+  touch-action: manipulation;
 }
 
 ::selection {
-  background: var(--brand-red);
+  background: var(--brand-blue);
   color: #ffffff;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gold);
   outline-offset: 3px;
 }
 
-.main-nav {
-  overflow-y: hidden;
-  scrollbar-width: none;
+select {
+  background-color: var(--surface);
+  color: var(--foreground);
 }
 
-.main-nav::-webkit-scrollbar {
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* Titoli e cifre stile broadcast: Big Shoulders, maiuscolo, pesante. */
+.font-display {
+  font-family: var(--font-display), Impact, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.25rem;
+  text-transform: uppercase;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------- Superfici arena ---------- */
+
+/* Pannello scuro con linee del campo (metà campo, area, lunetta) e luci da palazzetto. */
+.arena {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(60rem 30rem at 110% -20%, color-mix(in oklab, var(--brand-blue) 55%, transparent), transparent 60%),
+    radial-gradient(40rem 26rem at -10% 120%, color-mix(in oklab, #cf2338 40%, transparent), transparent 60%),
+    var(--arena);
+  color: #fff;
+}
+.arena::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='white' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cline x1='470' y1='0' x2='470' y2='500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Ccircle cx='470' cy='250' r='20'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Cpath d='M0 30 H140 A237 237 0 0 1 140 470 H0'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M940 30 H800 A237 237 0 0 0 800 470 H940'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.07;
+}
+
+/* Riflesso di luce che attraversa una superficie una volta sola all'ingresso. */
+.sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.12) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: sweep 1.4s var(--ease-out) 0.35s both;
+}
+
+/* Testo cifra "jumbotron": oro con bagliore. */
+.jumbo {
+  color: var(--gold);
+  text-shadow:
+    0 0 24px color-mix(in oklab, var(--gold) 45%, transparent),
+    0 2px 0 rgb(0 0 0 / 0.35);
+}
+
+/* Testo con solo contorno, per le parole grandi di sfondo. */
+.outline-text {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.035em currentColor;
+}
+
+/* ---------- Animazioni ---------- */
 
 @keyframes fade-in {
   from {
@@ -86,26 +188,127 @@ body {
     transform: translateY(6px);
   }
 }
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes meter {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes bounce-ball {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.05, 0.92);
+  }
+  45% {
+    transform: translateY(-9px) scale(0.96, 1.04);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-/* Transizioni di pagina (<ViewTransition> in template.tsx): l'header resta fermo, il contenuto sfuma e sale. */
+/* Entrata in sequenza: style={stagger(i)} imposta --i. */
+.rise {
+  animation: rise 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.pop {
+  animation: pop 420ms var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.meter-fill {
+  transform-origin: left center;
+  animation: meter 900ms var(--ease-out) 150ms both;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-subtle) 0%, color-mix(in oklab, var(--surface-subtle) 40%, var(--surface)) 50%, var(--surface-subtle) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.ball-bounce {
+  animation: bounce-ball 0.7s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  transform-origin: 50% 100%;
+}
+.ball-spin {
+  animation: spin 0.9s linear infinite;
+}
+
+/* Riga/carta che si solleva al passaggio del mouse. */
+.lift {
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    border-color 160ms ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px -18px rgb(6 10 20 / 0.45);
+  }
+}
+
+/* Barra di stato in basso (mobile): spazio per la home indicator di iOS. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Righe a strisce oblique per il cap sforato. */
+.stripes {
+  background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.28) 0 4px, transparent 4px 9px);
+}
+
+/* ---------- Transizioni di pagina (<ViewTransition> in template.tsx) ---------- */
 ::view-transition {
   pointer-events: none;
 }
-::view-transition-group(site-header) {
+::view-transition-group(site-header),
+::view-transition-group(tab-bar) {
   animation: none;
   z-index: 100;
 }
-::view-transition-old(site-header) {
+::view-transition-old(site-header),
+::view-transition-old(tab-bar) {
   display: none;
 }
-::view-transition-new(site-header) {
+::view-transition-new(site-header),
+::view-transition-new(tab-bar) {
   animation: none;
 }
 ::view-transition-old(.page-out) {
-  animation: 120ms ease-in both fade-in reverse;
+  animation: 140ms ease-in both fade-in reverse;
 }
 ::view-transition-new(.page-in) {
-  animation: 220ms ease-out 120ms both fade-in;
+  animation: 300ms var(--ease-out) 110ms both rise;
+}
+/* Lo stemma di una squadra vola dal board alla pagina squadra. */
+::view-transition-group(.crest) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -115,29 +318,12 @@ body {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
-}
-
-/* Titoli stile broadcast: condensed, maiuscolo, pesante. */
-.font-display {
-  font-family: var(--font-display), Impact, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.015em;
-}
-
-.eyebrow {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  line-height: 1.25rem;
-  text-transform: uppercase;
-}
-
-@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { Badge, PageTitle, Section } from "@/components/ui";
+import { TeamCrest } from "@/components/crest";
+import { Badge, PageTitle, Scoreboard, Section, stagger } from "@/components/ui";
 import { loadLeague } from "@/lib/league-server";
+import { teamColors } from "@/lib/team-colors";
 
 const ROUNDS = [1, 2, 3, 4, 5];
 
@@ -8,7 +10,10 @@ export default async function DraftPage() {
   const league = await loadLeague();
   const years = [...new Set(league.picks.map((p) => p.year))].sort();
   const name = (id: string | null) => (id ? league.teamNames.get(id) ?? "?" : "da definire");
+  const colors = teamColors(league.teams.map((t) => t.team.id));
+  const color = (id: string | null) => (id ? colors.get(id) ?? "#555" : "#555");
   const hasPending = league.picks.some((p) => p.to_confirm);
+  const traded = league.picks.filter((p) => p.current_team_id !== p.original_team_id).length;
   // L'ordine del draft si registra alla chiusura: il proprietario di adesso si legge dalle pick, così gli scambi successivi si vedono.
   const slot = (r: (typeof league.rookieDraft)[number]) => {
     if (!r.original_team_id) return { teamId: r.team_id, note: r.note };
@@ -17,45 +22,80 @@ export default async function DraftPage() {
     const teamId = pick?.current_team_id ?? r.team_id;
     return { teamId, note: teamId === r.original_team_id ? "" : `Da ${name(r.original_team_id)}` };
   };
+  const perRound = Math.max(1, league.teams.length);
+  const draftRounds = [...new Set(league.rookieDraft.map((r) => Math.ceil(r.pick_no / perRound)))];
 
   return (
     <>
-      <PageTitle sub={<>5 giri, una scelta per squadra e per giro. Si scambiano solo le scelte dei prossimi 3 anni.
-        Il punto (·) indica una scelta ancora della squadra, il nome il proprietario attuale.{hasPending && " Il ? segna le scelte da confermare."}</>}>Draft</PageTitle>
+      <PageTitle
+        icon="ticket"
+        eyebrow="Pick e rookie draft"
+        sub={
+          <>
+            5 giri, una scelta per squadra e per giro. Si scambiano solo le scelte dei prossimi 3 anni. Nella griglia il pallino grigio è una scelta ancora della
+            squadra; lo stemma indica il proprietario attuale.{hasPending && " Il ? segna le scelte da confermare."}
+          </>
+        }
+        aside={
+          <Scoreboard
+            items={[
+              { label: "Pick", value: league.picks.length },
+              { label: "Scambiate", value: traded, tone: "gold" },
+              { label: "Da confermare", value: league.picks.filter((p) => p.to_confirm).length },
+            ]}
+          />
+        }
+      >
+        Draft
+      </PageTitle>
 
       {years.map((y) => {
         const picks = league.picks.filter((p) => p.year === y);
         const moved = picks.filter((p) => p.current_team_id !== p.original_team_id).length;
         return (
-          <Section key={y} title={`Draft ${y}`} aside={`${moved} scelte scambiate`}>
-            <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-              <table className="w-full min-w-[34rem] text-sm">
+          <Section key={y} title={`Draft ${y}`} icon="ticket" aside={`${moved} scelte scambiate`}>
+            <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+              <table className="w-full min-w-[46rem] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-line text-left text-xs tracking-wide text-muted uppercase">
-                    <th className="px-3 py-2 font-medium">Pick di</th>
-                    {ROUNDS.map((r) => <th key={r} className="px-2 py-2 font-medium">{r}° giro</th>)}
+                  <tr className="eyebrow border-b border-line bg-surface-subtle/60 text-left text-muted">
+                    <th className="sticky left-0 z-[1] bg-surface-subtle px-4 py-2 font-bold">Pick di</th>
+                    {ROUNDS.map((r) => (
+                      <th key={r} className="px-2 py-2 text-center font-bold">
+                        {r}° giro
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {league.teams.map(({ team }) => (
-                    <tr key={team.id}>
-                      <th className="px-3 py-2 text-left font-medium whitespace-nowrap">
-                        <Link href={`/squadre/${team.id}`} className="hover:underline">{team.name}</Link>
+                  {league.teams.map(({ team }, ti) => (
+                    <tr key={team.id} className="rise" style={stagger(ti)}>
+                      <th className="sticky left-0 z-[1] bg-surface px-4 py-2 text-left font-semibold whitespace-nowrap">
+                        <Link href={`/squadre/${team.id}`} className="flex items-center gap-2 hover:underline">
+                          <TeamCrest name={team.name} color={color(team.id)} size="xs" />
+                          {team.name}
+                        </Link>
                       </th>
                       {ROUNDS.map((r) => {
                         const p = picks.find((x) => x.original_team_id === team.id && x.round === r);
                         return (
-                          <td key={r} className="px-2 py-2">
-                            {!p ? <span className="text-muted">–</span> : p.current_team_id === team.id ? (
-                              <span className="text-muted" title="Ancora della squadra">·</span>
+                          <td key={r} className="px-2 py-1.5 text-center">
+                            {!p ? (
+                              <span className="text-muted">–</span>
+                            ) : p.current_team_id === team.id ? (
+                              <span className="mx-auto block h-2 w-2 rounded-full bg-foreground/15" title="Ancora della squadra" />
+                            ) : p.current_team_id ? (
+                              <Link
+                                href={`/squadre/${p.current_team_id}`}
+                                className="inline-flex max-w-full items-center gap-1.5 rounded-lg border py-1 pr-2 pl-1 text-xs font-bold transition-[filter] hover:brightness-95"
+                                style={{ borderColor: `color-mix(in oklab, ${color(p.current_team_id)} 45%, transparent)`, background: `color-mix(in oklab, ${color(p.current_team_id)} 12%, transparent)` }}
+                              >
+                                <TeamCrest name={name(p.current_team_id)} color={color(p.current_team_id)} size="xs" />
+                                <span className="truncate">{name(p.current_team_id)}</span>
+                                {p.to_confirm && <span className="text-warning" title="Destinatario da confermare">?</span>}
+                              </Link>
                             ) : (
-                              <span className="flex items-center gap-1">
-                                {p.current_team_id ? (
-                                  <Link href={`/squadre/${p.current_team_id}`} className="font-medium text-brand-blue hover:underline">{name(p.current_team_id)}</Link>
-                                ) : (
-                                  <span className="italic text-muted">da definire</span>
-                                )}
-                                {p.to_confirm && <Badge tone="warn" title="Destinatario da confermare">?</Badge>}
+                              <span className="inline-flex items-center gap-1 text-xs text-muted italic">
+                                da definire {p.to_confirm && <Badge tone="warn">?</Badge>}
                               </span>
                             )}
                           </td>
@@ -71,19 +111,37 @@ export default async function DraftPage() {
       })}
 
       {league.rookieDraft.length > 0 && (
-        <Section title={`Ordine del draft ${league.seasonYear}`} aside={`${league.rookieDraft.length} scelte`}>
-          <ol className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-            {league.rookieDraft.map((r) => {
-              const { teamId, note } = slot(r);
-              return (
-                <li key={r.pick_no} className="flex items-center gap-3 px-3 py-2">
-                  <span className="w-8 text-sm tabular-nums text-muted">{r.pick_no}</span>
-                  <Link href={`/squadre/${teamId}`} className="w-40 shrink-0 truncate font-medium hover:underline">{name(teamId)}</Link>
-                  <span className="min-w-0 flex-1 truncate text-sm text-muted">{note}</span>
-                </li>
-              );
-            })}
-          </ol>
+        <Section title={`Ordine del draft ${league.seasonYear}`} icon="trophy" aside={`${league.rookieDraft.length} scelte`}>
+          <div className="space-y-6">
+            {draftRounds.map((round) => (
+              <div key={round}>
+                <h3 className="eyebrow mb-2 text-muted">{round}° giro</h3>
+                <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+                  {league.rookieDraft
+                    .filter((r) => Math.ceil(r.pick_no / perRound) === round)
+                    .map((r, i) => {
+                      const { teamId, note } = slot(r);
+                      return (
+                        <li key={r.pick_no} className="pop" style={stagger(i)}>
+                          <Link
+                            href={`/squadre/${teamId}`}
+                            className="lift group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface p-3 hover:border-foreground/25"
+                          >
+                            <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: color(teamId) }} />
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="font-display tnum text-4xl leading-none font-black">{r.pick_no}</span>
+                              <TeamCrest name={name(teamId)} color={color(teamId)} size="sm" />
+                            </span>
+                            <span className="mt-2 truncate text-sm font-semibold group-hover:underline">{name(teamId)}</span>
+                            {note && <span className="truncate text-xs text-muted">{note}</span>}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                </ol>
+              </div>
+            ))}
+          </div>
         </Section>
       )}
     </>

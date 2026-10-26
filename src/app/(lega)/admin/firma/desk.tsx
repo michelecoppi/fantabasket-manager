@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button, Callout, Check, Field, inputClass, Segmented } from "@/components/controls";
 import type { SimTeam } from "@/components/trade-parts";
-import { Badge, Card, StatChange } from "@/components/ui";
+import { Badge, Card, PosChip, StatChange } from "@/components/ui";
 import { contractDurations, evaluateSigning, teamOptionAllowed, type LeagueSettings } from "@/lib/cap";
 import { fmt } from "@/lib/format";
 import { filterPlayers, type PlayerListItem } from "@/lib/players";
@@ -82,10 +82,10 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
     <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
       <div className="space-y-4">
         <Card className="p-4">
-          <h2 className="font-display mb-3 border-l-4 border-brand-red pl-3 text-2xl font-bold">1 · Giocatore</h2>
+          <h2 className="font-display mb-3 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">1 · Giocatore</h2>
           {player ? (
             <div className="flex items-center gap-3 rounded-md bg-foreground/5 p-3">
-              <span className="w-6 text-center text-sm font-bold text-muted">{player.pos ?? "?"}</span>
+              <PosChip pos={player.pos} />
               <div className="min-w-0 flex-1">
                 <div className="font-display truncate text-xl leading-tight font-bold">{player.name}</div>
                 <div className="text-xs text-muted">
@@ -111,7 +111,7 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
                   {results.map((p) => (
                     <li key={p.id}>
                       <button type="button" onClick={() => pickPlayer(p)} className="flex min-h-12 w-full items-center gap-3 px-3 text-left transition hover:bg-foreground/5">
-                        <span className="w-5 text-center text-xs font-semibold text-muted">{p.pos ?? "?"}</span>
+                        <PosChip pos={p.pos} />
                         <span className="min-w-0 flex-1 truncate">{p.name}</span>
                         <span className="text-xs text-muted">{p.nbaTeam}</span>
                         <span className="w-10 text-right font-medium tabular-nums">{p.credits !== null ? fmt(p.credits) : "—"}</span>
@@ -126,7 +126,7 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
         </Card>
 
         <Card className="p-4">
-          <h2 className="font-display mb-3 border-l-4 border-brand-red pl-3 text-2xl font-bold">2 · Contratto</h2>
+          <h2 className="font-display mb-3 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">2 · Contratto</h2>
           <div className="space-y-4">
             <Field label="Squadra" htmlFor="team">
               <select id="team" className={inputClass} value={teamId} onChange={(e) => setTeamId(e.target.value)}>

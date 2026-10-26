@@ -35,7 +35,7 @@ export default async function AdminRosterPage() {
   }));
   return (
     <>
-      <PageTitle sub="Completa le durate, cambia titolare/riserva, taglia o rimuovi un contratto e chiudi i tagli dopo l'asta dei tagliati (R-41, R-42).">
+      <PageTitle icon="clipboard" eyebrow="Area admin" sub="Completa le durate, cambia titolare/riserva, taglia o rimuovi un contratto e chiudi i tagli dopo l'asta dei tagliati (R-41, R-42).">
         Rose e contratti
       </PageTitle>
       <RoseDesk teams={teams} settings={league.settings} />
