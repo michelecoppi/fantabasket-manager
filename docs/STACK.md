@@ -10,9 +10,9 @@
 Carico: 8 utenti, scritture rarissime (solo admin) → un decimo dei limiti free.
 
 ## Attenzioni sui piani gratuiti
-- Supabase free **mette in pausa il progetto dopo ~7 giorni senza attività**. Mitigazione: il workflow GitHub Actions `keepalive.yml` (configurazione in [DEPLOY.md](DEPLOY.md), sezione 3), oppure riattivarlo a mano a inizio asta.
+- Supabase free **mette in pausa il progetto dopo ~7 giorni senza attività**. Mitigazione: il cron di Vercel su `/api/keepalive` (ogni giorno, `vercel.json`) più il workflow GitHub Actions `keepalive.yml` come ridondanza (configurazione in [DEPLOY.md](DEPLOY.md), sezione 3; GitHub ferma i workflow schedulati dopo 60 giorni di inattività del repo), oppure riattivarlo a mano a inizio asta.
 - Vercel Hobby è per uso non commerciale: ok per una lega tra amici.
-- Backup: export periodico (`pg_dump` o CSV) salvato nel repo privato/Drive, perché il free non ha backup garantiti.
+- Backup: workflow settimanale `backup.yml` con `pg_dump` cifrato salvato come artifact (90 giorni), perché il free non ha backup garantiti; ripristino in [DEPLOY.md](DEPLOY.md), sezione 3b.
 
 ## Alternative valutate
 - **Cloudflare Pages + D1 (SQLite)**: nessuna pausa, ma auth da costruire a mano e meno comodo per RLS. Buona seconda scelta.

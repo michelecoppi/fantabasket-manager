@@ -27,6 +27,21 @@ Il workflow `.github/workflows/keepalive.yml` interroga Supabase ogni 3 giorni. 
 
 Poi **Actions → Supabase keep-alive → Run workflow** per provarlo: deve finire con `HTTP 200`.
 
+**Cron di Vercel (principale).** `vercel.json` chiama ogni giorno `/api/keepalive`, che fa una query leggera. Parte da sola dopo il deploy e non si ferma se il repo resta fermo. Facoltativo: aggiungi la variabile `CRON_SECRET` su Vercel (una stringa casuale lunga) e la route accetterà solo le chiamate del cron. Il workflow GitHub resta come rete di sicurezza, ma GitHub disattiva i workflow schedulati dopo 60 giorni senza attività nel repo.
+
+## 3b. Backup settimanale del database
+Il piano gratuito di Supabase non ha backup garantiti. Il workflow `.github/workflows/backup.yml` ogni domenica salva un `pg_dump` dello schema `public` come artifact (90 giorni), **cifrato** perché il repo è pubblico. Secret da aggiungere come sopra:
+- `SUPABASE_DB_URL` — Supabase → Connect → **Session pooler** (la stessa di `.env.local`)
+- `BACKUP_PASSPHRASE` — una frase lunga e casuale: conservala anche fuori da GitHub, senza di lei il backup non si apre
+
+Provalo con **Actions → Backup database → Run workflow**. Se i workflow schedulati si fermano (60 giorni senza attività) il dump va rilanciato a mano.
+
+**Ripristino.** Scarica l'artifact, poi:
+```bash
+gpg --decrypt backup.sql.gz.gpg | gunzip > backup.sql
+```
+Il file contiene schema e dati di `public`. Applicalo su un progetto Supabase **nuovo o vuoto** (con le migrazioni già applicate, `psql "$SUPABASE_DB_URL" -f backup.sql` darebbe errori di oggetti esistenti): per un ripristino parziale copia solo le tabelle che servono. Non ripristinare mai sopra il progetto reale senza averne prima fatto un dump.
+
 ## 4. Aggiornamenti
 Ogni push su `main` ripubblica il sito da solo. Le variabili si cambiano da Vercel → Project → Settings → Environment Variables (poi serve un nuovo deploy).
 

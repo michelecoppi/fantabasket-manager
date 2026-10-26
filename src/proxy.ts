@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+// /api/keepalive: chiamata dal cron di Vercel, senza sessione (risponde con una query che la RLS lascia vuota).
+const PUBLIC_PATHS = ["/login", "/auth", "/api/keepalive"];
 
 /** Rinnova la sessione Supabase e rimanda al login chi non è autenticato. */
 export async function proxy(request: NextRequest) {
