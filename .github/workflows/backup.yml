@@ -1,0 +1,38 @@
+name: Backup database
+
+# Il piano gratuito di Supabase non garantisce backup. Ogni domenica un pg_dump dei soli dati dell'app (schema public)
+# viene cifrato e salvato come artifact. Il repo è pubblico e gli artifact sono scaricabili da chi ha un account GitHub:
+# per questo il dump non esce mai in chiaro. Ripristino in docs/DEPLOY.md.
+on:
+  schedule:
+    - cron: "43 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump cifrato
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "Mancano i secret SUPABASE_DB_URL e BACKUP_PASSPHRASE"; exit 1
+          fi
+          # pg_dump deve avere la stessa versione maggiore del server (Supabase: Postgres 17).
+          docker run --rm -e SUPABASE_DB_URL postgres:17-alpine \
+            sh -c 'pg_dump "$SUPABASE_DB_URL" --schema=public --no-owner --no-privileges' \
+            | gzip -9 \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --symmetric --cipher-algo AES256 -o backup.sql.gz.gpg
+          test -s backup.sql.gz.gpg
+          ls -l backup.sql.gz.gpg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.sql.gz.gpg
+          retention-days: 90
+          if-no-files-found: error
