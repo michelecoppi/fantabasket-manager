@@ -100,13 +100,14 @@ Nessun elemento confermato. In particolare non è stato verificato un accesso an
 - **Complessità:** media. **Rischio/dipendenze:** migrazione obbligatoria e applicazione coordinata; il valore 2 non va hardcodato.
 - **Accettazione:** rookie 1/2 validi, rookie 3 e 2+1 rifiutati, contratti ordinari invariati, seed/migrazione/test RLS aggiornati.
 
-#### P1-06 — Concorrenza su invarianti di rosa e chiusura — **rinviata**
+#### P1-06 — Concorrenza su invarianti di rosa e chiusura — **completata in questa PR**
 - **Tipo:** technical improvement / data integrity, rischio confermato staticamente.
 - **Problema ed evidenza:** firma/modifica/rientro leggono e validano in TypeScript, ma la RPC non blocca la rosa della squadra. Due admin possono validare contemporaneamente l'ultimo slot. Firme/scambi non serializzano con la chiusura stagione.
 - **Soluzione:** lock di squadra/stagione o revisione di rosa verificata nella stessa transazione; test concorrenti prima di abilitare la chiusura.
 - **Valore:** mantiene valide le regole anche con due admin e durante transizioni irreversibili.
 - **Complessità:** alta. **Rischio/dipendenze:** migrazione RPC e test di concorrenza; `SEASON_CLOSE_ENABLED` deve restare false fino alla verifica.
 - **Accettazione:** due richieste concorrenti non superano i massimi; una scrittura non può finire nella stagione appena chiusa; nessun deadlock nei test.
+- **Esito:** `teams.roster_rev` (trigger sui contratti) verificato dalle RPC dopo il lock di squadra, stagione corrente `for share` in ogni scrittura, ordine dei lock stagione → squadre per id → righe. Migrazione `20261026220000_roster_locks.sql`, test in `supabase/tests/concurrency.sh` e `rls.sql`. `SEASON_CLOSE_ENABLED` resta `false`: la chiusura va comunque provata su dati veri.
 
 #### P1-07 — Luxury tax arrotondata a un decimale — **completata in questa PR**
 - **Tipo:** bug fix / accuratezza UI.

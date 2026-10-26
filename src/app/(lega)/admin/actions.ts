@@ -101,6 +101,7 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
       p_is_rookie: input.isRookie,
       p_restriction: restriction.unrestricted ? "unrestricted" : null,
       p_notes: input.notes,
+      p_roster_rev: versions.rosterRev[input.teamId] ?? null,
     });
     if (error) return rpcError(error.message);
     refresh();
@@ -117,6 +118,7 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
     p_is_rookie: input.isRookie,
     p_restriction: restriction.unrestricted ? "unrestricted" : null,
     p_notes: input.notes,
+    p_roster_rev: (await loadVersions()).rosterRev[input.teamId] ?? null,
   });
   if (error) return rpcError(error.message);
   refresh();
@@ -152,6 +154,7 @@ export async function updateContract(input: UpdateInput): Promise<ActionResult> 
     p_years: input.years,
     p_team_option: input.teamOption,
     p_salary: input.salary,
+    p_roster_rev: (await loadVersions()).rosterRev[owner.team.id] ?? null,
   });
   if (error) return rpcError(error.message);
   refresh();
@@ -219,6 +222,7 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
     }),
   });
 
+  const { rosterRev } = await loadVersions();
   const db = await createClient();
   const { error } = await db.rpc("admin_execute_trade", {
     p_team_a: input.teamA,
@@ -227,6 +231,7 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
     p_b_gives: label(input.bGives),
     p_approved_by: input.approvedBy,
     p_override_reason: ev.capBreakers.length ? reason : "",
+    p_roster_revs: { [input.teamA]: rosterRev[input.teamA] ?? null, [input.teamB]: rosterRev[input.teamB] ?? null },
   });
   if (error) return rpcError(error.message);
   refresh();
@@ -329,6 +334,7 @@ export async function reinstateCut(input: {
     p_salary: salary,
     p_years: input.years,
     p_team_option: input.teamOption,
+    p_roster_rev: (await loadVersions()).rosterRev[found.team.team.id] ?? null,
   });
   if (error) return rpcError(error.message);
   refresh();

@@ -21,13 +21,7 @@ Authentication → **URL Configuration**:
 Senza questo il login con password funziona lo stesso, ma il link via email rimanda all'indirizzo sbagliato.
 
 ## 3. Tenere sveglio Supabase (opzionale ma consigliato)
-Il workflow `.github/workflows/keepalive.yml` interroga Supabase ogni 3 giorni. Nel repo GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
-- `SUPABASE_URL` — stesso valore di `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_ANON_KEY` — stessa chiave pubblica
-
-Poi **Actions → Supabase keep-alive → Run workflow** per provarlo: deve finire con `HTTP 200`.
-
-**Cron di Vercel (principale).** `vercel.json` chiama ogni giorno `/api/keepalive`, che fa una query leggera. Parte da sola dopo il deploy e non si ferma se il repo resta fermo. Facoltativo: aggiungi la variabile `CRON_SECRET` su Vercel (una stringa casuale lunga) e la route accetterà solo le chiamate del cron. Il workflow GitHub resta come rete di sicurezza, ma GitHub disattiva i workflow schedulati dopo 60 giorni senza attività nel repo.
+`vercel.json` chiama ogni giorno `/api/keepalive`, che fa una query leggera. Parte da sola dopo il deploy e non si ferma se il repo resta fermo. Facoltativo: aggiungi la variabile `CRON_SECRET` su Vercel (una stringa casuale lunga) e la route accetterà solo le chiamate del cron. Per controllare: Vercel → Project → Settings → Cron Jobs (e i Logs filtrati su `/api/keepalive`); deve rispondere 200.
 
 ## 3b. Backup settimanale del database
 Il piano gratuito di Supabase non ha backup garantiti. Il workflow `.github/workflows/backup.yml` ogni domenica salva un `pg_dump` dello schema `public` come artifact (90 giorni), **cifrato** perché il repo è pubblico. Secret da aggiungere come sopra:
