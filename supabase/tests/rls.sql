@@ -148,6 +148,8 @@ insert into dunkest_matches (id, season_id, matchday, dunkest_matchday_id, home_
   from seasons s where s.is_current;
 insert into dunkest_lineups (match_id, team_id, fantasy_player_id, player_id, name, pos, role, court_position, pts)
   select 990001, id, 3, 900001, 'RLS Uno', 'G', 'starter', 1, 72.19 from teams order by name limit 1;
+insert into dunkest_rosters (season_id, team_id, fantasy_player_id, player_id, name, pos)
+  select s.id, t.id, 3, 900001, 'RLS Uno', 'G' from seasons s, (select id from teams order by name limit 1) t where s.is_current;
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
@@ -567,6 +569,18 @@ begin
             and count(*) filter (where not ok and error = 'HTTP 401' and report->>'code' = 'token_rejected') = 1
      from dunkest_sync_runs where kind = 'league'));
 
+  -- Rose: con la chiave si sostituiscono per intero, senza restano; vuote = fonte rotta.
+  perform rls_t.chk('rose vuote',
+    rls_t.try(format('select public.dunkest_league_apply(''rls-segreto-del-job-0123'', %L)', ok_payload || '{"rosters": []}'::jsonb)), array['error: INVALID%']);
+  v := public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload || jsonb_build_object('rosters', jsonb_build_array(
+    jsonb_build_object('team_id', t2, 'fantasy_player_id', 3, 'player_id', 900001, 'name', 'RLS Uno', 'pos', 'G'),
+    jsonb_build_object('team_id', t2, 'fantasy_player_id', 4, 'player_id', null, 'name', 'Ignoto', 'pos', 'C'))));
+  perform rls_t.ok('rose non sostituite',
+    (v->>'rosters')::int = 2 and (select count(*) from dunkest_rosters where season_id = sid) = 2
+    and (select count(*) from dunkest_rosters where season_id = sid and team_id = t2 and player_id is null and pos = 'C') = 1);
+  perform public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload);
+  perform rls_t.ok('apply senza rose le ha cancellate', (select count(*) from dunkest_rosters where season_id = sid) = 2);
+
   -- Calendario completo: resta solo quello del payload.
   perform public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload || '{"full_calendar": true}'::jsonb);
   perform rls_t.ok('full_calendar non ha tolto lo scontro vecchio',
@@ -580,6 +594,41 @@ begin
   perform rls_t.become('postgres');
   perform rls_t.ok('esecuzione di lega admin non registrata come admin',
     exists (select 1 from dunkest_sync_runs where kind = 'league' and trigger = 'admin' and user_id = rls_t.admin() and report->>'code' = 'token_missing'));
+end $$;
+
+-- ---------- admin_swap_slots (issue #72): titolari e riserve allineati a Dunkest ----------
+do $$
+declare
+  v int;
+  c contracts;
+  rev int;
+begin
+  select * into c from contracts where id = 900001;
+  select roster_rev into rev from teams where id = c.team_id;
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('swap con revisione vecchia',
+    rls_t.try(format('select public.admin_swap_slots(%L, %s, %L)', c.team_id, rev + 1, jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'reserve')))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('swap con versione vecchia',
+    rls_t.try(format('select public.admin_swap_slots(%L, %s, %L)', c.team_id, rev, jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version + 1, 'slot', 'reserve')))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('swap verso talenti',
+    rls_t.try(format('select public.admin_swap_slots(%L, %s, %L)', c.team_id, rev, jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'talent')))),
+    array['error: INVALID%']);
+  perform rls_t.chk('swap di un contratto di un''altra squadra',
+    rls_t.try(format('select public.admin_swap_slots((select id from public.teams where id <> %L order by name limit 1), 0, %L)', c.team_id,
+      jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'reserve')))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('swap senza cambiamenti',
+    rls_t.try(format('select public.admin_swap_slots(%L, %s, %L)', c.team_id, rev, jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', c.slot)))),
+    array['error: INVALID%']);
+  v := public.admin_swap_slots(c.team_id, rev, jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'reserve')));
+  perform rls_t.become('postgres');
+  perform rls_t.ok('swap non applicato', v = 1 and (select slot from contracts where id = 900001) = 'reserve');
+  perform rls_t.ok('swap senza audit',
+    exists (select 1 from audit_log where table_name = 'contracts' and row_id = '900001' and after->>'slot' = 'reserve' and user_id = rls_t.admin())
+    and exists (select 1 from audit_log where table_name = 'contracts' and row_id is null and after->>'summary' like 'Titolari e riserve di % allineati a Dunkest (1 contratti)'));
+  update contracts set slot = 'starter' where id = 900001;
 end $$;
 
 do $$ begin

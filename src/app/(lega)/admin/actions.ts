@@ -15,9 +15,10 @@ import {
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
+import { teamAlignment } from "@/lib/dunkest-align";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
-import { loadCloseInput, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
+import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
 
@@ -464,4 +465,49 @@ export async function syncDunkest(): Promise<ActionResult> {
   if (unlinked > 0) warnings.push(`${unlinked} giocatori da controllare nel report.`);
   const parts = [r.ok && `${r.stats} giocatori con statistiche, ${r.injuries} infortunati`, l.ok && leagueLine].filter(Boolean);
   return done(`Dati Dunkest aggiornati: ${parts.join("; ")}.`, warnings);
+}
+
+// ---------- Allineamento titolari ↔ riserve alla rosa Dunkest (issue #72) ----------
+/**
+ * Per ogni squadra indicata: chi è nella rosa Dunkest diventa titolare, i titolari che non ci sono diventano riserve. Lo stesso
+ * calcolo della proposta in /admin/dunkest, rifatto qui sui dati di adesso. Una transazione per squadra (`admin_swap_slots`);
+ * squadre bloccate (giocatori non collegati o di altre squadre) restano com'erano. Cap e riserve sforati sono avvisi.
+ */
+export async function alignToDunkest(teamIds: string[]): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!Array.isArray(teamIds) || teamIds.length === 0 || teamIds.some((id) => typeof id !== "string")) return fail("Dati non validi.");
+  const [league, versions, rosters] = await Promise.all([loadLeague(), loadVersions(), loadDunkestRosters()]);
+  const db = await createClient();
+  const doneTeams: string[] = [];
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  for (const teamId of teamIds) {
+    const name = league.teamNames.get(teamId) ?? "?";
+    const a = teamAlignment(league, teamId, rosters);
+    if (!a) {
+      errors.push(`${name}: rosa Dunkest non disponibile.`);
+      continue;
+    }
+    if (a.blockers.length) {
+      errors.push(`${name}: ${a.blockers.join(" ")}`);
+      continue;
+    }
+    if (a.promote.length === 0) continue;
+    const items = [
+      ...a.promote.map((c) => ({ id: c.contractId, version: versions.contracts[c.contractId], slot: "starter" })),
+      ...a.demote.map((c) => ({ id: c.contractId, version: versions.contracts[c.contractId], slot: "reserve" })),
+    ];
+    const { error } = await db.rpc("admin_swap_slots", { p_team_id: teamId, p_roster_rev: versions.rosterRev[teamId] ?? null, p_items: items });
+    if (error) {
+      const r = rpcError(error.message);
+      errors.push(`${name}: ${r.ok ? error.message : r.error}`);
+      continue;
+    }
+    doneTeams.push(`${name} (${a.promote.map((c) => c.name.split(" ").at(-1)).join(", ")} titolari)`);
+    warnings.push(...a.warnings.map((w) => `${name}: ${w}`));
+  }
+  refresh();
+  if (doneTeams.length === 0) return fail(errors.length ? errors.join(" ") : "Niente da allineare: titolari e riserve coincidono già con Dunkest.");
+  return done(`Allineate a Dunkest: ${doneTeams.join("; ")}.`, [...warnings, ...errors]);
 }

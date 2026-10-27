@@ -803,5 +803,457 @@
     "players": null
    }
   }
+ },
+ "teamRoster": {
+  "data": [
+   {
+    "id": 12,
+    "first_name": "Trae",
+    "last_name": "Young",
+    "quotation": 0,
+    "jersey": "3",
+    "face_path": null,
+    "avg_pts": 34.59,
+    "is_on_fire": null,
+    "popularity": 0.024,
+    "position": {
+     "id": 1,
+     "name": "Guard"
+    },
+    "team": {
+     "id": 30,
+     "name": "Washington Wizards",
+     "abbreviation": "WAS",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 4,
+     "name": "Charlotte Hornets",
+     "abbreviation": "CHA"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 29,
+    "first_name": "Deandre",
+    "last_name": "Ayton",
+    "quotation": 0,
+    "jersey": "5",
+    "face_path": null,
+    "avg_pts": 13.78,
+    "is_on_fire": null,
+    "popularity": 0.003,
+    "position": {
+     "id": 3,
+     "name": "Center"
+    },
+    "team": {
+     "id": 30,
+     "name": "Washington Wizards",
+     "abbreviation": "WAS",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 4,
+     "name": "Charlotte Hornets",
+     "abbreviation": "CHA"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": true,
+    "label": "opponent"
+   },
+   {
+    "id": 32,
+    "first_name": "Julius",
+    "last_name": "Randle",
+    "quotation": 0,
+    "jersey": "30",
+    "face_path": null,
+    "avg_pts": 32.38,
+    "is_on_fire": null,
+    "popularity": 0.019,
+    "position": {
+     "id": 2,
+     "name": "Forward"
+    },
+    "team": {
+     "id": 3,
+     "name": "Brooklyn Nets",
+     "abbreviation": "BKN",
+     "position": "home"
+    },
+    "opponent": {
+     "id": 12,
+     "name": "Indiana Pacers",
+     "abbreviation": "IND"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 37,
+    "first_name": "Darius",
+    "last_name": "Garland",
+    "quotation": 0,
+    "jersey": "10",
+    "face_path": null,
+    "avg_pts": 22.43,
+    "is_on_fire": null,
+    "popularity": 0.014,
+    "position": {
+     "id": 1,
+     "name": "Guard"
+    },
+    "team": {
+     "id": 13,
+     "name": "Los Angeles Clippers",
+     "abbreviation": "LAC",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 21,
+     "name": "Oklahoma City Thunder",
+     "abbreviation": "OKC"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 83,
+    "first_name": "Michael",
+    "last_name": "Porter Jr",
+    "quotation": 0,
+    "jersey": "17",
+    "face_path": null,
+    "avg_pts": 33.63,
+    "is_on_fire": null,
+    "popularity": 0.033,
+    "position": {
+     "id": 2,
+     "name": "Forward"
+    },
+    "team": {
+     "id": 3,
+     "name": "Brooklyn Nets",
+     "abbreviation": "BKN",
+     "position": "home"
+    },
+    "opponent": {
+     "id": 12,
+     "name": "Indiana Pacers",
+     "abbreviation": "IND"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 91,
+    "first_name": "Tyrese",
+    "last_name": "Maxey",
+    "quotation": 0,
+    "jersey": "0",
+    "face_path": null,
+    "avg_pts": 30.72,
+    "is_on_fire": null,
+    "popularity": 0.026,
+    "position": {
+     "id": 1,
+     "name": "Guard"
+    },
+    "team": {
+     "id": 23,
+     "name": "Philadelphia 76ers",
+     "abbreviation": "PHI",
+     "position": "home"
+    },
+    "opponent": {
+     "id": 9,
+     "name": "Detroit Pistons",
+     "abbreviation": "DET"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 123,
+    "first_name": "Franz",
+    "last_name": "Wagner",
+    "quotation": 0,
+    "jersey": "22",
+    "face_path": null,
+    "avg_pts": 17.5,
+    "is_on_fire": null,
+    "popularity": 0.031,
+    "position": {
+     "id": 2,
+     "name": "Forward"
+    },
+    "team": {
+     "id": 22,
+     "name": "Orlando Magic",
+     "abbreviation": "ORL",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 20,
+     "name": "New York Knicks",
+     "abbreviation": "NYK"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 130,
+    "first_name": "Nicolas",
+    "last_name": "Claxton",
+    "quotation": 0,
+    "jersey": "9",
+    "face_path": null,
+    "avg_pts": 0,
+    "is_on_fire": null,
+    "popularity": 0.004,
+    "position": {
+     "id": 3,
+     "name": "Center"
+    },
+    "team": {
+     "id": 5,
+     "name": "Chicago Bulls",
+     "abbreviation": "CHI",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 2,
+     "name": "Boston Celtics",
+     "abbreviation": "BOS"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": true,
+    "probability_of_playing": 0,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 140,
+    "first_name": "Alperen",
+    "last_name": "Sengun",
+    "quotation": 0,
+    "jersey": "28",
+    "face_path": null,
+    "avg_pts": 35.18,
+    "is_on_fire": null,
+    "popularity": 0.03,
+    "position": {
+     "id": 3,
+     "name": "Center"
+    },
+    "team": {
+     "id": 11,
+     "name": "Houston Rockets",
+     "abbreviation": "HOU",
+     "position": "home"
+    },
+    "opponent": {
+     "id": 1,
+     "name": "Atlanta Hawks",
+     "abbreviation": "ATL"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 202,
+    "first_name": "Dyson",
+    "last_name": "Daniels",
+    "quotation": 0,
+    "jersey": "5",
+    "face_path": null,
+    "avg_pts": 31.5,
+    "is_on_fire": null,
+    "popularity": 0.012,
+    "position": {
+     "id": 1,
+     "name": "Guard"
+    },
+    "team": {
+     "id": 1,
+     "name": "Atlanta Hawks",
+     "abbreviation": "ATL",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 11,
+     "name": "Houston Rockets",
+     "abbreviation": "HOU"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 347,
+    "first_name": "Trey",
+    "last_name": "Murphy III",
+    "quotation": 0,
+    "jersey": "25",
+    "face_path": null,
+    "avg_pts": 12.13,
+    "is_on_fire": null,
+    "popularity": 0.012,
+    "position": {
+     "id": 2,
+     "name": "Forward"
+    },
+    "team": {
+     "id": 19,
+     "name": "New Orleans Pelicans",
+     "abbreviation": "NOP",
+     "position": null
+    },
+    "opponent": null,
+    "round": null,
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "resting"
+   },
+   {
+    "id": 1796,
+    "first_name": "Keyonte",
+    "last_name": "George",
+    "quotation": 0,
+    "jersey": "3",
+    "face_path": null,
+    "avg_pts": 28.58,
+    "is_on_fire": null,
+    "popularity": 0.05,
+    "position": {
+     "id": 1,
+     "name": "Guard"
+    },
+    "team": {
+     "id": 29,
+     "name": "Utah Jazz",
+     "abbreviation": "UTA",
+     "position": "home"
+    },
+    "opponent": {
+     "id": 14,
+     "name": "Los Angeles Lakers",
+     "abbreviation": "LAL"
+    },
+    "round": {
+     "id": 2895,
+     "number": 1
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   },
+   {
+    "id": 8570,
+    "first_name": "Cooper",
+    "last_name": "Flagg",
+    "quotation": 0,
+    "jersey": "32",
+    "face_path": null,
+    "avg_pts": 30.45,
+    "is_on_fire": null,
+    "popularity": 0.034,
+    "position": {
+     "id": 2,
+     "name": "Forward"
+    },
+    "team": {
+     "id": 7,
+     "name": "Dallas Mavericks",
+     "abbreviation": "DAL",
+     "position": "away"
+    },
+    "opponent": {
+     "id": 16,
+     "name": "Miami Heat",
+     "abbreviation": "MIA"
+    },
+    "round": {
+     "id": 2896,
+     "number": 2
+    },
+    "is_injured": false,
+    "probability_of_playing": 1,
+    "fantasy_team": null,
+    "started_from_bench": false,
+    "label": "opponent"
+   }
+  ]
  }
 }
