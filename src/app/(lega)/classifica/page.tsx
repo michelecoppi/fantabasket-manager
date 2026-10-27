@@ -3,9 +3,9 @@ import { Lineup, LeagueSource, MatchScore, StandingsTable, type TeamIndex } from
 import { Icon } from "@/components/icons";
 import { MatchdayStrip } from "@/components/matchday-strip";
 import { Badge, Empty, PageTitle, Scoreboard, Section, stagger } from "@/components/ui";
-import { checkLineup, rosterRefs, type LineupPlayer } from "@/lib/dunkest-league";
+import { checkLineup, rosterRefs, tribune, type LineupPlayer } from "@/lib/dunkest-league";
 import type { TeamView } from "@/lib/league";
-import { loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
+import { loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
 const STATE_TEXT = { played: "Giocata", latest: "Ultima giornata con punti", upcoming: "Da giocare" } as const;
@@ -17,7 +17,7 @@ const STATE_TEXT = { played: "Giocata", latest: "Ultima giornata con punti", upc
  */
 export default async function StandingsPage(props: PageProps<"/classifica">) {
   const sp = await props.searchParams;
-  const [view, league, profile] = await Promise.all([loadLeagueDunkest(), loadLeague(), loadProfile()]);
+  const [view, league, profile, dunkestRosters] = await Promise.all([loadLeagueDunkest(), loadLeague(), loadProfile(), loadDunkestRosters()]);
   const colors = teamColors(league.teams.map((t) => t.team.id));
   const teams: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
   const myTeamId = profile?.team_id ?? null;
@@ -35,8 +35,7 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
     const t = byTeam.get(teamId) as TeamView | undefined;
     const starters = t?.starters ?? [];
     const check = checkLineup(teamId, lineup, starters.map((p) => p.playerId), rosters);
-    const stands = check.stands.map((id) => starters.find((p) => p.playerId === id)!).map((p) => ({ id: p.playerId, name: p.name, pos: p.pos }));
-    return { check, stands };
+    return { check, stands: tribune(lineup, dunkestRosters.get(teamId), starters, check) };
   };
 
   return (
@@ -132,7 +131,7 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
                                   <Link href={`/squadre/${s.teamId}`} className="font-display mb-2 block truncate text-2xl leading-none font-black hover:underline">
                                     {teams.get(s.teamId)?.name ?? "?"}
                                   </Link>
-                                  <Lineup check={s.check} stands={s.stands} teams={teams} columns={false} />
+                                  <Lineup check={s.check} stands={s.stands.players} standsFromDunkest={s.stands.fromDunkest} teams={teams} columns={false} />
                                 </div>
                               ))}
                             </div>

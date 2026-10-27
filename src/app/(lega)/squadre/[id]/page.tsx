@@ -9,10 +9,10 @@ import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
 import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
-import { checkLineup, rosterRefs, teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
+import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
-import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
+import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
 function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number }) {
@@ -117,7 +117,7 @@ async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: 
   const next = teamMatch(view, id, "next");
   const lineup = latest ? ((await loadLineups([latest.match.id])).get(latest.match.id)?.get(id) ?? []) : [];
   const check = checkLineup(id, lineup, t.starters.map((p) => p.playerId), rosterRefs(league.teams));
-  const stands = check.stands.map((pid) => t.starters.find((p) => p.playerId === pid)!).map((p) => ({ id: p.playerId, name: p.name, pos: p.pos }));
+  const stands = tribune(lineup, (await loadDunkestRosters()).get(id), t.starters, check);
   const issues = issuesText(check, teams);
   const standing = view.standings.find((s) => s.teamId === id);
 
@@ -169,7 +169,7 @@ async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: 
                   </ul>
                 </Callout>
               )}
-              <Lineup check={check} stands={stands} teams={teams} />
+              <Lineup check={check} stands={stands.players} standsFromDunkest={stands.fromDunkest} teams={teams} />
             </>
           )}
         </div>

@@ -2,14 +2,16 @@ import { DunkestSource } from "@/components/dunkest";
 import { issuesText, LeagueSource, type TeamIndex } from "@/components/dunkest-league";
 import { TeamCrest } from "@/components/crest";
 import { Icon } from "@/components/icons";
-import { Badge, Empty, PageTitle, Scoreboard, Section, stagger } from "@/components/ui";
+import { Badge, Empty, PageTitle, PosChip, Scoreboard, Section, stagger } from "@/components/ui";
 import { syncState, type LinkReport } from "@/lib/dunkest";
-import { checkLineup, rosterRefs, teamMatch, tokenDays, tokenState, type DunkestLeagueView, type LeagueReport } from "@/lib/dunkest-league";
-import { fmtDateTime } from "@/lib/format";
+import { teamAlignment } from "@/lib/dunkest-align";
+import { checkLineup, rosterRefs, teamMatch, tokenDays, tokenState, type Alignment, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport } from "@/lib/dunkest-league";
+import { fmt, fmtDateTime } from "@/lib/format";
 import type { LeagueView } from "@/lib/league";
-import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
+import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { createClient } from "@/lib/supabase/server";
+import { AlignButton } from "./align-button";
 import { DunkestSyncButton } from "./sync-button";
 
 const RUNS = 30;
@@ -125,6 +127,115 @@ function TokenCard({ view }: { view: DunkestLeagueView }) {
   );
 }
 
+function MoveList({ title, tone, items }: { title: string; tone: "up" | "down"; items: Alignment["promote"] }) {
+  return (
+    <div className="min-w-0">
+      <h4 className={`eyebrow mb-1.5 flex items-center gap-1.5 ${tone === "up" ? "text-success" : "text-muted"}`}>
+        <span aria-hidden>{tone === "up" ? "▲" : "▼"}</span>
+        {title}
+      </h4>
+      <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+        {items.map((c) => (
+          <li key={c.contractId} className="flex min-h-11 items-center gap-2.5 px-3 py-1.5">
+            <PosChip pos={c.pos} />
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{c.name}</span>
+            <span className="font-display tnum text-xl leading-none font-extrabold">{fmt(c.salary)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Titolari e riserve da allineare alla rosa Dunkest (decisione dell'utente 2026-10-27: chi è nella rosa Dunkest è titolare).
+ * Per ogni squadra: chi sale, chi scende, effetto su monte ingaggi e riserve, avvisi e blocchi; l'admin conferma.
+ */
+function AlignmentSection({ league, rosters, teams }: { league: LeagueView; rosters: Map<string, DunkestRosterPlayer[]>; teams: TeamIndex }) {
+  const rows = league.teams.map((t) => ({ t, a: teamAlignment(league, t.team.id, rosters) }));
+  const todo = rows.filter((r) => r.a && r.a.promote.length + r.a.demote.length > 0);
+  const ready = todo.filter((r) => r.a!.blockers.length === 0).map((r) => r.t.team.id);
+  const synced = rows.filter((r) => r.a && r.a.promote.length + r.a.demote.length === 0 && r.a.blockers.length === 0);
+  if (rosters.size === 0) {
+    return (
+      <Empty title="Rose Dunkest non ancora lette" icon="clipboard">
+        Arrivano col prossimo aggiornamento («Aggiorna ora» o il cron delle 9).
+      </Empty>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm">
+          {todo.length === 0 ? (
+            <span className="font-semibold text-success">Titolari e riserve coincidono con le rose Dunkest per tutte le squadre.</span>
+          ) : (
+            <>
+              <span className="font-semibold">{todo.length === 1 ? "1 squadra da allineare" : `${todo.length} squadre da allineare`}</span>
+              <span className="text-muted">
+                {" "}
+                · chi è nella rosa Dunkest (quintetto, panchina o tribuna) diventa titolare, gli altri riserve. Cap e riserve sforati sono solo avvisi.
+              </span>
+            </>
+          )}
+        </p>
+        {ready.length > 1 && (
+          <div className="shrink-0">
+            <AlignButton teamIds={ready} label={`Allinea tutte (${ready.length})`} primary />
+          </div>
+        )}
+      </div>
+      {todo.map(({ t, a }, i) => {
+        const al = a!;
+        const blocked = al.blockers.length > 0;
+        return (
+          <article key={t.team.id} className={`rise rounded-2xl border bg-surface p-4 ${blocked ? "border-danger/40" : al.warnings.length ? "border-warning/45" : "border-line"}`} style={stagger(i)}>
+            <div className="mb-3 flex items-center gap-3">
+              <TeamCrest name={t.team.name} color={teams.get(t.team.id)?.color ?? "var(--muted)"} size="sm" />
+              <a href={`/squadre/${t.team.id}`} className="font-display min-w-0 flex-1 truncate text-2xl leading-none font-black hover:underline">
+                {t.team.name}
+              </a>
+              <span className="text-right text-xs text-muted">
+                <span className="eyebrow block">Monte ingaggi</span>
+                <span className="font-display tnum text-xl leading-none font-extrabold text-foreground">
+                  {fmt(al.before.payroll)} → <span className={al.after.overCap ? "text-danger" : ""}>{fmt(al.after.payroll)}</span>
+                </span>
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MoveList title="Diventano titolari" tone="up" items={al.promote} />
+              <MoveList title="Diventano riserve" tone="down" items={al.demote} />
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              Spazio salariale {fmt(al.before.capSpace)} → {fmt(al.after.capSpace)} · budget riserve libero {fmt(al.before.reserveSpace)} → {fmt(al.after.reserveSpace)}
+            </p>
+            {(blocked || al.warnings.length > 0) && (
+              <ul className="mt-2 space-y-1 text-sm">
+                {[...al.blockers.map((x) => ({ x, bad: true })), ...al.warnings.map((x) => ({ x, bad: false }))].map(({ x, bad }) => (
+                  <li key={x} className="flex gap-1.5">
+                    <Icon name="alert" size={15} strokeWidth={2.4} className={`mt-0.5 shrink-0 ${bad ? "text-danger" : "text-warning"}`} />
+                    {x}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-3">
+              {blocked ? (
+                <p className="text-xs text-muted">Non si allinea in automatico: sistema i giocatori indicati (collegamento o squadra) e riprova.</p>
+              ) : (
+                <AlignButton teamIds={[t.team.id]} label="Allinea" />
+              )}
+            </div>
+          </article>
+        );
+      })}
+      {synced.length > 0 && todo.length > 0 && (
+        <p className="text-xs text-muted">Già allineate: {synced.map((r) => r.t.team.name).join(", ")}.</p>
+      )}
+    </div>
+  );
+}
+
 /** Divergenze tra le formazioni Dunkest dell'ultima giornata con punti e le rose dell'app, squadra per squadra. */
 async function LineupIssues({ league, view, teams }: { league: LeagueView; view: DunkestLeagueView; teams: TeamIndex }) {
   const day = view.matchdays.find((d) => d.state === "latest");
@@ -183,10 +294,11 @@ async function LineupIssues({ league, view, teams }: { league: LeagueView; view:
  */
 export default async function AdminDunkestPage() {
   const db = await createClient();
-  const [dunkest, view, league, runsRes, mapRes] = await Promise.all([
+  const [dunkest, view, league, rosters, runsRes, mapRes] = await Promise.all([
     loadDunkest(),
     loadLeagueDunkest(),
     loadLeague(),
+    loadDunkestRosters(),
     db.from("dunkest_sync_runs").select("id,kind,at,trigger,user_id,ok,stats_count,injuries_count,links_count,error,report").order("id", { ascending: false }).limit(RUNS),
     db.from("dunkest_teams").select("team_id,dunkest_team_id,seasons!inner(is_current)").eq("seasons.is_current", true),
   ]);
@@ -271,6 +383,12 @@ export default async function AdminDunkestPage() {
           </div>
         </div>
       </Section>
+
+      {view.available && (
+        <Section title="Titolari e riserve" icon="swap" aside="come la rosa Dunkest">
+          <AlignmentSection league={league} rosters={rosters} teams={teams} />
+        </Section>
+      )}
 
       {view.available && (
         <Section title="Formazioni da controllare" icon="jersey" aside={view.latest ? `giornata ${view.latest}` : undefined}>
