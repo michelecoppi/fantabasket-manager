@@ -23,6 +23,10 @@ export interface SourceStat {
   lastName: string;
   teamCode: string;
   teamName: string;
+  /** ruolo come nel listone (G/A/C): Dunkest scrive G/F/C */
+  pos: Position | null;
+  /** crediti Dunkest di oggi; null se Dunkest scrive 0 (non ancora prezzato) */
+  credits: number | null;
   gp: number;
   pdk: number;
   min: number;
@@ -51,6 +55,8 @@ const num = (v: unknown): number => {
   return Number.isFinite(n) ? n : NaN;
 };
 
+const POS: Record<string, Position> = { G: "G", F: "A", C: "C" };
+
 /** Righe di `/api/stats/table` (valori quasi tutti stringhe). Lancia se la forma non è quella attesa. */
 export function parseStats(json: unknown): SourceStat[] {
   if (!Array.isArray(json)) throw new SourceFormatError("statistiche: la risposta non è una lista");
@@ -63,6 +69,8 @@ export function parseStats(json: unknown): SourceStat[] {
       lastName: String(r?.last_name ?? "").trim(),
       teamCode: String(r?.team_code ?? "").trim(),
       teamName: TEAM_NAMES[String(r?.team_name ?? "").trim()] ?? String(r?.team_name ?? "").trim(),
+      pos: POS[String(r?.position ?? "").trim()] ?? null,
+      credits: num(r?.cr) > 0 ? num(r?.cr) : null,
       gp: num(r?.gp),
       pdk: num(r?.pdk),
       min: num(r?.min),
@@ -156,6 +164,8 @@ export interface LinkReport {
   rosteredWithoutStats: string[];
   /** infortunati Dunkest senza un giocatore della lega con lo stesso nome */
   injuriesUnlinked: string[];
+  /** giocatori nuovi aggiunti al listone in questa esecuzione (assente nei report più vecchi) */
+  added?: string[];
 }
 
 const SUFFIX = /(jr|sr|ii|iii|iv)$/;
@@ -217,6 +227,37 @@ export function linkPlayers(players: DbPlayer[], sources: LinkSource[]): { links
   return { links, newLinks, ambiguous, unlinked };
 }
 
+/** Giocatore di Dunkest che il listone non ha: lo aggiunge `dunkest_sync_add_players` prima di scrivere le statistiche. */
+export interface NewPlayer {
+  dunkest_id: number;
+  first_name: string;
+  last_name: string;
+  pos: Position | null;
+  nba_team: string;
+  dunkest_credits: number | null;
+}
+
+/** Oltre questa soglia in un colpo solo la fonte è probabilmente cambiata (nomi diversi): non si aggiunge nessuno e il job fallisce. */
+export const MAX_NEW_PLAYERS = 100;
+
+/**
+ * Chi ha giocato (è nelle statistiche) ma non ha nessun giocatore della lega con lo stesso nome o id: rookie e firme nuove.
+ * Gli omonimi dubbi non si aggiungono (restano nel report) e neppure gli infortunati senza statistiche, di cui la pagina
+ * infortuni dà solo il nome abbreviato.
+ */
+export function findNewPlayers(players: DbPlayer[], stats: SourceStat[]): NewPlayer[] {
+  const sources: LinkSource[] = stats.map((s) => ({ dunkestId: s.dunkestId, name: `${s.firstName} ${s.lastName}`, team: s.teamName, label: s.lastName }));
+  const missing = new Set(linkPlayers(players, sources).unlinked.map((s) => s.dunkestId));
+  const seen = new Set<number>();
+  const out: NewPlayer[] = [];
+  for (const s of stats) {
+    if (!missing.has(s.dunkestId) || seen.has(s.dunkestId) || !s.firstName || !s.teamName) continue;
+    seen.add(s.dunkestId);
+    out.push({ dunkest_id: s.dunkestId, first_name: s.firstName, last_name: s.lastName, pos: s.pos, nba_team: s.teamName, dunkest_credits: s.credits });
+  }
+  return out;
+}
+
 /** Payload della RPC `dunkest_sync_apply` (migrazione 20261027025827): tutto quello che il job scrive, in una transazione. */
 export interface SyncPayload {
   season_id: number;
@@ -233,6 +274,7 @@ export function buildSyncPayload(
   players: DbPlayer[],
   stats: SourceStat[],
   injuries: { updatedAt: string | null; injuries: SourceInjury[] },
+  added: string[] = [],
 ): SyncPayload {
   const codeToTeam = new Map(stats.map((s) => [s.teamCode, s.teamName]));
   const sources: LinkSource[] = [
@@ -270,6 +312,7 @@ export function buildSyncPayload(
       // Chi è infortunato ha già il suo motivo: qui restano i casi da guardare.
       rosteredWithoutStats: players.filter((p) => p.rostered && !statPlayers.has(p.id) && !injuryPlayers.has(p.id)).map(dbName).sort(byName),
       injuriesUnlinked: unlinked.filter((s) => injuryIds.has(s.dunkestId)).map((s) => s.label).sort(byName),
+      added: [...added].sort(byName),
     },
   };
 }

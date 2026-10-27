@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildDunkest, buildSyncPayload, injuryStatus, linkPlayers, parseInjuries, parseStats, SourceFormatError, syncState, type DbPlayer } from "./dunkest";
+import { buildDunkest, buildSyncPayload, findNewPlayers, injuryStatus, linkPlayers, parseInjuries, parseStats, SourceFormatError, syncState, type DbPlayer } from "./dunkest";
 
 const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
 const player = (id: number, firstName: string, lastName: string, nbaTeam: string | null = null, extra: Partial<DbPlayer> = {}): DbPlayer => ({
@@ -109,6 +109,53 @@ describe("linkPlayers", () => {
     const r = linkPlayers([player(1, "", "A.Walker")], [src(5, "Jarace Walker"), src(6, "awalker")]);
     expect(r.links.size).toBe(0);
     expect(r.unlinked).toHaveLength(2);
+  });
+});
+
+describe("findNewPlayers (listone aggiornato dalle statistiche)", () => {
+  const stats = parseStats(JSON.parse(fixture("dunkest-stats.json")));
+
+  it("legge ruolo (F → A) e crediti, e tratta 0.0 come non prezzato", () => {
+    const row = (extra: object) => parseStats([{ id: "9", gp: "1", first_name: "A", last_name: "B", team_name: "LA Clippers", pdk: "1.0", ...extra }])[0];
+    expect(row({ position: "F", cr: "7.8" })).toMatchObject({ pos: "A", credits: 7.8, teamName: "Los Angeles Clippers" });
+    expect(row({ position: "C", cr: "0.0" })).toMatchObject({ pos: "C", credits: null });
+    expect(row({ position: "?" }).pos).toBeNull();
+  });
+
+  it("aggiunge chi ha statistiche e non è nel listone, con nome, ruolo, squadra e crediti di Dunkest", () => {
+    const jokic = stats.find((s) => s.lastName === "Jokic")!;
+    const fresh = findNewPlayers([player(1, "Royce", "O'Neale", "Charlotte Hornets")], stats);
+    expect(fresh.map((n) => n.dunkest_id)).not.toContain(358);
+    expect(fresh.find((n) => n.dunkest_id === jokic.dunkestId)).toEqual({
+      dunkest_id: jokic.dunkestId,
+      first_name: "Nikola",
+      last_name: "Jokic",
+      pos: "C",
+      nba_team: "Denver Nuggets",
+      dunkest_credits: 29.5,
+    });
+  });
+
+  it("non duplica chi c'è già (per id salvato o per nome), anche con suffisso o punti diversi", () => {
+    const fresh = findNewPlayers([player(1, "Nikola", "Jokic", "Denver Nuggets"), player(2, "X", "Y", null, { dunkestId: 358 })], stats);
+    expect(fresh.map((n) => n.dunkest_id)).not.toContain(358);
+    expect(fresh.some((n) => n.last_name === "Jokic")).toBe(false);
+  });
+
+  it("non aggiunge gli omonimi dubbi né collega i provvisori: A.Walker non copre Nickeil Alexander-Walker", () => {
+    const one = parseStats([{ id: "575", gp: "4", first_name: "Nickeil", last_name: "Alexander-Walker", team_name: "Atlanta Hawks", position: "G", cr: "11.2", pdk: "9.0" }]);
+    expect(findNewPlayers([player(5, "", "A.Walker")], one)).toHaveLength(1);
+    expect(findNewPlayers([player(5, "Nickeil", "Alexander-Walker", "Atlanta Hawks")], one)).toEqual([]);
+    const twins = parseStats([
+      { id: "5", gp: "1", first_name: "Brandon", last_name: "Williams", team_name: "Dallas Mavericks", position: "G", pdk: "1.0" },
+      { id: "6", gp: "1", first_name: "Brandon", last_name: "Williams", team_name: "Golden State Warriors", position: "G", pdk: "1.0" },
+    ]);
+    expect(findNewPlayers([player(1, "Brandon", "Williams", "Phoenix Suns")], twins)).toEqual([]);
+  });
+
+  it("il report del payload elenca i giocatori aggiunti", () => {
+    const p = buildSyncPayload(7, [player(1, "Nikola", "Jokic", "Denver Nuggets", { dunkestId: 248 })], stats, parseInjuries(fixture("dunkest-injuries.html")), ["Zeta Rookie", "Alfa Rookie"]);
+    expect(p.report.added).toEqual(["Alfa Rookie", "Zeta Rookie"]);
   });
 });
 

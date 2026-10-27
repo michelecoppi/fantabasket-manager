@@ -29,6 +29,7 @@ export const PLAYER_ALIASES: Record<string, string> = {
   jjohnson: "Jalen Johnson", // OKCC, A da 30
   thomas: "Cam Thomas", // confermato dall'utente 2026-10-23: unico Thomas dello snapshot, ma la sua squadra è del 2024-25
   bmiller: "Brandon Miller", // confermato dall'utente 2026-10-23: Baba Miller è nel listone dei free agent
+  awalker: "Nickeil Alexander-Walker", // confermato dall'utente 2026-10-27 (Atlanta Hawks): finora restava provvisorio
   // ex contratti di giocatori ora nel listone dei free agent (il cognome da solo è ambiguo)
   anwiggins: "Andrew Wiggins",
   otoppin: "Obi Toppin",

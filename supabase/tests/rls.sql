@@ -434,6 +434,19 @@ begin
 
   v := public.dunkest_sync_source('rls-segreto-del-job-0123');
   perform rls_t.ok('dunkest_sync_source col segreto', (v->>'season_id')::int = sid and jsonb_array_length(v->'players') > 0);
+  -- Listone: aggiunta dei giocatori nuovi (solo con il segreto, idempotente, nomi vuoti scartati)
+  perform rls_t.chk('anon aggiunge giocatori senza segreto',
+    rls_t.try('select public.dunkest_sync_add_players(null, ''[{"dunkest_id": 990101, "first_name": "Rls", "last_name": "Rookie"}]''::jsonb)'), array['error: FORBIDDEN%']);
+  v := public.dunkest_sync_add_players('rls-segreto-del-job-0123',
+    '[{"dunkest_id": 990101, "first_name": "Rls", "last_name": "Rookie", "pos": "A", "nba_team": "Rls Team", "dunkest_credits": 7.5},
+      {"dunkest_id": 990102, "first_name": "", "last_name": "Senzanome", "pos": "G", "nba_team": "Rls Team"}]'::jsonb);
+  perform rls_t.ok('add_players: solo il giocatore con nome intero', jsonb_array_length(v) = 1 and (v->0->>'dunkest_id')::int = 990101);
+  perform rls_t.ok('add_players: seconda chiamata uguale non duplica',
+    jsonb_array_length(public.dunkest_sync_add_players('rls-segreto-del-job-0123',
+      '[{"dunkest_id": 990101, "first_name": "Rls", "last_name": "Rookie", "pos": "A", "nba_team": "Rls Team"}]'::jsonb)) = 0);
+  perform rls_t.chk('add_players: troppi giocatori',
+    rls_t.try(format('select public.dunkest_sync_add_players(''rls-segreto-del-job-0123'', %L)', (select jsonb_agg(jsonb_build_object('dunkest_id', 991000 + g, 'first_name', 'R', 'last_name', 'L' || g)) from generate_series(1, 101) g))),
+    array['error: INVALID%']);
   perform rls_t.chk('payload senza statistiche',
     rls_t.try(format('select public.dunkest_sync_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid, 'stats', '[]'::jsonb, 'injuries', '[]'::jsonb))),
     array['error: INVALID%']);
@@ -455,6 +468,10 @@ begin
     and (select pdk from dunkest_stats where season_id = sid and player_id = 900001) = 30.5
     and (select count(*) from dunkest_injuries) = 1 and exists (select 1 from dunkest_injuries where player_id = 900001));
   perform rls_t.ok('apply non ha salvato l''id Dunkest', (select dunkest_id from players where id = 900001) = 990001);
+  perform rls_t.ok('add_players non ha creato il giocatore con ruolo, squadra e crediti',
+    exists (select 1 from players where dunkest_id = 990101 and pos = 'A' and nba_team = 'Rls Team' and dunkest_credits = 7.5)
+    and not exists (select 1 from players where last_name = 'Senzanome'));
+  delete from players where dunkest_id = 990101;
   perform rls_t.ok('storico delle esecuzioni sbagliato',
     (select count(*) filter (where ok and trigger = 'cron' and stats_count = 1 and links_count = 1) = 1
             and count(*) filter (where not ok and error = 'HTTP 503') = 1
