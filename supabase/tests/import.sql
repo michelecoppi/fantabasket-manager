@@ -64,6 +64,8 @@ insert into last_contracts (id, player_id, team_id, salary, last_contract_on)
   values (910001, 910003, (select id from teams order by name limit 1), 4, date '2099-06-30'); -- storico: tiene vivo il giocatore 910003
 -- Dati "vecchi" della stagione 2098, da sostituire.
 insert into players (id, first_name, last_name, pos, nba_team) values (910004, 'Vecchio', 'Provvisorio', 'G', null);
+-- Listone da Dunkest: senza contratti e fuori dal foglio, ma con id Dunkest. L'import non lo toglie (issue #68).
+insert into players (id, first_name, last_name, pos, nba_team, dunkest_id) values (910005, 'Rookie', 'Dunkest', 'G', 'Test Team', 990201);
 insert into contracts (id, season_id, team_id, player_id, slot, years_left, salary)
   values (910002, 990098, (select id from teams order by name limit 1), 910004, 'starter', 1, 5);
 
@@ -106,6 +108,7 @@ begin
   perform imp_t.ok('conteggi inattesi: ' || r::text,
     r @> '{"players":2,"contracts":2,"cuts":0,"talents":1,"picks":2,"rookie_draft":1,"last_contracts":1,"team_season":2}'::jsonb);
   perform imp_t.ok('il provvisorio vecchio non è stato tolto', r->>'players_removed' = '1');
+  perform imp_t.ok('il giocatore con id Dunkest è stato tolto dall''import', exists (select 1 from players where id = 910005));
   perform imp_t.ok('i contratti 2098 non sono quelli nuovi', (select count(*) from contracts where season_id = 990098) = 2
     and not exists (select 1 from contracts where id = 910002));
   perform imp_t.ok('la stagione 2099 è cambiata', imp_t.fp_2099() = (select fp99 from imp_ctx));
