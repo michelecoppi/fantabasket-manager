@@ -290,6 +290,11 @@ select {
   background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.28) 0 4px, transparent 4px 9px);
 }
 
+/* Tratteggio nel colore del testo, per i valori incerti o parziali del planner (durata da fissare, quote dei tagli). */
+.hatch {
+  background-image: repeating-linear-gradient(-45deg, color-mix(in oklab, currentColor 30%, transparent) 0 2px, transparent 2px 6px);
+}
+
 /* ---------- Scheda a comparsa (popover nativo, components/dunkest.tsx) ---------- */
 /* Telefono: foglio che sale dal basso. Da 640 px: finestra centrata. Uscita animata grazie a overlay/display discreti. */
 .sheet {
