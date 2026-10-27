@@ -15,6 +15,7 @@ import {
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
+import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { loadCloseInput, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
@@ -444,9 +445,23 @@ export async function syncDunkest(): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
   const db = await createClient();
+  // Le due parti sono indipendenti: un token scaduto non deve fermare statistiche e infortuni, e viceversa.
   const r = await runDunkestSync(db, null);
+  const l = await runDunkestLeagueSync(db, null, process.env.DUNKEST_TOKEN);
   refresh();
-  if (!r.ok) return fail(`Aggiornamento non riuscito: ${r.error}. Restano i dati di prima.`);
-  const unlinked = r.report.ambiguous.length + r.report.rosteredWithoutStats.length;
-  return done(`Dati Dunkest aggiornati: ${r.stats} giocatori con statistiche, ${r.injuries} infortunati.`, unlinked > 0 ? [`${unlinked} giocatori da controllare nel report.`] : []);
+  const leagueLine = l.ok
+    ? `classifica e ${l.matches} scontri aggiornati${l.lineups ? `, ${l.lineups} giocatori schierati` : ""}`
+    : l.code === "token_rejected"
+      ? "Dunkest ha rifiutato il token: va rinnovato (classifica e formazioni restano quelle di prima)."
+      : l.code === "token_missing"
+        ? "DUNKEST_TOKEN non impostato: classifica e formazioni non si aggiornano."
+        : `Classifica e formazioni non aggiornate: ${l.error}.`;
+  if (!r.ok && !l.ok) return fail(`Aggiornamento non riuscito: ${r.error}. ${leagueLine} Restano i dati di prima.`);
+  const warnings: string[] = [];
+  if (!r.ok) warnings.push(`Statistiche e infortuni non aggiornati: ${r.error}. Restano quelli di prima.`);
+  if (!l.ok) warnings.push(leagueLine);
+  const unlinked = (r.ok ? r.report.ambiguous.length + r.report.rosteredWithoutStats.length : 0) + (l.ok ? l.report.unlinked.length + l.report.ambiguous.length : 0);
+  if (unlinked > 0) warnings.push(`${unlinked} giocatori da controllare nel report.`);
+  const parts = [r.ok && `${r.stats} giocatori con statistiche, ${r.injuries} infortunati`, l.ok && leagueLine].filter(Boolean);
+  return done(`Dati Dunkest aggiornati: ${parts.join("; ")}.`, warnings);
 }
