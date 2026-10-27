@@ -80,6 +80,12 @@ export interface ClosePlan {
 
 const isPermutation = (a: string[], b: string[]) => a.length === b.length && new Set(a).size === a.length && a.every((x) => b.includes(x));
 
+/**
+ * R-23 / R-24: a fine contratto il vecchio proprietario può pareggiare (restricted), salvo mezza stagione
+ * o contratto già unrestricted (secondo contratto dopo un pareggio). L'option riscattata è gestita a parte.
+ */
+export const expiresRestricted = (years: number, restriction: "unrestricted" | null) => years !== 0.5 && restriction !== "unrestricted";
+
 /** R-22: la team option si decide nell'ultimo anno di contratto. */
 export const optionContracts = (contracts: CloseContract[]) => contracts.filter((c) => c.teamOption && c.years !== null && c.years <= 1);
 
@@ -149,7 +155,7 @@ export function planSeasonClose(input: CloseInput, choices: CloseChoices, s: Lea
       plan.carryContracts.push({ id: c.id, version: c.version, years: 1, teamOption: false, restriction: "unrestricted" });
     } else {
       // R-23: mezza stagione → unrestricted; 1/2/3 stagioni → restricted, salvo il secondo contratto dopo un pareggio (R-24).
-      const restricted = c.years !== 0.5 && c.restriction !== "unrestricted";
+      const restricted = expiresRestricted(c.years, c.restriction);
       plan.expireContracts.push({ id: c.id, version: c.version, teamId: c.teamId, name: c.name, restricted });
     }
   }
