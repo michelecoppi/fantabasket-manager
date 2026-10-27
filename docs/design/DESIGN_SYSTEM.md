@@ -8,7 +8,7 @@ Leggere prima di toccare la UI. Le skill locali in `.agents/skills/` (`sports-ar
 
 | File | Contenuto |
 |---|---|
-| `src/app/globals.css` | Token colore (chiaro/scuro), `.font-display`, `.eyebrow`, `.tnum`, superfici `.arena`/`.sweep`/`.jumbo`/`.outline-text`, animazioni (`.rise`, `.pop`, `.meter-fill`, `.skeleton`, `.ball-bounce`, `.ball-spin`, `.lift`), view transition |
+| `src/app/globals.css` | Token colore (chiaro/scuro), `.font-display`, `.eyebrow`, `.tnum` (in `@layer components`: le utility accanto vincono), superfici `.arena`/`.sweep`/`.jumbo`/`.outline-text`, animazioni (`.rise`, `.pop`, `.meter-fill`, `.skeleton`, `.ball-bounce`, `.ball-spin`, `.lift`), view transition |
 | `src/app/layout.tsx` | Font: Archivo (`--font-body`) e Big Shoulders (`--font-display`) via `next/font` |
 | `src/components/icons.tsx` | `Icon` (tracciati Tabler Icons, MIT) e `BallLoader` |
 | `src/components/crest.tsx` | `TeamCrest`: scudo nel colore della squadra con monogramma; `morphId` per la view transition |
@@ -19,12 +19,13 @@ Leggere prima di toccare la UI. Le skill locali in `.agents/skills/` (`sports-ar
 | `src/components/player-row.tsx` | `PlayerRow` / `PlayerList` per rose e scadenze |
 | `src/components/chips.tsx` | `ChipLinks`: filtri come link nella query string |
 | `src/components/count-up.tsx` | `CountUp`: cifra che sale (solo per il numero eroe di una pagina) |
-| `src/components/league-ticker.tsx` | Ticker delle squadre sotto l'header |
-| `src/components/nav.tsx` | `MainNav` (header, da `md`) e `TabBar` (in basso, sotto `md`) |
+| `src/components/league-ticker.tsx` | Ticker delle squadre sotto l'header; `ticker-scroll.tsx` lo fa scorrere quando non ci sta (bordi sfumati, frecce col mouse) |
+| `src/components/use-scroll-edges.ts` | `useScrollEdges` e `edgeMask`: sfumano i bordi delle strisce che scorrono (ticker, chip) |
+| `src/components/nav.tsx` | `MainNav` (header, da `lg`) e `TabBar` (in basso, sotto `lg`) |
 
 ## Firma visiva
 
-1. **Ticker della lega** sotto l'header, su tutte le pagine: una "partita" per squadra con stemma, spazio salariale e mini cap meter. Ordine alfabetico, non è una classifica.
+1. **Ticker della lega** sotto l'header, su tutte le pagine: una "partita" per squadra con stemma, nome, mini cap meter e spazio salariale. Le partite si allargano fino a riempire la striscia (tutte e 8 visibili da ~1280 px); sotto si scorre, con bordi sfumati e frecce col mouse. Mai tagliare una squadra senza segnalare che la striscia continua. Ordine alfabetico, non è una classifica.
 2. **Cap meter** (`CapLine`): payroll sul cap effettivo, tacca del salary floor, parte sforata a strisce rosse oltre la linea del cap. Si riempie all'ingresso. Compare in home, pagina squadra, ticker e scambio.
 3. **Stemmi di squadra** (`TeamCrest`): scudo con monogramma nel colore della franchigia; bordo e corona oro per la squadra dell'utente. Lo stemma "vola" dal board alla pagina squadra (view transition `crest-<id>`).
 4. **Superficie arena** (`.arena`): blu notte con le linee del campo in SVG al 7% e due luci (blu in alto a destra, rossa in basso a sinistra). Solo per testate di pagina, hero, login, errori. Mai per tabelle o form.
@@ -69,8 +70,8 @@ Regole:
 
 ## Componenti chiave
 
-- **Header**: nero, logo + "Fantabasket / League office", `MainNav` con icone e sottolineatura oro animata, utente, aggiorna (pallone che gira), esci. Filo broadcast di 3 px.
-- **TabBar** (sotto `md`): 5–6 voci con icona ed etichetta, voce attiva oro, safe area iOS. Il `main` ha `pb-28` per non finirci sotto.
+- **Header**: nero, logo + "Fantabasket / League office", `MainNav` con icone e sottolineatura oro animata, utente, aggiorna (pallone che gira), esci. Filo broadcast di 3 px. Da `lg` a `xl` la scritta accanto al logo e il badge utente si nascondono, così il menu (6 voci per gli admin) non viene mai tagliato.
+- **TabBar** (sotto `lg`, quindi anche su tablet): 5–6 voci con icona ed etichetta, voce attiva oro, safe area iOS. Il `main` ha `pb-28` per non finirci sotto.
 - **PageTitle**: banda arena con icona oro, eyebrow, titolo, sottotitolo e `aside` (di solito uno `Scoreboard` con 3–4 numeri reali della pagina).
 - **Filtri**: preferire `ChipLinks` (un tocco, stato nell'URL) a select + "Applica". Le select restano dove le opzioni sono molte (listone).
 - **PlayerRow**: `PosChip` (G blu, A oro, C rosso, `?` tratteggiato), nome, contesto, badge r/u, `ContractPips` (pallini pieni = stagioni, mezzo = mezza stagione, tratteggiato blu = team option, `?` = durata da fissare), crediti.
@@ -94,7 +95,8 @@ Solo `Icon` di `src/components/icons.tsx`, con i tracciati di [Tabler Icons](htt
 
 - Focus visibile oro (`:focus-visible`, offset 3 px); checkbox nascosti mantengono il focus con `peer-focus-visible`/`has-[:focus-visible]`.
 - Target minimi 44 px (40 px per i chip). Testo su `gold`: sempre `text-nav`.
-- Mobile-first, controllato a 390, 768, 1440 px; nessuno scroll orizzontale della pagina (le tabelle larghe scorrono nel loro contenitore con la prima colonna fissa).
+- Mobile-first, controllato a 390, 768, 1024, 1280, 1440 px; nessuno scroll orizzontale della pagina (le tabelle larghe scorrono nel loro contenitore con la prima colonna fissa). Le strisce che scorrono (ticker, chip) sfumano il bordo dove continuano; la griglia del draft sotto `md` mostra tutti i giri (intestazioni "1°", stemma senza nome).
+- Testo che non ci sta: titoli di squadra con `truncate` (funziona perché `text-wrap: balance` sui titoli è in `@layer base`), etichette brevi su due righe (`line-clamp-2`), cifre del tabellone allineate in basso anche se l'etichetta va a capo. `scrollbar-gutter: stable` evita salti di layout tra pagine corte e lunghe.
 - Tema chiaro/scuro automatico (`prefers-color-scheme`, `color-scheme` impostato); `theme-color` `#060a14`.
 
 ## Da non fare
@@ -109,4 +111,5 @@ Solo `Icon` di `src/components/icons.tsx`, con i tracciati di [Tabler Icons](htt
 
 - 2026-10-23: Phase 1 audit (`PHASE_1_AUDIT.md`) e Phase 2 "Front Office editoriale" (cap line, league board).
 - 2026-10-25: QA autenticato della dashboard (`PLAN.md` in questa cartella).
+- 2026-10-27: rifiniture: ticker che non taglia più l'ultima squadra, menu dell'header che non si taglia tra 768 e 1280 px (TabBar fino a `lg`), classi del design system nei layer CSS, tabellone allineato, draft leggibile su telefono, dettagli di home, squadra, listone e admin.
 - 2026-10-26: "Arena Night": nuova palette dal logo, font Big Shoulders + Archivo, icone, stemmi, ticker, tab bar mobile, trade machine, animazioni. Ispirazione NBA.com (header nero, scoreboard, tabelle dense) senza copiarne asset.

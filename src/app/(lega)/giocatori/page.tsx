@@ -59,7 +59,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
         Giocatori
       </PageTitle>
 
-      <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 shadow-[0_12px_30px_-24px_rgb(6_10_20/0.6)] backdrop-blur-md md:sticky md:top-[4.5rem]">
+      <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 shadow-[0_12px_30px_-24px_rgb(6_10_20/0.6)] backdrop-blur-md md:sticky md:top-[4.5rem] md:shadow-[0_-0.5rem_0_0_var(--background),0_12px_30px_-24px_rgb(6_10_20/0.6)]">
         <Form className="grid grid-cols-2 gap-2 lg:grid-cols-[minmax(14rem,1.6fr)_repeat(4,minmax(8rem,1fr))_auto_auto]" action="/giocatori">
           <label className="relative col-span-2 lg:col-span-1">
             <span className="sr-only">Cerca per nome</span>

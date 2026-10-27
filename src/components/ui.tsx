@@ -107,9 +107,9 @@ export function Scoreboard({ items }: { items: { label: string; value: ReactNode
       className={`grid gap-px overflow-hidden rounded-xl border border-white/12 bg-white/12 ${items.length > 3 ? "grid-cols-2 sm:grid-cols-4" : "auto-cols-fr grid-flow-col"}`}
     >
       {items.map((it) => (
-        <div key={it.label} className="min-w-0 bg-[#060a16]/85 px-3.5 py-3 backdrop-blur-sm sm:px-5">
+        <div key={it.label} className="flex min-w-0 flex-col justify-between gap-0.5 bg-[#060a16]/85 px-3.5 py-3 backdrop-blur-sm sm:px-5">
           <dt className="eyebrow leading-tight text-white/55">{it.label}</dt>
-          <dd className={`font-display tnum mt-0.5 text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-[#ff8a95]" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
+          <dd className={`font-display tnum text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-[#ff8a95]" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
         </div>
       ))}
     </dl>

@@ -1,7 +1,8 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { edgeMask, useScrollEdges } from "@/components/use-scroll-edges";
 
 function ChipInner({ children, count, active }: { children: ReactNode; count?: number; active: boolean }) {
   const { pending } = useLinkStatus();
@@ -20,10 +21,12 @@ function ChipInner({ children, count, active }: { children: ReactNode; count?: n
  * senza "Applica". `scroll={false}` tiene la posizione mentre si cambia filtro.
  */
 export function ChipLinks({ label, options }: { label: string; options: { href: string; label: string; active: boolean; count?: number }[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mask = edgeMask(useScrollEdges(ref));
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span className="eyebrow hidden shrink-0 text-muted sm:inline">{label}</span>
-      <div role="group" aria-label={label} className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+      <div ref={ref} role="group" aria-label={label} style={{ maskImage: mask }} className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
         {options.map((o) => (
           <Link
             key={o.href}

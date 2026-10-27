@@ -34,12 +34,12 @@ function PendingIcon({ name, size }: { name: IconName; size: number }) {
   );
 }
 
-/** Navigazione principale nell'header (da md in su): icona + etichetta, sottolineatura oro sulla voce attiva. */
+/** Navigazione principale nell'header (da lg in su; sotto c'è la TabBar): icona + etichetta, sottolineatura oro sulla voce attiva. */
 export function MainNav({ admin = false }: { admin?: boolean }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
   return (
-    <nav aria-label="Navigazione principale" className="no-scrollbar hidden h-full items-stretch overflow-x-auto md:flex">
+    <nav aria-label="Navigazione principale" className="no-scrollbar hidden h-full items-stretch overflow-x-auto lg:flex">
       {items.map((l) => {
         const active = isActive(pathname, l.href);
         return (
@@ -47,7 +47,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`group font-display relative flex items-center gap-2 px-3 text-[1.0625rem] font-extrabold tracking-wide whitespace-nowrap transition-colors lg:px-4 ${
+            className={`group font-display relative flex items-center gap-2 px-3 text-[1.0625rem] font-extrabold tracking-wide whitespace-nowrap transition-colors 2xl:px-4 ${
               active ? "text-white" : "text-white/55 hover:text-white"
             }`}
           >
@@ -57,7 +57,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
             {l.label}
             <span
               aria-hidden
-              className={`absolute inset-x-3 bottom-0 h-[3px] origin-center rounded-t-full bg-gold transition-transform duration-300 lg:inset-x-4 ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"}`}
+              className={`absolute inset-x-3 bottom-0 h-[3px] origin-center rounded-t-full bg-gold transition-transform duration-300 2xl:inset-x-4 ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"}`}
             />
           </Link>
         );
@@ -66,7 +66,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
   );
 }
 
-/** Barra in basso su telefono (sotto md): le voci a portata di pollice, come un'app. */
+/** Barra in basso su telefono e tablet (sotto lg): le voci a portata di pollice, come un'app. */
 export function TabBar({ admin = false }: { admin?: boolean }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
@@ -74,7 +74,7 @@ export function TabBar({ admin = false }: { admin?: boolean }) {
     <nav
       aria-label="Navigazione principale"
       style={{ viewTransitionName: "tab-bar" }}
-      className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-nav/95 text-white backdrop-blur-md md:hidden"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-nav/95 text-white backdrop-blur-md lg:hidden"
     >
       <div className="mx-auto flex max-w-lg">
         {items.map((l) => {

@@ -73,6 +73,8 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  /* Spazio della barra di scorrimento sempre riservato: il layout non salta tra pagine lunghe e corte. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -98,29 +100,35 @@ select {
   color: var(--foreground);
 }
 
-h1,
-h2,
-h3 {
-  text-wrap: balance;
+/* In @layer base: così `truncate` e le altre utility sui titoli hanno la precedenza. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
 }
 
-/* Titoli e cifre stile broadcast: Big Shoulders, maiuscolo, pesante. */
-.font-display {
-  font-family: var(--font-display), Impact, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-}
+/* Classi di base del design system: in @layer components, così le utility scritte accanto (leading-*, tracking-*) vincono. */
+@layer components {
+  /* Titoli e cifre stile broadcast: Big Shoulders, maiuscolo, pesante. */
+  .font-display {
+    font-family: var(--font-display), Impact, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
 
-.eyebrow {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  line-height: 1.25rem;
-  text-transform: uppercase;
-}
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1.25rem;
+    text-transform: uppercase;
+  }
 
-.tnum {
-  font-variant-numeric: tabular-nums;
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .no-scrollbar {

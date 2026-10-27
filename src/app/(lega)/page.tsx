@@ -28,7 +28,7 @@ function PulseTile({ icon, label, value, tone, i }: { icon: IconName; label: str
       </span>
       <div className="min-w-0">
         <div className="font-display tnum text-3xl leading-none font-black">{value}</div>
-        <div className="mt-0.5 truncate text-xs font-semibold text-muted">{label}</div>
+        <div className="mt-1 line-clamp-2 text-xs leading-tight font-semibold text-muted">{label}</div>
       </div>
     </div>
   );
@@ -240,7 +240,7 @@ export default async function Home(props: PageProps<"/">) {
                             <TeamCrest name={t.team.name} color={color} size="md" mine={mine} morphId={t.team.id} />
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <h3 className="font-display truncate text-[1.75rem] leading-none font-black">{t.team.name}</h3>
+                                <h3 className="font-display truncate text-[1.5rem] leading-none font-black sm:text-[1.75rem]">{t.team.name}</h3>
                                 {mine && (
                                   <Badge tone="gold" icon="crown">
                                     La tua
