@@ -23,6 +23,7 @@ interface PlayerJoin {
 export interface ContractRow {
   id: number;
   team_id: string;
+  player_id: number;
   slot: "starter" | "reserve" | "talent";
   years_left: number | null; // null = durata da fissare
   team_option: boolean;
@@ -107,7 +108,9 @@ export interface RawLeague {
 }
 
 export interface RosterPlayer {
+  /** id del contratto */
   id: number;
+  playerId: number;
   name: string;
   pos: Position | null;
   nbaTeam: string | null;
@@ -219,6 +222,7 @@ export function buildLeague(raw: RawLeague): LeagueView {
       yearsLeft: c.years_left === null ? null : Number(c.years_left),
       teamOption: c.team_option,
       id: c.id,
+      playerId: c.player_id,
       name: playerName(c.players),
       pos: c.players?.pos ?? null,
       nbaTeam: c.players?.nba_team ?? null,

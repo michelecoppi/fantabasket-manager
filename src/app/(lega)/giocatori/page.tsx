@@ -2,20 +2,26 @@ import Form from "next/form";
 import Link from "next/link";
 import { SubmitButton } from "@/components/controls";
 import { TeamCrest } from "@/components/crest";
+import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
 import { Icon } from "@/components/icons";
 import { Badge, Empty, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
 import { fmt, POS_LABEL } from "@/lib/format";
-import { loadLeague, loadPlayers } from "@/lib/league-server";
+import { loadDunkest, loadLeague, loadPlayers } from "@/lib/league-server";
 import { filterPlayers, PAGE_SIZE, parseFilters, playerStatus } from "@/lib/players";
 import { teamColors } from "@/lib/team-colors";
 
 const control = "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15";
 const pagerLink = "font-display inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-lg font-extrabold transition-colors hover:border-foreground/40";
-const cols = "md:grid md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_4.5rem] md:items-center md:gap-4";
+// Con i dati Dunkest c'è una colonna in più (PDK) prima dei crediti.
+const cols = (withPdk: boolean) =>
+  `md:grid md:items-center md:gap-4 ${withPdk ? "md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_3.5rem_4.5rem]" : "md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_4.5rem]"}`;
 
 export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const filters = parseFilters(await props.searchParams);
-  const [players, league] = await Promise.all([loadPlayers(), loadLeague()]);
+  const [listed, league, dunkest] = await Promise.all([loadPlayers(), loadLeague(), loadDunkest()]);
+  const players = dunkest.available ? listed.map((p) => ({ ...p, pdk: dunkest.stats.get(p.id)?.pdk ?? null })) : listed;
+  const withPdk = dunkest.available;
+  const injuredCount = players.filter((p) => dunkest.injuries.has(p.id)).length;
   const nbaTeams = [...new Set(players.map((p) => p.nbaTeam).filter((t): t is string => !!t))].sort();
   const rows = filterPlayers(players, filters);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -93,6 +99,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
           <select name="ordina" defaultValue={filters.sort} className={control} aria-label="Ordina per">
             <option value="credits">Per crediti</option>
             <option value="name">Per nome</option>
+            {withPdk && <option value="pdk">Per punteggio Dunkest</option>}
           </select>
           <SubmitButton icon="sliders">Filtra</SubmitButton>
           <Link
@@ -104,10 +111,14 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
         </Form>
       </div>
 
-      <p className="mt-5 mb-2 text-sm font-semibold text-muted">
-        {rows.length} risultati
-        {rows.length > PAGE_SIZE && ` · ${offset + 1}–${offset + shown.length} (pagina ${page} di ${pages})`}
-      </p>
+      <div className="mt-5 mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-sm font-semibold text-muted">
+          {rows.length} risultati
+          {rows.length > PAGE_SIZE && ` · ${offset + 1}–${offset + shown.length} (pagina ${page} di ${pages})`}
+          {injuredCount > 0 && ` · ${injuredCount} infortunati nel listone`}
+        </p>
+        <DunkestSource dunkest={dunkest} />
+      </div>
 
       {shown.length === 0 ? (
         <Empty title="Nessun giocatore" icon="search">
@@ -115,21 +126,30 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
         </Empty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-          <div className={`eyebrow hidden border-b border-line bg-surface-subtle/60 px-4 py-2 text-muted ${cols}`}>
+          <div className={`eyebrow hidden border-b border-line bg-surface-subtle/60 px-4 py-2 text-muted ${cols(withPdk)}`}>
             <span>#</span>
             <span>Giocatore</span>
             <span>NBA</span>
             <span>Stato</span>
-            <span className="text-right text-brand-blue">Crediti</span>
+            {withPdk && (
+              <span className={`text-right ${filters.sort === "pdk" ? "text-brand-blue" : ""}`} title="Punteggio Dunkest medio a partita">
+                PDK
+              </span>
+            )}
+            <span className={`text-right ${filters.sort === "credits" ? "text-brand-blue" : ""}`}>Crediti</span>
           </div>
           <ul className="divide-y divide-line">
             {shown.map((p, i) => (
-              <li key={p.id} className={`rise flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60 sm:px-4 ${cols}`} style={stagger(i)}>
+              <li key={p.id} className={`rise relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60 sm:px-4 ${cols(withPdk)}`} style={stagger(i)}>
+                {withPdk && <SheetTrigger id={sheetId(p.id)} name={p.name} />}
                 <span className="tnum hidden text-sm font-semibold text-muted md:block">{offset + i + 1}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-3">
                   <PosChip pos={p.pos} />
                   <span className="min-w-0">
-                    <span className="block truncate font-semibold">{p.name}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate font-semibold">{p.name}</span>
+                      {dunkest.injuries.has(p.id) && <InjuryChip injury={dunkest.injuries.get(p.id)!} />}
+                    </span>
                     <span className="block truncate text-xs text-muted md:hidden">
                       {p.nbaTeam ?? "NBA n.d."}
                       {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
@@ -142,7 +162,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                 <span className="hidden truncate text-sm font-semibold text-muted md:block">{p.nbaTeam ?? "n.d."}</span>
                 <span className="min-w-0 shrink-0">
                   {p.ownerTeamId ? (
-                    <Link href={`/squadre/${p.ownerTeamId}`} className="inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
+                    <Link href={`/squadre/${p.ownerTeamId}`} className="relative z-[2] inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
                       <TeamCrest name={league.teamNames.get(p.ownerTeamId) ?? "?"} color={colors.get(p.ownerTeamId) ?? "#555"} size="xs" />
                       <span className="hidden max-w-28 truncate sm:inline">{league.teamNames.get(p.ownerTeamId) ?? "?"}</span>
                     </Link>
@@ -160,12 +180,32 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                     </Badge>
                   )}
                 </span>
+                {withPdk && (
+                  <span className="flex shrink-0 justify-end">
+                    <PdkCell stats={dunkest.stats.get(p.id)} role={p.pos ? dunkest.roles[p.pos] : dunkest.all} />
+                  </span>
+                )}
                 <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black md:w-auto">{p.credits === null ? "–" : fmt(p.credits)}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
+
+      {withPdk &&
+        shown.map((p) => (
+          <PlayerSheet
+            key={p.id}
+            player={{
+              playerId: p.id,
+              name: p.name,
+              pos: p.pos,
+              nbaTeam: p.nbaTeam,
+              owner: p.ownerTeamId ? { name: league.teamNames.get(p.ownerTeamId) ?? "?", color: colors.get(p.ownerTeamId) ?? "#555" } : null,
+            }}
+            dunkest={dunkest}
+          />
+        ))}
 
       {pages > 1 && (
         <nav aria-label="Paginazione" className="mt-4 flex items-center justify-between gap-3">

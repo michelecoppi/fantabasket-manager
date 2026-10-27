@@ -2,30 +2,105 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CapLine } from "@/components/cap-line";
 import { TeamCrest } from "@/components/crest";
+import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
 import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
-import { Badge, ContractPips, Empty, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
+import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
+import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { RosterPlayer } from "@/lib/league";
-import { loadLeague } from "@/lib/league-server";
+import { loadDunkest, loadLeague } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
-function Roster({ players, offset = 0 }: { players: RosterPlayer[]; offset?: number }) {
+function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number }) {
   return (
     <PlayerList>
-      {players.map((p, i) => (
-        <PlayerRow
-          key={p.id}
-          i={offset + i}
-          pos={p.pos}
-          name={p.name}
-          meta={p.nbaTeam ?? "NBA n.d."}
-          badges={(p.rookie || p.restriction) && <RestrictionBadge rookie={p.rookie} restriction={p.restriction} />}
-          contract={<ContractPips years={p.yearsLeft} option={p.teamOption} label={p.contractLabel} />}
-          value={p.salary}
-        />
-      ))}
+      {players.map((p, i) => {
+        const injury = dunkest.injuries.get(p.playerId);
+        return (
+          <PlayerRow
+            key={p.id}
+            i={offset + i}
+            pos={p.pos}
+            name={p.name}
+            meta={p.nbaTeam ?? "NBA n.d."}
+            badges={(p.rookie || p.restriction) && <RestrictionBadge rookie={p.rookie} restriction={p.restriction} />}
+            contract={<ContractPips years={p.yearsLeft} option={p.teamOption} label={p.contractLabel} />}
+            value={p.salary}
+            status={injury && <InjuryChip injury={injury} />}
+            score={dunkest.available && <PdkCell stats={dunkest.stats.get(p.playerId)} role={p.pos ? dunkest.roles[p.pos] : dunkest.all} />}
+            sheet={dunkest.available ? { id: sheetId(p.playerId), name: p.name } : undefined}
+          />
+        );
+      })}
     </PlayerList>
+  );
+}
+
+const injuryNote = (status: string, until: string | null) =>
+  status === "season" ? "fuori per la stagione" : status === "doubtful" ? "da valutare prima della partita" : until ? `rientro previsto ${until}` : "indisponibile";
+
+/** "Infermeria": infortunati della rosa secondo Dunkest, dal più grave. Ogni voce apre la scheda del giocatore. */
+function Infirmary({ players, dunkest }: { players: RosterPlayer[]; dunkest: DunkestView }) {
+  const injured = players
+    .flatMap((p) => {
+      const injury = dunkest.injuries.get(p.playerId);
+      return injury ? [{ p, injury }] : [];
+    })
+    .sort((a, b) => INJURY_ORDER[a.injury.status] - INJURY_ORDER[b.injury.status] || b.p.salary - a.p.salary);
+  const out = injured.filter((x) => x.injury.status !== "doubtful").length;
+  const doubtful = injured.length - out;
+  const counts = [out > 0 && `${out} fuori`, doubtful > 0 && `${doubtful} in dubbio`].filter(Boolean).join(" · ");
+
+  return (
+    <Section title="Infermeria" icon="medkit" id="infermeria" aside={!dunkest.available ? "dati non disponibili" : counts || "nessuno"}>
+      {!dunkest.available ? (
+        <Empty title="Dati non disponibili" icon="medkit">
+          Infortuni e punteggi Dunkest non si leggono in questo momento. Rose e contratti sono aggiornati.
+        </Empty>
+      ) : injured.length === 0 ? (
+        <div className="rise flex items-center gap-3 rounded-2xl border border-success/30 bg-success/8 px-4 py-3.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success/15 text-success">
+            <Icon name="check" size={20} strokeWidth={2.4} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-display text-xl leading-none font-extrabold">Rosa al completo</p>
+            <p className="mt-1 text-xs text-muted">Nessun giocatore nella lista infortuni di Dunkest.</p>
+          </div>
+        </div>
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {injured.map(({ p, injury }, i) => {
+            const doubt = injury.status === "doubtful";
+            return (
+              <li
+                key={p.id}
+                className={`rise relative flex items-center gap-3 overflow-hidden rounded-2xl border bg-surface py-3 pr-3 pl-4 transition-colors hover:bg-surface-subtle/60 ${doubt ? "border-warning/35" : "border-danger/30"}`}
+                style={stagger(i)}
+              >
+                <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${doubt ? "bg-warning" : "bg-danger"}`} />
+                <SheetTrigger id={sheetId(p.playerId)} name={p.name} />
+                <PosChip pos={p.pos} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate font-semibold">{p.name}</span>
+                    <InjuryChip injury={injury} />
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-muted">
+                    <span className="font-semibold text-foreground/80">{injury.injury || "Infortunio"}</span> · {injuryNote(injury.status, injury.until)}
+                  </p>
+                </div>
+                <Icon name="chevron" size={16} className="shrink-0 text-muted" />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <DunkestSource dunkest={dunkest} />
+        {dunkest.available && <span className="text-xs text-muted">PDK = punteggio medio Dunkest · pg = partite giocate · tocca un giocatore per la sua scheda</span>}
+      </div>
+    </Section>
   );
 }
 
@@ -49,7 +124,7 @@ function SlotMeter({ label, have, need }: { label: string; have: number; need: n
 
 export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const { id } = await props.params;
-  const league = await loadLeague();
+  const [league, dunkest] = await Promise.all([loadLeague(), loadDunkest()]);
   const t = league.teams.find((x) => x.team.id === id);
   if (!t) notFound();
   const f = t.finance;
@@ -62,6 +137,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const years = [...new Set(ownPicks.map((p) => p.year))].sort();
   const positions = ["G", "A", "C"] as const;
   const unknownPos = t.starters.filter((x) => !x.pos);
+  const roster = [...t.starters, ...t.reserves];
+  const injuredCount = roster.filter((p) => dunkest.injuries.has(p.playerId)).length;
 
   return (
     <>
@@ -122,10 +199,19 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
           Quota {t.entryFeePaid ? "pagata" : "da pagare"}
         </Badge>
+        {injuredCount > 0 && (
+          <a href="#infermeria" className="rounded-full transition-opacity hover:opacity-80">
+            <Badge tone="bad" icon="medkit">
+              {injuredCount} {injuredCount === 1 ? "infortunato" : "infortunati"}
+            </Badge>
+          </a>
+        )}
       </div>
 
       <div className="mt-10 grid gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
         <div>
+          <Infirmary players={roster} dunkest={dunkest} />
+
           <Section title="Titolari" icon="jersey" aside={`${t.starters.length}/${positions.reduce((n, p) => n + league.settings.starters[p], 0)}`}>
             <div className="mb-3 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
               {positions.map((p) => (
@@ -142,14 +228,14 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                   return (
                     <div key={p}>
                       <h3 className="eyebrow mb-1.5 text-muted">{POS_LABEL[p]}</h3>
-                      <Roster players={group} offset={gi * 5} />
+                      <Roster players={group} dunkest={dunkest} offset={gi * 5} />
                     </div>
                   );
                 })}
                 {unknownPos.length > 0 && (
                   <div>
                     <h3 className="eyebrow mb-1.5 text-muted">Ruolo da indicare</h3>
-                    <Roster players={unknownPos} offset={13} />
+                    <Roster players={unknownPos} dunkest={dunkest} offset={13} />
                   </div>
                 )}
               </div>
@@ -157,7 +243,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           </Section>
 
           <Section title="Riserve" icon="clipboard" aside={`${t.reserves.length} (min ${league.settings.reserveMin}, max ${league.settings.reserveMax})`}>
-            {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} />}
+            {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} dunkest={dunkest} />}
           </Section>
         </div>
 
@@ -265,6 +351,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           </Section>
         </aside>
       </div>
+
+      {dunkest.available && roster.map((p) => <PlayerSheet key={p.playerId} player={{ ...p, owner: { name: t.team.name, color } }} dunkest={dunkest} />)}
     </>
   );
 }

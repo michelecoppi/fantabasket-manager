@@ -135,6 +135,10 @@ insert into team_season (season_id, team_id)
   select s.id, t.id from seasons s, (select id from teams order by name limit 1) t where s.is_current on conflict do nothing;
 insert into trades (id, season_id, payload) select 900001, id, '{}'::jsonb from seasons where is_current;
 insert into audit_log (id, user_id, action, table_name) values (900001, rls_t.admin(), 'rls-test', 'rls');
+insert into dunkest_stats (season_id, player_id, gp, pdk) select id, 900001, 3, 21.5 from seasons where is_current;
+insert into dunkest_injuries (player_id, injured_on, injury, description) values (900002, date '2026-10-19', 'Caviglia', 'GTD: da valutare');
+insert into dunkest_sync_runs (id, trigger, ok, stats_count, injuries_count, links_count) values (900001, 'cron', true, 1, 1, 0);
+-- dunkest_sync ha già la sua riga unica (migrazione 20261027025827).
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
@@ -401,6 +405,71 @@ begin
   grant usage on schema rls_t to service_role;
   perform rls_t.become('service_role');
   perform rls_t.chk('service_role con payload nullo', rls_t.try('select public.import_replace_season(null)'), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+end $$;
+
+-- ---------- Job Dunkest (issue #68): segreto o admin ----------
+-- Le RPC dunkest_sync_* si eseguono con la chiave anon (il job gira senza sessione): chi non conosce il segreto si ferma con
+-- FORBIDDEN, l'admin passa anche senza. Un payload senza statistiche e un tentativo fallito non toccano i dati.
+do $$
+declare v jsonb; sid int := (select id from seasons where is_current);
+begin
+  perform rls_t.ok('dunkest_sync_allowed chiamabile dai client',
+    not has_function_privilege('anon', 'public.dunkest_sync_allowed(text)', 'execute')
+    and not has_function_privilege('authenticated', 'public.dunkest_sync_allowed(text)', 'execute'));
+  perform rls_t.ok('dunkest_sync_log chiamabile dai client (storico falso)',
+    not has_function_privilege('anon', 'public.dunkest_sync_log(text,boolean,int,int,int,text,jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.dunkest_sync_log(text,boolean,int,int,int,text,jsonb)', 'execute'));
+  perform rls_t.ok('private.job_secrets leggibile dai client',
+    not has_table_privilege('anon', 'private.job_secrets', 'select') and not has_table_privilege('authenticated', 'private.job_secrets', 'select'));
+  insert into private.job_secrets (name, secret_hash) values ('dunkest_sync', sha256(convert_to('rls-segreto-del-job-0123', 'UTF8')))
+    on conflict (name) do update set secret_hash = excluded.secret_hash;
+
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon senza segreto', rls_t.try('select public.dunkest_sync_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon con segreto sbagliato', rls_t.try('select public.dunkest_sync_source(''rls-segreto-sbagliato-000'')'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon scrive senza segreto',
+    rls_t.try(format('select public.dunkest_sync_apply(null, %L)', jsonb_build_object('season_id', sid, 'stats', '[]'::jsonb, 'injuries', '[]'::jsonb))), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon registra un errore senza segreto', rls_t.try('select public.dunkest_sync_fail(null, ''x'')'), array['error: FORBIDDEN%']);
+
+  v := public.dunkest_sync_source('rls-segreto-del-job-0123');
+  perform rls_t.ok('dunkest_sync_source col segreto', (v->>'season_id')::int = sid and jsonb_array_length(v->'players') > 0);
+  perform rls_t.chk('payload senza statistiche',
+    rls_t.try(format('select public.dunkest_sync_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid, 'stats', '[]'::jsonb, 'injuries', '[]'::jsonb))),
+    array['error: INVALID%']);
+  perform rls_t.chk('collegamenti duplicati',
+    rls_t.try(format('select public.dunkest_sync_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid,
+      'links', '[{"player_id": 900001, "dunkest_id": 1}, {"player_id": 900002, "dunkest_id": 1}]'::jsonb,
+      'stats', '[{"player_id": 900001, "gp": 1, "pdk": 1}]'::jsonb, 'injuries', '[]'::jsonb))),
+    array['error: INVALID%']);
+  perform public.dunkest_sync_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid,
+    'links', '[{"player_id": 900001, "dunkest_id": 990001}]'::jsonb,
+    'stats', '[{"player_id": 900001, "gp": 4, "pdk": 30.5, "min": 31, "pts": 22, "reb": 5, "ast": 6}]'::jsonb,
+    'injuries', '[{"player_id": 900001, "injured_on": "2026-10-20", "injury": "Piede", "description": "Indisponibile fino al 20 Nov"}]'::jsonb,
+    'source_updated_at', '2026-10-27T02:30:05Z', 'report', '{"provisional": []}'::jsonb));
+  perform public.dunkest_sync_fail('rls-segreto-del-job-0123', 'HTTP 503');
+  perform rls_t.become('postgres');
+
+  perform rls_t.ok('apply non ha sostituito statistiche e infortuni',
+    (select count(*) from dunkest_stats where season_id = sid) = 1
+    and (select pdk from dunkest_stats where season_id = sid and player_id = 900001) = 30.5
+    and (select count(*) from dunkest_injuries) = 1 and exists (select 1 from dunkest_injuries where player_id = 900001));
+  perform rls_t.ok('apply non ha salvato l''id Dunkest', (select dunkest_id from players where id = 900001) = 990001);
+  perform rls_t.ok('storico delle esecuzioni sbagliato',
+    (select count(*) filter (where ok and trigger = 'cron' and stats_count = 1 and links_count = 1) = 1
+            and count(*) filter (where not ok and error = 'HTTP 503') = 1
+     from dunkest_sync_runs where id <> 900001));
+  perform rls_t.ok('fail ha cancellato i dati o non ha registrato il motivo',
+    (select last_error = 'HTTP 503' and last_success_at is not null and last_attempt_at >= last_success_at and stats_count = 1 from dunkest_sync));
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer senza segreto', rls_t.try('select public.dunkest_sync_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin senza segreto', rls_t.try('select public.dunkest_sync_source(null)'), array['rows=%']);
+  perform public.dunkest_sync_fail(null, 'prova admin');
+  perform rls_t.become('postgres');
+  perform rls_t.ok('esecuzione admin non registrata come admin',
+    exists (select 1 from dunkest_sync_runs where trigger = 'admin' and user_id = rls_t.admin() and error = 'prova admin'));
   perform rls_t.become('postgres');
 end $$;
 

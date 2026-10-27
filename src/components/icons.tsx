@@ -81,6 +81,39 @@ const paths = {
     </>
   ),
   crown: <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4l4 -6" />,
+  // Infortuni (first-aid-kit)
+  medkit: (
+    <>
+      <path d="M8 8v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
+      <path d="M4 8m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" />
+      <path d="M10 14h4" />
+      <path d="M12 12v4" />
+    </>
+  ),
+  // Statistiche (chart-bar)
+  chart: (
+    <>
+      <path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M4 20h14" />
+    </>
+  ),
+  // Aggiornamento dei dati (clock)
+  clock: (
+    <>
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+      <path d="M12 7v5l3 3" />
+    </>
+  ),
+  // Job Dunkest (cloud-download)
+  download: (
+    <>
+      <path d="M19 18a3.5 3.5 0 0 0 0 -7h-1a5 4.5 0 0 0 -11 -2a4.6 4.4 0 0 0 -2.1 8.4" />
+      <path d="M12 13l0 9" />
+      <path d="M9 19l3 3l3 -3" />
+    </>
+  ),
   search: (
     <>
       <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />

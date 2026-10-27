@@ -21,11 +21,11 @@ const raw: RawLeague = {
   ],
   settings: SETTING_ROWS,
   contracts: [
-    { id: 1, team_id: "t1", slot: "starter", years_left: 0.5, team_option: false, salary: 20, restriction: null, is_rookie: false, players: pl("Mezzo") },
-    { id: 2, team_id: "t1", slot: "starter", years_left: 2, team_option: true, salary: 30, restriction: null, is_rookie: false, players: pl("Due") },
-    { id: 3, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 255, restriction: null, is_rookie: false, players: pl("Ricco") },
-    { id: 4, team_id: "t2", slot: "reserve", years_left: 3, team_option: false, salary: 5, restriction: null, is_rookie: false, players: pl("Riserva") },
-    { id: 5, team_id: "t2", slot: "starter", years_left: null, team_option: false, salary: 4, restriction: null, is_rookie: false, players: pl("SenzaDurata") },
+    { id: 1, player_id: 1, team_id: "t1", slot: "starter", years_left: 0.5, team_option: false, salary: 20, restriction: null, is_rookie: false, players: pl("Mezzo") },
+    { id: 2, player_id: 2, team_id: "t1", slot: "starter", years_left: 2, team_option: true, salary: 30, restriction: null, is_rookie: false, players: pl("Due") },
+    { id: 3, player_id: 3, team_id: "t2", slot: "starter", years_left: 1, team_option: false, salary: 255, restriction: null, is_rookie: false, players: pl("Ricco") },
+    { id: 4, player_id: 4, team_id: "t2", slot: "reserve", years_left: 3, team_option: false, salary: 5, restriction: null, is_rookie: false, players: pl("Riserva") },
+    { id: 5, player_id: 5, team_id: "t2", slot: "starter", years_left: null, team_option: false, salary: 4, restriction: null, is_rookie: false, players: pl("SenzaDurata") },
   ],
   cuts: [], talents: [], picks: [], teamSeason: [], rookieDraft: [],
 };

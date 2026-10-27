@@ -1,4 +1,8 @@
 // Parsing dei testi del foglio Excel: nomi contratto, alias squadra, normalizzazione. Vedi docs/DATA-MODEL.md.
+import { lettersOnly } from "../../src/lib/text";
+
+// Condivisa con il collegamento ai giocatori Dunkest (src/lib/dunkest.ts).
+export { lettersOnly };
 
 const TEAM_NAMES = [
   "Assago Farmers",
@@ -42,13 +46,6 @@ const ALIASES: Record<string, TeamName> = {
   stant: "San Antonio",
   sanantonio: "San Antonio",
 };
-
-export const lettersOnly = (s: string): string =>
-  s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
 
 /** Restituisce la squadra per un alias del foglio, o null se sconosciuto (es. "ChS"). */
 export function resolveTeam(raw: string | null | undefined): TeamName | null {
