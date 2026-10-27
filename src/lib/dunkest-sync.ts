@@ -1,7 +1,7 @@
 // Job giornaliero dei dati Dunkest (issue #68): l'unico punto dell'app che chiama dunkest.com. Lo usano il cron
 // (`/api/dunkest`, con il segreto) e il pulsante admin "Aggiorna ora" (sessione admin, segreto null).
 import type { createClient } from "@/lib/supabase/server";
-import { buildSyncPayload, DUNKEST_INJURIES_URL, dunkestStatsUrl, parseInjuries, parseStats, type DbPlayer, type LinkReport } from "./dunkest";
+import { buildSyncPayload, DUNKEST_INJURIES_URL, dunkestStatsUrl, findNewPlayers, MAX_NEW_PLAYERS, parseInjuries, parseStats, type DbPlayer, type LinkReport } from "./dunkest";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -29,7 +29,7 @@ interface SourceRpc {
 }
 
 /**
- * Scarica statistiche e infortuni, li collega ai giocatori e li scrive con `dunkest_sync_apply` (una transazione).
+ * Scarica statistiche e infortuni, aggiunge al listone i giocatori nuovi, li collega ai giocatori e li scrive con `dunkest_sync_apply` (una transazione).
  * Se qualcosa va storto non si scrive nulla: `dunkest_sync_fail` registra il motivo e le pagine continuano a mostrare
  * gli ultimi dati validi.
  */
@@ -51,7 +51,22 @@ export async function runDunkestSync(db: Db, secret: string | null): Promise<Syn
     const injuries = parseInjuries(await injuriesRes.text());
 
     const players: DbPlayer[] = src.players.map((p) => ({ id: p.id, firstName: p.first_name, lastName: p.last_name, nbaTeam: p.nba_team, dunkestId: p.dunkest_id, rostered: p.rostered }));
-    const payload = buildSyncPayload(src.season_id, players, stats, injuries);
+
+    // Listone: chi ha giocato su Dunkest e non c'è ancora (rookie, firme nuove) si aggiunge prima di scrivere le statistiche.
+    const fresh = findNewPlayers(players, stats);
+    if (fresh.length > MAX_NEW_PLAYERS) throw new Error(`listone: ${fresh.length} giocatori nuovi in un colpo solo, la fonte è cambiata? Non aggiungo nessuno`);
+    const added: string[] = [];
+    if (fresh.length > 0) {
+      const inserted = await db.rpc("dunkest_sync_add_players", { p_secret: secret, p_players: fresh });
+      if (inserted.error) throw new Error(`listone: ${inserted.error.message}`);
+      for (const row of inserted.data as { id: number; dunkest_id: number }[]) {
+        const f = fresh.find((n) => n.dunkest_id === row.dunkest_id);
+        if (!f) continue;
+        players.push({ id: row.id, firstName: f.first_name, lastName: f.last_name, nbaTeam: f.nba_team, dunkestId: f.dunkest_id, rostered: false });
+        added.push(`${f.first_name} ${f.last_name}`);
+      }
+    }
+    const payload = buildSyncPayload(src.season_id, players, stats, injuries, added);
     const applied = await db.rpc("dunkest_sync_apply", { p_secret: secret, p_payload: payload });
     if (applied.error) throw new Error(`scrittura: ${applied.error.message}`);
     const counts = applied.data as { stats: number; injuries: number };

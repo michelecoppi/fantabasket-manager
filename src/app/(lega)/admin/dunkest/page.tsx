@@ -23,13 +23,13 @@ interface RunRow {
 }
 
 /** Una voce del report, chiusa di default: si apre solo se serve controllare qualcuno. */
-function ReportList({ title, hint, items }: { title: string; hint: string; items: string[] }) {
+function ReportList({ title, hint, items, neutral = false }: { title: string; hint: string; items: string[]; neutral?: boolean }) {
   return (
     <details className="group border-t border-line first:border-t-0">
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
         <Icon name="chevron" size={16} className="shrink-0 text-muted transition-transform group-open:rotate-90" />
         <span className="flex-1">{title}</span>
-        <span className={`tnum rounded-full px-2 py-0.5 text-xs font-bold ${items.length > 0 ? "bg-warning/12 text-warning" : "bg-success/10 text-success"}`}>{items.length}</span>
+        <span className={`tnum rounded-full px-2 py-0.5 text-xs font-bold ${items.length === 0 ? "bg-success/10 text-success" : neutral ? "bg-surface-subtle text-muted" : "bg-warning/12 text-warning"}`}>{items.length}</span>
       </summary>
       <div className="px-4 pb-3 pl-10">
         <p className="text-xs text-muted">{hint}</p>
@@ -42,6 +42,7 @@ function ReportList({ title, hint, items }: { title: string; hint: string; items
 function Report({ report }: { report: LinkReport }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <ReportList title="Aggiunti al listone" hint="Hanno giocato su Dunkest e non c'erano: il job li ha creati con ruolo, squadra NBA e crediti di Dunkest." items={report.added ?? []} neutral />
       <ReportList title="Collegamenti dubbi (omonimi)" hint="Voci Dunkest con più giocatori possibili anche guardando la squadra NBA: non collegate." items={report.ambiguous.map((a) => `${a.source} → ${a.candidates.join(" / ")}`)} />
       <ReportList title="In rosa senza dati Dunkest" hint="Né statistiche né infortuni: non hanno ancora giocato, oppure il nome è scritto diversamente." items={report.rosteredWithoutStats} />
       <ReportList title="Giocatori provvisori" hint="Solo cognome: non si collegano finché il nome non viene completato." items={report.provisional} />
