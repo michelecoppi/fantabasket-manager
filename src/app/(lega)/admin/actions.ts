@@ -15,6 +15,7 @@ import {
   type TradeParty,
 } from "@/lib/cap";
 import { teamPicks, teamSide } from "@/lib/league";
+import { runDunkestSync } from "@/lib/dunkest-sync";
 import { loadCloseInput, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
@@ -435,4 +436,17 @@ export async function setTeamSeason(input: { teamId: string; version: number | n
   if (error) return rpcError(error.message);
   refresh();
   return done(`${team.team.name} aggiornata.`);
+}
+
+// ---------- Dati Dunkest (issue #68) ----------
+/** "Aggiorna ora": lo stesso aggiornamento del cron delle 9, con la sessione admin al posto del segreto del job. */
+export async function syncDunkest(): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  const db = await createClient();
+  const r = await runDunkestSync(db, null);
+  refresh();
+  if (!r.ok) return fail(`Aggiornamento non riuscito: ${r.error}. Restano i dati di prima.`);
+  const unlinked = r.report.ambiguous.length + r.report.rosteredWithoutStats.length;
+  return done(`Dati Dunkest aggiornati: ${r.stats} giocatori con statistiche, ${r.injuries} infortunati.`, unlinked > 0 ? [`${unlinked} giocatori da controllare nel report.`] : []);
 }

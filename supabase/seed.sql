@@ -1,5 +1,5 @@
 -- Dati di base. Mappa proprietari ↔ squadre confermata il 2026-10-21 (docs/OPEN-QUESTIONS.md).
-insert into seasons (year, is_current) values (2026, true);
+insert into seasons (year, is_current, dunkest_season_id) values (2026, true, 29);
 
 insert into league_settings (season_id, key, value)
 select s.id, v.key, v.value from seasons s, (values

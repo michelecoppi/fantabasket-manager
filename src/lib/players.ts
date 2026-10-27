@@ -14,11 +14,13 @@ export interface PlayerListItem {
   restrictedTeamId: string | null;
   /** R-25: ultimo contratto (riga più recente di last_contracts), da cui il minimo d'asta. */
   lastContract: LastContract | null;
+  /** Punteggio Dunkest medio (issue #68), aggiunto dalla pagina dai dati del job; null = nessuna partita. */
+  pdk?: number | null;
 }
 
 export type OwnerFilter = "all" | "free" | "open" | "cut" | "restricted" | "taken";
 export type PlayerStatus = "taken" | "cut" | "restricted" | "free";
-export type SortKey = "credits" | "name";
+export type SortKey = "credits" | "name" | "pdk";
 
 export interface PlayerFilters {
   q: string;
@@ -53,10 +55,13 @@ export function filterPlayers(all: PlayerListItem[], f: PlayerFilters): PlayerLi
     if (f.owner !== "all" && f.owner !== "free" && playerStatus(p) !== (f.owner === "open" ? "free" : f.owner)) return false;
     return true;
   });
+  const byCredits = (a: PlayerListItem, b: PlayerListItem) => (b.credits ?? -1) - (a.credits ?? -1) || a.name.localeCompare(b.name, "it") || a.id - b.id;
   return out.sort((a, b) =>
     f.sort === "name"
       ? a.name.localeCompare(b.name, "it") || a.id - b.id
-      : (b.credits ?? -1) - (a.credits ?? -1) || a.name.localeCompare(b.name, "it") || a.id - b.id,
+      : f.sort === "pdk"
+        ? (b.pdk ?? -Infinity) - (a.pdk ?? -Infinity) || byCredits(a, b) // chi non ha giocato in fondo
+        : byCredits(a, b),
   );
 }
 
@@ -73,7 +78,7 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     pos: pos === "G" || pos === "A" || pos === "C" ? pos : "",
     nbaTeam: one("nba").slice(0, 5),
     owner: owner === "free" || owner === "open" || owner === "cut" || owner === "restricted" || owner === "taken" ? owner : "all",
-    sort: one("ordina") === "name" ? "name" : "credits",
+    sort: one("ordina") === "name" ? "name" : one("ordina") === "pdk" ? "pdk" : "credits",
     page: Math.max(1, Math.min(Math.floor(Number(one("pagina"))) || 1, 1000)),
   };
 }

@@ -56,7 +56,7 @@ Questi incrementi possono essere parallelizzati dopo le correzioni, ma ognuno de
 ## Da validare prima di investire
 
 - **P3-01 calendario/notifiche:** raccogliere date reali, fuso, destinatari e canale gratuito sostenibile. Iniziare eventualmente da un calendario editoriale, non da notifiche automatiche.
-- **P3-02 statistiche sportive/trend:** serve una fonte attendibile e un caso d'uso distinto da Dunkest. Punteggi e formazioni restano fuori scope finché questa decisione non cambia.
+- **P3-02 statistiche sportive/trend:** serve una fonte attendibile e un caso d'uso distinto da Dunkest. Punteggi e formazioni restano fuori scope; dal 2026-10-27 fanno eccezione infortuni, punteggio medio e partite giocate da Dunkest (Fase 5 di PLAN.md, issue #68).
 - **Squadra talenti/rookie:** resta bloccata dalle domande già aperte sulle prelazioni; non dedurre regole dal foglio.
 
 ## Misura del successo

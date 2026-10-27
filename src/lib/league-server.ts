@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
+import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
 import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
@@ -50,7 +51,7 @@ const loadLeagueData = cache(async () => {
   const [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie] = await Promise.all([
     db.from("teams").select("id,name,owner_name").order("name"),
     db.from("league_settings").select("key,value").eq("season_id", sid),
-    db.from("contracts").select(`id,version,team_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
+    db.from("contracts").select(`id,version,team_id,player_id,slot,years_left,team_option,salary,restriction,is_rookie,${playerCols}`).eq("season_id", sid),
     db
       .from("cuts")
       .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,original_is_rookie,team_option,${playerCols}`)
@@ -183,3 +184,48 @@ export async function loadLastContract(playerId: number): Promise<LastContract |
   if (r.error) throw new Error(r.error.message);
   return r.data ? { salary: Number(r.data.salary), on: r.data.last_contract_on, restricted: r.data.restricted } : null;
 }
+
+/**
+ * Dati Dunkest della stagione corrente (issue #68), scritti dal job giornaliero: le pagine non chiamano mai Dunkest.
+ * Sono un contorno: se non si leggono (migrazione non applicata, errore) le pagine mostrano "dati non disponibili" e il resto funziona.
+ */
+export const loadDunkest = cache(async (): Promise<DunkestView> => {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const [sync, injuries] = await Promise.all([
+      db.from("dunkest_sync").select("last_attempt_at,last_success_at,last_error,source_updated_at,report").eq("id", 1).maybeSingle(),
+      db.from("dunkest_injuries").select("player_id,injured_on,injury,description"),
+    ]);
+    if (sync.error || injuries.error) throw new Error((sync.error ?? injuries.error)!.message);
+    const stats: StatRow[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const r = await db
+        .from("dunkest_stats")
+        .select("player_id,gp,pdk,min,pts,reb,ast,players(pos)")
+        .eq("season_id", sid)
+        .order("player_id")
+        .range(from, from + PAGE - 1);
+      if (r.error) throw new Error(r.error.message);
+      for (const row of r.data as unknown as (Omit<StatRow, "pos"> & { players: { pos: StatRow["pos"] } | null })[]) {
+        stats.push({ ...row, pos: row.players?.pos ?? null });
+      }
+      if (r.data.length < PAGE) break;
+    }
+    const s = sync.data;
+    return buildDunkest(
+      s && {
+        lastSuccessAt: s.last_success_at as string | null,
+        lastAttemptAt: s.last_attempt_at as string | null,
+        lastError: s.last_error as string | null,
+        sourceUpdatedAt: s.source_updated_at as string | null,
+        report: s.report as LinkReport | null,
+      },
+      stats,
+      (injuries.data ?? []) as InjuryRow[],
+    );
+  } catch (e) {
+    console.error(`[dunkest] dati non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return EMPTY_DUNKEST;
+  }
+});

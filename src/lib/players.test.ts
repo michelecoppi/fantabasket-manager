@@ -27,6 +27,11 @@ describe("filterPlayers", () => {
     expect(filterPlayers(all, { ...base, owner: "taken" }).map((p) => p.id)).toEqual([1]);
     expect(filterPlayers(all, { ...base, owner: "free" }).map((p) => p.id)).toEqual([2, 3, 4]);
   });
+  it("ordina per punteggio Dunkest, chi non ha giocato in fondo (per crediti)", () => {
+    const scored = [mk(1, "A", { pdk: 20 }), mk(2, "B", { pdk: null, credits: 30 }), mk(3, "C", { pdk: 35.5 }), mk(4, "D", { credits: 5 })];
+    expect(filterPlayers(scored, { ...base, sort: "pdk" }).map((p) => p.id)).toEqual([3, 1, 2, 4]);
+    expect(parseFilters({ ordina: "pdk" }).sort).toBe("pdk");
+  });
   it("ordina per nome", () => {
     expect(filterPlayers(all, { ...base, sort: "name" }).map((p) => p.id)).toEqual([3, 1, 2, 4]);
   });

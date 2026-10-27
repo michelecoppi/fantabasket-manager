@@ -21,6 +21,7 @@ Leggere prima di toccare la UI. Le skill locali in `.agents/skills/` (`sports-ar
 | `src/components/count-up.tsx` | `CountUp`: cifra che sale (solo per il numero eroe di una pagina) |
 | `src/components/league-ticker.tsx` | Ticker delle squadre sotto l'header; `ticker-scroll.tsx` lo fa scorrere quando non ci sta (bordi sfumati, frecce col mouse) |
 | `src/components/use-scroll-edges.ts` | `useScrollEdges` e `edgeMask`: sfumano i bordi delle strisce che scorrono (ticker, chip) |
+| `src/components/dunkest.tsx` | Dati Dunkest: `DunkestLogo`, `DunkestSource` (logo + ora dell'ultimo aggiornamento o stato), `InjuryChip` (OUT rosso, GTD oro, «Out stagione» rosso pieno), `PdkCell` (punteggio medio in blu con tacca di confronto col ruolo e partite giocate), `PlayerSheet` + `SheetTrigger` (scheda giocatore a comparsa) |
 | `src/components/nav.tsx` | `MainNav` (header, da `lg`) e `TabBar` (in basso, sotto `lg`) |
 
 ## Firma visiva
@@ -76,6 +77,7 @@ Regole:
 - **Filtri**: preferire `ChipLinks` (un tocco, stato nell'URL) a select + "Applica". Le select restano dove le opzioni sono molte (listone).
 - **PlayerRow**: `PosChip` (G blu, A oro, C rosso, `?` tratteggiato), nome, contesto, badge r/u, `ContractPips` (pallini pieni = stagioni, mezzo = mezza stagione, tratteggiato blu = team option, `?` = durata da fissare), crediti.
 - **Trade machine** (`/scambio` e `/admin/scambio`): due lati con stemma e colore squadra, righe selezionabili con checkbox nativo nascosto, pulsante "inverti", `ImpactCard` con prima→dopo e cap meter.
+- **Dati Dunkest** (issue #68): fonte sempre dichiarata con `DunkestSource` (logo Dunkest + «agg. 27 ott, 09:02»; avviso oro se l'ultimo aggiornamento è fallito). Nelle righe giocatore il PDK è blu (non nero come i crediti) con una tacca: riempimento = punteggio sul migliore del ruolo, linea = media del ruolo; «pg» sotto. Il chip infortunio sta accanto al nome anche su telefono. Tutta la riga apre la `PlayerSheet`: popover nativo (niente JS), foglio dal basso su telefono e finestra centrata da 640 px, testata arena con `Scoreboard` (PDK in oro), barra di confronto col ruolo con ▲/▼ sulla media, posizione nel ruolo, punti/rimbalzi/assist, infortunio. Pagina squadra: sezione «Infermeria» (infortunati dal più grave, «Rosa al completo» se nessuno). Il logo Dunkest è un marchio della fonte: solo accanto ai dati, mai decorazione.
 - **Stati**: `Empty` (icona + titolo + azione reale), `loading.tsx` (testata arena + righe shimmer + pallone che rimbalza), `error.tsx` ("Timeout tecnico"), `not-found.tsx` ("Air ball").
 
 ## Movimento
@@ -109,6 +111,7 @@ Solo `Icon` di `src/components/icons.tsx`, con i tracciati di [Tabler Icons](htt
 
 ## Storia
 
+- 2026-10-27: dati Dunkest (issue #68): scheda giocatore a comparsa (`.sheet` in `globals.css`), infermeria, PDK e chip infortunio nelle righe, fonte col logo Dunkest, pagina `/admin/dunkest`. Nuove icone Tabler: `first-aid-kit` (medkit), `chart-bar`, `clock`, `cloud-download`.
 - 2026-10-23: Phase 1 audit (`PHASE_1_AUDIT.md`) e Phase 2 "Front Office editoriale" (cap line, league board).
 - 2026-10-25: QA autenticato della dashboard (`PLAN.md` in questa cartella).
 - 2026-10-27: rifiniture: ticker che non taglia più l'ultima squadra, menu dell'header che non si taglia tra 768 e 1280 px (TabBar fino a `lg`), classi del design system nei layer CSS, tabellone allineato, draft leggibile su telefono, dettagli di home, squadra, listone e admin.

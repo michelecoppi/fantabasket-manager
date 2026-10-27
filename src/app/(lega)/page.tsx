@@ -2,11 +2,12 @@ import Link from "next/link";
 import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
+import { DunkestLogo } from "@/components/dunkest";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtEuro } from "@/lib/format";
-import { loadLeague, loadProfile } from "@/lib/league-server";
+import { loadDunkest, loadLeague, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -36,7 +37,9 @@ function PulseTile({ icon, label, value, tone, i }: { icon: IconName; label: str
 
 export default async function Home(props: PageProps<"/">) {
   const options = parseTeamListOptions(await props.searchParams);
-  const [league, profile] = await Promise.all([loadLeague(), loadProfile()]);
+  const [league, profile, dunkest] = await Promise.all([loadLeague(), loadProfile(), loadDunkest()]);
+  // Infortunati di ogni rosa secondo Dunkest (issue #68).
+  const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
   const { settings } = league;
   const colors = teamColors(league.teams.map((t) => t.team.id));
   const teams = listTeams(league.teams, options);
@@ -127,6 +130,27 @@ export default async function Home(props: PageProps<"/">) {
                 <p className="mt-2 mb-4 text-xs text-white/55">crediti · cap effettivo {fmt(myTeam.finance.effectiveCap)}</p>
                 <CapLine payroll={myTeam.finance.payroll} cap={myTeam.finance.effectiveCap} floor={myTeam.finance.floor} dark />
               </div>
+              {dunkest.available && (
+                <Link
+                  href={`/squadre/${myTeam.team.id}#infermeria`}
+                  className="group mb-5 -mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm transition-colors hover:border-white/25 hover:bg-white/8"
+                >
+                  <DunkestLogo size={22} />
+                  <span className="min-w-0 flex-1 truncate">
+                    {injuredOf(myTeam).length === 0 ? (
+                      <span className="text-white/75">Nessun infortunato nella tua rosa</span>
+                    ) : (
+                      <>
+                        <span className="font-bold text-[#ff8a95]">
+                          {injuredOf(myTeam).length} {injuredOf(myTeam).length === 1 ? "infortunato" : "infortunati"}
+                        </span>
+                        <span className="text-white/60"> · {injuredOf(myTeam).map((p) => p.name.split(" ").at(-1)).join(", ")}</span>
+                      </>
+                    )}
+                  </span>
+                  <Icon name="arrow-right" size={16} strokeWidth={2.2} className="shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              )}
               <dl className="grid grid-cols-3 gap-3">
                 <div>
                   <dt className="eyebrow text-white/55">Titolari</dt>
@@ -276,6 +300,11 @@ export default async function Home(props: PageProps<"/">) {
                             <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
                               Quota {t.entryFeePaid ? "pagata" : "da pagare"}
                             </Badge>
+                            {injuredOf(t).length > 0 && (
+                              <Badge tone="bad" icon="medkit" title={injuredOf(t).map((p) => p.name).join(", ")}>
+                                {injuredOf(t).length} {injuredOf(t).length === 1 ? "infortunato" : "infortunati"}
+                              </Badge>
+                            )}
                             {f.luxuryTaxEur > 0 && (
                               <Badge tone={t.luxuryTaxPaid ? "good" : "bad"} icon="coins">
                                 Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}
