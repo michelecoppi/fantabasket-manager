@@ -13,6 +13,7 @@ Aggiornato 2026-10-21 dopo le risposte dell'utente.
 
 7. **Classifica per il bonus e per la lottery** (R-60, R-32): è la stessa o ce ne sono due (regular season e finale dopo i playoff)? L'utente ha descritto la lottery (probabilità in base alla classifica, poi estrazione) ma non ha risposto; per ora l'app usa **una sola** classifica (`team_season.final_rank`). *(fase 3, non blocca)*
 8. **Divisione della luxury tax** (R-12): come si dividono gli incassi tra le squadre sotto il cap («priorità ai primi in classifica»)? Per ora si fa a mano fuori dall'app, che calcola solo quanto deve ogni squadra. *(non blocca)*
+9. **Riserve schierate su Dunkest** (R-03, R-04; issue #72): il 27/10, giornata 3, 10 giocatori che nell'app sono **riserve** compaiono nel quintetto o in panchina su Dunkest (3 per Bol Bollerz, 2 per OKCC, San Antonio e Spaccinos, 1 per Assago Farmers). O nell'app titolari e riserve non sono aggiornati (scambi titolare↔riserva di R-04 non registrati), o su Dunkest le riserve si possono schierare e R-03 va letto diversamente. L'app oggi lo mostra come avviso «Riserva» e non cambia nulla. *(da chiarire con la lega)*
 
 ## Assunzioni correnti
 Cap effettivo, spazio riserve, righe delle riserve e monte ingaggi con i tagli (1/3 arrotondato a 0.5) sono verificati sul foglio su 8 squadre su 8, prima e dopo l'asta: formule e zone in [DATA-MODEL.md](DATA-MODEL.md), codice in `src/lib/cap.ts`.
@@ -91,3 +92,10 @@ Scenari solo in pagina (`/scadenze?vista=planner`): niente si salva, nessuna reg
 - **ASSUNZIONE** R-42: la quota di un taglio pesa finché dura il contratto (`years_left` del taglio); quella di un taglio senza durata pesa sulla stagione corrente e dopo è "da fissare". Un taglio in asta «preso da un'altra squadra» (assunzione R-41/R-42 sopra) sparisce dalla stagione successiva; la stagione corrente resta quella di oggi.
 - Contratti senza durata: pesano oggi, nelle stagioni future sono mostrati a parte («da fissare») e restano fuori dal totale. Riserve: restano riserve. Firme, aste, scambi, pareggi dei restricted e squadra talenti non entrano negli scenari.
 - **Da validare con la lega** (criterio della issue): se i totali di `/scadenze` e il planner servono davvero per l'asta, e se il piazzamento ipotetico uguale ogni anno è utile o va tolto.
+
+## Lega su Dunkest (issue #72)
+Classifica, calendario e formazioni dall'app della lega; nessuna regola nuova. Logica in `src/lib/dunkest-league.ts`.
+- **ASSUNZIONE**: una formazione Dunkest che non torna con le rose dell'app (riserva schierata, giocatore di un'altra squadra o in nessuna rosa, non collegato) è un **avviso**, mai un errore e mai una correzione automatica: le rose su Dunkest le aggiornano i proprietari a mano. Il confronto usa le rose di adesso, non quelle del giorno della giornata. Vedi domanda 9.
+- **ASSUNZIONE**: «tribuna» = titolari dell'app non schierati nello scontro. Dunkest ha 3 posti di riserva, ma la rosa completa delle altre squadre non si legge (solo la propria), quindi non si confronta.
+- **ASSUNZIONE**: l'ultima giornata con punti non si dichiara chiusa (Dunkest non lo dice): la pagina scrive «in testa» e non «vince», e la forma (V/P) conta solo le giornate prima.
+- La classifica Dunkest **non** scrive `team_season.final_rank` (bonus R-60, lottery R-32): resta da decidere quale classifica conta (domanda 7) e se quella di Dunkest è la classifica ufficiale.
