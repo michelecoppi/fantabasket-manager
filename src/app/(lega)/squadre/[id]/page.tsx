@@ -3,13 +3,16 @@ import { notFound } from "next/navigation";
 import { CapLine } from "@/components/cap-line";
 import { TeamCrest } from "@/components/crest";
 import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
+import { issuesText, LeagueSource, Lineup, MatchScore, type TeamIndex } from "@/components/dunkest-league";
+import { Callout } from "@/components/controls";
 import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
 import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
+import { checkLineup, rosterRefs, teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
-import type { RosterPlayer } from "@/lib/league";
-import { loadDunkest, loadLeague } from "@/lib/league-server";
+import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
+import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
 function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number }) {
@@ -104,6 +107,86 @@ function Infirmary({ players, dunkest }: { players: RosterPlayer[]; dunkest: Dun
   );
 }
 
+/**
+ * «Formazione su Dunkest»: quintetto, panchina e tribuna della squadra nell'ultima giornata con punti (issue #72), con gli
+ * avvisi quando chi è schierato non torna con le rose dell'app. Sotto, il prossimo scontro.
+ */
+async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: LeagueView; view: DunkestLeagueView; teams: TeamIndex }) {
+  const id = t.team.id;
+  const latest = teamMatch(view, id, "latest");
+  const next = teamMatch(view, id, "next");
+  const lineup = latest ? ((await loadLineups([latest.match.id])).get(latest.match.id)?.get(id) ?? []) : [];
+  const check = checkLineup(id, lineup, t.starters.map((p) => p.playerId), rosterRefs(league.teams));
+  const stands = check.stands.map((pid) => t.starters.find((p) => p.playerId === pid)!).map((p) => ({ id: p.playerId, name: p.name, pos: p.pos }));
+  const issues = issuesText(check, teams);
+  const standing = view.standings.find((s) => s.teamId === id);
+
+  return (
+    <Section title="Formazione su Dunkest" icon="jersey" id="formazione" aside={latest ? `giornata ${latest.matchday}` : undefined}>
+      {!view.available ? (
+        <Empty title="Dati non disponibili" icon="jersey">
+          Classifica e formazioni di Dunkest non si leggono in questo momento.
+        </Empty>
+      ) : !latest ? (
+        <Empty title="Nessuna giornata giocata" icon="clock">
+          La formazione compare quando comincia la prima giornata del torneo.
+        </Empty>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch">
+            <Link href={`/classifica?giornata=${latest.matchday}`} className="rise block rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:bg-surface-subtle/50">
+              <span className="eyebrow mb-2 flex items-center justify-between text-muted">
+                <span>Giornata {latest.matchday} · ultima con punti</span>
+                <Icon name="arrow-right" size={14} strokeWidth={2.2} />
+              </span>
+              <MatchScore match={latest.match} teams={teams} myTeamId={id} live />
+            </Link>
+            {standing && (
+              <Link href="/classifica" className="rise flex items-center gap-4 rounded-2xl bg-nav px-5 py-3 text-white transition-[filter] hover:brightness-125" style={stagger(1)}>
+                <span>
+                  <span className="eyebrow block text-white/55">Classifica</span>
+                  <span className="font-display tnum block text-5xl leading-none font-black text-gold">{standing.position}°</span>
+                </span>
+                <span className="text-sm text-white/70">
+                  <span className="font-display tnum block text-2xl leading-none font-extrabold text-white">
+                    {standing.wins}–{standing.losses}
+                  </span>
+                  vittorie–sconfitte
+                </span>
+              </Link>
+            )}
+          </div>
+          {lineup.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-line px-4 py-3 text-sm text-muted">Formazione non ancora letta per questa giornata: arriva col prossimo aggiornamento.</p>
+          ) : (
+            <>
+              {issues.length > 0 && (
+                <Callout tone="warn" title={issues.length === 1 ? "Un giocatore schierato non torna con la rosa" : `${issues.length} giocatori schierati non tornano con la rosa`}>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                    {issues.map((x) => (
+                      <li key={x}>{x}</li>
+                    ))}
+                  </ul>
+                </Callout>
+              )}
+              <Lineup check={check} stands={stands} teams={teams} />
+            </>
+          )}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <LeagueSource league={view} />
+        {next && (
+          <span className="text-xs text-muted">
+            Prossimo: giornata {next.matchday} contro{" "}
+            <span className="font-semibold text-foreground">{teams.get(next.match.homeTeamId === id ? next.match.awayTeamId : next.match.homeTeamId)?.name}</span>
+          </span>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 /** Contatore di ruolo: "Guardie 4/5" con tacche piene per i posti occupati. Su telefono le tacche vanno sotto, in tre colonne uguali. */
 function SlotMeter({ label, have, need }: { label: string; have: number; need: number }) {
   const ok = have === need;
@@ -124,7 +207,7 @@ function SlotMeter({ label, have, need }: { label: string; have: number; need: n
 
 export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const { id } = await props.params;
-  const [league, dunkest] = await Promise.all([loadLeague(), loadDunkest()]);
+  const [league, dunkest, view] = await Promise.all([loadLeague(), loadDunkest(), loadLeagueDunkest()]);
   const t = league.teams.find((x) => x.team.id === id);
   if (!t) notFound();
   const f = t.finance;
@@ -139,6 +222,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const unknownPos = t.starters.filter((x) => !x.pos);
   const roster = [...t.starters, ...t.reserves];
   const injuredCount = roster.filter((p) => dunkest.injuries.has(p.playerId)).length;
+  const teams: TeamIndex = new Map(league.teams.map((x) => [x.team.id, { name: x.team.name, owner: x.team.owner_name, color: colors.get(x.team.id) ?? "var(--muted)" }]));
+  const standing = view.standings.find((s) => s.teamId === id);
 
   return (
     <>
@@ -199,6 +284,13 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
           Quota {t.entryFeePaid ? "pagata" : "da pagare"}
         </Badge>
+        {standing && (
+          <Link href="/classifica" className="rounded-full transition-opacity hover:opacity-80">
+            <Badge tone="accent" icon="trophy">
+              {standing.position}° su Dunkest · {standing.wins}–{standing.losses}
+            </Badge>
+          </Link>
+        )}
         {injuredCount > 0 && (
           <a href="#infermeria" className="rounded-full transition-opacity hover:opacity-80">
             <Badge tone="bad" icon="medkit">
@@ -208,9 +300,11 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         )}
       </div>
 
-      <div className="mt-10 grid gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
         <div>
           <Infirmary players={roster} dunkest={dunkest} />
+
+          <DunkestLineup t={t} league={league} view={view} teams={teams} />
 
           <Section title="Titolari" icon="jersey" aside={`${t.starters.length}/${positions.reduce((n, p) => n + league.settings.starters[p], 0)}`}>
             <div className="mb-3 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2">

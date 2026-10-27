@@ -139,6 +139,15 @@ insert into dunkest_stats (season_id, player_id, gp, pdk) select id, 900001, 3, 
 insert into dunkest_injuries (player_id, injured_on, injury, description) values (900002, date '2026-10-19', 'Caviglia', 'GTD: da valutare');
 insert into dunkest_sync_runs (id, trigger, ok, stats_count, injuries_count, links_count) values (900001, 'cron', true, 1, 1, 0);
 -- dunkest_sync ha già la sua riga unica (migrazione 20261027025827).
+insert into dunkest_teams (season_id, team_id, dunkest_team_id)
+  select s.id, t.id, 990001 from seasons s, (select id from teams order by name limit 1) t where s.is_current on conflict do nothing;
+insert into dunkest_standings (season_id, team_id, position, total_pts, wins, losses)
+  select s.id, t.id, 1, 700.5, 3, 0 from seasons s, (select id from teams order by name limit 1) t where s.is_current;
+insert into dunkest_matches (id, season_id, matchday, dunkest_matchday_id, home_team_id, away_team_id, home_pts, away_pts)
+  select 990001, s.id, 1, 1858, (select id from teams order by name limit 1), (select id from teams order by name offset 1 limit 1), 240.05, 233.15
+  from seasons s where s.is_current;
+insert into dunkest_lineups (match_id, team_id, fantasy_player_id, player_id, name, pos, role, court_position, pts)
+  select 990001, id, 3, 900001, 'RLS Uno', 'G', 'starter', 1, 72.19 from teams order by name limit 1;
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
@@ -488,6 +497,89 @@ begin
   perform rls_t.ok('esecuzione admin non registrata come admin',
     exists (select 1 from dunkest_sync_runs where trigger = 'admin' and user_id = rls_t.admin() and error = 'prova admin'));
   perform rls_t.become('postgres');
+end $$;
+
+-- ---------- Job Dunkest, parte di lega (issue #72): classifica, calendario, formazioni ----------
+-- Stesse regole delle dunkest_sync_*: segreto o admin. Classifica vuota e tentativi falliti non toccano i dati; un 401 di
+-- Dunkest azzera «token funzionante da».
+do $$
+declare
+  v jsonb;
+  sid int := (select id from seasons where is_current);
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  ok_payload jsonb;
+begin
+  perform rls_t.ok('dunkest_league_log chiamabile dai client (storico falso)',
+    not has_function_privilege('anon', 'public.dunkest_league_log(text,boolean,text,jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.dunkest_league_log(text,boolean,text,jsonb)', 'execute'));
+  ok_payload := jsonb_build_object('season_id', sid, 'full_calendar', false,
+    'standings', jsonb_build_array(
+      jsonb_build_object('team_id', t1, 'position', 2, 'total_pts', 650.25, 'wins', 2, 'losses', 1),
+      jsonb_build_object('team_id', t2, 'position', 1, 'total_pts', 721.71, 'wins', 3, 'losses', 0)),
+    'matches', jsonb_build_array(jsonb_build_object('id', 990002, 'matchday', 2, 'dunkest_matchday_id', 1859,
+      'home_team_id', t2, 'away_team_id', t1, 'home_pts', 292.9, 'away_pts', 243.44, 'winner_team_id', t2)),
+    'lineup_matches', '[990002]'::jsonb,
+    'lineups', jsonb_build_array(
+      jsonb_build_object('match_id', 990002, 'team_id', t2, 'fantasy_player_id', 3, 'player_id', 900001, 'name', 'RLS Uno', 'pos', 'G',
+        'role', 'starter', 'court_position', 4, 'is_captain', true, 'pts', 72.19),
+      jsonb_build_object('match_id', 990002, 'team_id', t1, 'fantasy_player_id', 1, 'player_id', null, 'name', 'Nikola Jokic', 'pos', 'C',
+        'role', 'bench', 'court_position', 6, 'is_sixth_man', true, 'pts', 42.5)),
+    'links', '[{"player_id": 900001, "fantasy_id": 77001}]'::jsonb,
+    'report', '{"unlinked": ["Nikola Jokic"]}'::jsonb);
+
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon legge la sorgente di lega senza segreto', rls_t.try('select public.dunkest_league_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon scrive la lega senza segreto', rls_t.try(format('select public.dunkest_league_apply(null, %L)', ok_payload)), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon registra un errore di lega senza segreto', rls_t.try('select public.dunkest_league_fail(null, ''error'', ''x'')'), array['error: FORBIDDEN%']);
+
+  v := public.dunkest_league_source('rls-segreto-del-job-0123');
+  perform rls_t.ok('dunkest_league_source col segreto',
+    (v->>'season_id')::int = sid and (v->>'tournament_id')::int = 252941 and jsonb_array_length(v->'teams') > 0
+    and jsonb_array_length(v->'players') > 0 and jsonb_array_length(v->'matchdays') = 1 and (v->'matchdays'->0->>'scored')::boolean);
+  perform rls_t.chk('classifica vuota',
+    rls_t.try(format('select public.dunkest_league_apply(''rls-segreto-del-job-0123'', %L)', ok_payload || '{"standings": []}'::jsonb)), array['error: INVALID%']);
+  perform rls_t.chk('calendario completo vuoto',
+    rls_t.try(format('select public.dunkest_league_apply(''rls-segreto-del-job-0123'', %L)', ok_payload || '{"full_calendar": true, "matches": []}'::jsonb)), array['error: INVALID%']);
+  perform rls_t.chk('collegamenti di lega duplicati',
+    rls_t.try(format('select public.dunkest_league_apply(''rls-segreto-del-job-0123'', %L)',
+      ok_payload || '{"links": [{"player_id": 900001, "fantasy_id": 5}, {"player_id": 900002, "fantasy_id": 5}]}'::jsonb)), array['error: INVALID%']);
+  v := public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload);
+  perform rls_t.ok('apply di lega: conteggi', (v->>'standings')::int = 2 and (v->>'matches')::int = 1 and (v->>'lineups')::int = 2);
+  perform public.dunkest_league_fail('rls-segreto-del-job-0123', 'token_rejected', 'HTTP 401');
+  perform rls_t.become('postgres');
+
+  perform rls_t.ok('classifica non sostituita',
+    (select count(*) from dunkest_standings where season_id = sid) = 2
+    and (select position from dunkest_standings where season_id = sid and team_id = t2) = 1);
+  perform rls_t.ok('calendario: lo scontro vecchio è sparito senza full_calendar',
+    exists (select 1 from dunkest_matches where id = 990001) and exists (select 1 from dunkest_matches where id = 990002 and winner_team_id = t2));
+  perform rls_t.ok('formazioni non scritte',
+    (select count(*) from dunkest_lineups where match_id = 990002) = 2
+    and exists (select 1 from dunkest_lineups where match_id = 990002 and is_captain and pos = 'G' and player_id = 900001)
+    and (select count(*) from dunkest_lineups where match_id = 990001) = 1);
+  perform rls_t.ok('id Fantaking non salvato', (select dunkest_fantasy_id from players where id = 900001) = 77001);
+  perform rls_t.ok('token rifiutato non registrato',
+    (select league_error_code = 'token_rejected' and token_ok_since is null and token_rejected_at is not null
+            and token_ok_at is not null and league_success_at is not null and league_error = 'HTTP 401' from dunkest_sync));
+  perform rls_t.ok('storico di lega sbagliato',
+    (select count(*) filter (where ok and (report->>'lineups')::int = 2 and links_count = 1) = 1
+            and count(*) filter (where not ok and error = 'HTTP 401' and report->>'code' = 'token_rejected') = 1
+     from dunkest_sync_runs where kind = 'league'));
+
+  -- Calendario completo: resta solo quello del payload.
+  perform public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload || '{"full_calendar": true}'::jsonb);
+  perform rls_t.ok('full_calendar non ha tolto lo scontro vecchio',
+    not exists (select 1 from dunkest_matches where id = 990001) and (select calendar_at is not null and token_ok_since is not null from dunkest_sync));
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer legge la sorgente di lega', rls_t.try('select public.dunkest_league_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin legge la sorgente di lega', rls_t.try('select public.dunkest_league_source(null)'), array['rows=%']);
+  perform public.dunkest_league_fail(null, 'token_missing', 'DUNKEST_TOKEN non impostato');
+  perform rls_t.become('postgres');
+  perform rls_t.ok('esecuzione di lega admin non registrata come admin',
+    exists (select 1 from dunkest_sync_runs where kind = 'league' and trigger = 'admin' and user_id = rls_t.admin() and report->>'code' = 'token_missing'));
 end $$;
 
 do $$ begin

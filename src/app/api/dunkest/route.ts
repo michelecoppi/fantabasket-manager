@@ -1,10 +1,12 @@
+import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Cron giornaliero di Vercel (vercel.json, `0 8 * * *` UTC = 9:00 italiane in ora solare): aggiorna punteggio, partite giocate e
- * infortuni da Dunkest (issue #68). Vercel manda CRON_SECRET come Bearer; lo stesso valore, girato alle RPC, è il segreto del job
- * (hash in `private.job_secrets`, migrazione 20261027025827). Senza CRON_SECRET non parte: qui il segreto è obbligatorio.
+ * infortuni da Dunkest (issue #68), poi classifica, calendario e formazioni della lega (issue #72, con DUNKEST_TOKEN). Vercel
+ * manda CRON_SECRET come Bearer; lo stesso valore, girato alle RPC, è il segreto del job (hash in `private.job_secrets`,
+ * migrazione 20261027025827). Senza CRON_SECRET non parte: qui il segreto è obbligatorio.
  */
 export const maxDuration = 60;
 
@@ -15,11 +17,12 @@ export async function GET(request: Request) {
     return new Response("Non autorizzato", { status: 401 });
   }
   const db = await createClient();
-  const result = await runDunkestSync(db, secret);
-  if (!result.ok) {
-    console.error(`[dunkest] aggiornamento non riuscito: ${result.error}`);
-    return Response.json(result, { status: 502 });
-  }
-  console.log(`[dunkest] ${result.stats} statistiche, ${result.injuries} infortuni, ${result.links} nuovi collegamenti`);
-  return Response.json(result);
+  // Parti indipendenti: un token scaduto non ferma statistiche e infortuni.
+  const stats = await runDunkestSync(db, secret);
+  const league = await runDunkestLeagueSync(db, secret, process.env.DUNKEST_TOKEN);
+  if (stats.ok) console.log(`[dunkest] ${stats.stats} statistiche, ${stats.injuries} infortuni, ${stats.links} nuovi collegamenti`);
+  else console.error(`[dunkest] aggiornamento non riuscito: ${stats.error}`);
+  if (league.ok) console.log(`[dunkest] lega: classifica ${league.standings}, scontri ${league.matches}, formazioni ${league.lineups}${league.report.full ? " (calendario completo)" : ""}`);
+  else console.error(`[dunkest] lega non aggiornata (${league.code}): ${league.error}`);
+  return Response.json({ stats, league }, { status: stats.ok && league.ok ? 200 : 502 });
 }

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
+import { buildLeagueView, EMPTY_LEAGUE, type LeagueReport, type DunkestLeagueView, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
@@ -229,3 +230,88 @@ export const loadDunkest = cache(async (): Promise<DunkestView> => {
     return EMPTY_DUNKEST;
   }
 });
+
+/**
+ * Classifica e calendario della lega su Dunkest (issue #72), scritti dal job giornaliero. Come `loadDunkest`: se non si leggono
+ * le pagine mostrano "dati non disponibili". Gli scontri di una stagione sono poche centinaia (8 squadre, ~100 giornate):
+ * stanno sotto le 1000 righe di PostgREST.
+ */
+export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const [sync, standings, matches] = await Promise.all([
+      db
+        .from("dunkest_sync")
+        .select("league_attempt_at,league_success_at,league_error,league_error_code,league_report,calendar_at,token_ok_since,token_ok_at,token_rejected_at")
+        .eq("id", 1)
+        .maybeSingle(),
+      db.from("dunkest_standings").select("team_id,position,total_pts,wins,draws,losses").eq("season_id", sid),
+      db.from("dunkest_matches").select("id,matchday,home_team_id,away_team_id,home_pts,away_pts,winner_team_id").eq("season_id", sid).order("matchday").order("id"),
+    ]);
+    for (const r of [sync, standings, matches]) if (r.error) throw new Error(r.error.message);
+    const s = sync.data;
+    const num = (v: unknown) => (v === null ? null : Number(v));
+    return buildLeagueView(
+      s && {
+        lastSuccessAt: s.league_success_at,
+        lastAttemptAt: s.league_attempt_at,
+        lastError: s.league_error,
+        errorCode: s.league_error_code as LeagueSyncInfo["errorCode"],
+        report: s.league_report as LeagueReport | null,
+        calendarAt: s.calendar_at,
+        tokenOkSince: s.token_ok_since,
+        tokenOkAt: s.token_ok_at,
+        tokenRejectedAt: s.token_rejected_at,
+      },
+      (standings.data ?? []).map((r) => ({ teamId: r.team_id, position: r.position, totalPts: Number(r.total_pts), wins: r.wins, draws: r.draws, losses: r.losses })),
+      (matches.data ?? []).map((m) => ({
+        id: Number(m.id),
+        matchday: m.matchday,
+        homeTeamId: m.home_team_id,
+        awayTeamId: m.away_team_id,
+        homePts: num(m.home_pts),
+        awayPts: num(m.away_pts),
+        winnerTeamId: m.winner_team_id,
+      })),
+    );
+  } catch (e) {
+    console.error(`[dunkest] lega non disponibile: ${e instanceof Error ? e.message : String(e)}`);
+    return EMPTY_LEAGUE;
+  }
+});
+
+/** Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. */
+export async function loadLineups(matchIds: number[]): Promise<Map<number, Map<string, LineupPlayer[]>>> {
+  const out = new Map<number, Map<string, LineupPlayer[]>>();
+  if (matchIds.length === 0) return out;
+  const db = await createClient();
+  const r = await db
+    .from("dunkest_lineups")
+    .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
+    .in("match_id", matchIds)
+    .order("court_position");
+  if (r.error) {
+    console.error(`[dunkest] formazioni non disponibili: ${r.error.message}`);
+    return out;
+  }
+  for (const row of r.data) {
+    const byTeam = out.get(Number(row.match_id)) ?? new Map<string, LineupPlayer[]>();
+    out.set(Number(row.match_id), byTeam);
+    byTeam.set(row.team_id, [
+      ...(byTeam.get(row.team_id) ?? []),
+      {
+        fantasyId: row.fantasy_player_id,
+        playerId: row.player_id,
+        name: row.name,
+        pos: row.pos as LineupPlayer["pos"],
+        role: row.role as LineupPlayer["role"],
+        courtPosition: row.court_position,
+        isCaptain: row.is_captain,
+        isSixthMan: row.is_sixth_man,
+        pts: row.pts === null ? null : Number(row.pts),
+      },
+    ]);
+  }
+  return out;
+}

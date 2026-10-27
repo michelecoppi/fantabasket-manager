@@ -1,0 +1,807 @@
+{
+ "tournament": {
+  "data": {
+   "id": 252941,
+   "name": "KD FOTO PIEDI",
+   "type": {
+    "id": 2,
+    "name": "head_to_head"
+   },
+   "category": {
+    "id": 4,
+    "name": "user"
+   },
+   "game_mode_id": 2,
+   "starting_matchday_id": 1858,
+   "joined": null,
+   "is_featured": false,
+   "num_fantasy_teams": 8,
+   "max_num_fantasy_teams": 40,
+   "is_public": false,
+   "chat_url": null,
+   "logo_url": null,
+   "cover_url": null,
+   "profile_picture_url": null,
+   "color": null,
+   "prizes": null,
+   "call_to_action": null,
+   "ending_matchday_id": null,
+   "num_promoted_fantasy_teams": 2,
+   "fantasy_team_trophy_cup_status": null
+  }
+ },
+ "standings": {
+  "data": [
+   {
+    "id": 3233650,
+    "name": "Atlanto Non Vinco",
+    "is_mvp": false,
+    "position": 1,
+    "matchday_pts": null,
+    "total_pts": 700.36,
+    "standings_pts": null,
+    "wins": 3,
+    "draws": null,
+    "losses": 0,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3234157,
+    "name": "CUS Cosenza",
+    "is_mvp": false,
+    "position": 2,
+    "matchday_pts": null,
+    "total_pts": 742.81,
+    "standings_pts": null,
+    "wins": 2,
+    "draws": null,
+    "losses": 1,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3233688,
+    "name": "Assago Farmers",
+    "is_mvp": false,
+    "position": 3,
+    "matchday_pts": null,
+    "total_pts": 737.26,
+    "standings_pts": null,
+    "wins": 2,
+    "draws": null,
+    "losses": 1,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3234455,
+    "name": "Bol Bollerz",
+    "is_mvp": false,
+    "position": 4,
+    "matchday_pts": null,
+    "total_pts": 721.71,
+    "standings_pts": null,
+    "wins": 2,
+    "draws": null,
+    "losses": 1,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3233925,
+    "name": "Dame Time",
+    "is_mvp": false,
+    "position": 5,
+    "matchday_pts": null,
+    "total_pts": 697.35,
+    "standings_pts": null,
+    "wins": 2,
+    "draws": null,
+    "losses": 1,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": "https://fantaking-assets.dunkest.com/jersey/91540523efc8737543458a6bfd696f792375837a.png"
+   },
+   {
+    "id": 3233625,
+    "name": "Chicago Spaccinos",
+    "is_mvp": false,
+    "position": 6,
+    "matchday_pts": null,
+    "total_pts": 545.46,
+    "standings_pts": null,
+    "wins": 1,
+    "draws": null,
+    "losses": 2,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3233754,
+    "name": "San Antonio Spurs",
+    "is_mvp": false,
+    "position": 7,
+    "matchday_pts": null,
+    "total_pts": 599.23,
+    "standings_pts": null,
+    "wins": 0,
+    "draws": null,
+    "losses": 3,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": null
+   },
+   {
+    "id": 3234648,
+    "name": "OKCC",
+    "is_mvp": false,
+    "position": 8,
+    "matchday_pts": null,
+    "total_pts": 585.61,
+    "standings_pts": null,
+    "wins": 0,
+    "draws": null,
+    "losses": 3,
+    "is_qualified": null,
+    "fantasy_team_trophy_cup_status": null,
+    "jersey_url": "https://fantaking-assets.dunkest.com/jersey/649cab47fcfc379205639d5ab0a5bfe431df2074.png"
+   }
+  ],
+  "links": {
+   "first": null,
+   "last": null,
+   "prev": null,
+   "next": null
+  },
+  "meta": {
+   "path": "https://fantaking-api.dunkest.com/api/v1/tournaments/252941/standings",
+   "per_page": 25,
+   "next_cursor": null,
+   "prev_cursor": null
+  }
+ },
+ "matchday": {
+  "data": [
+   {
+    "id": 8426830,
+    "winner_id": 3233650,
+    "home_team": {
+     "id": 3234157,
+     "name": "CUS Cosenza",
+     "pts": 210.76,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233650,
+     "name": "Atlanto Non Vinco",
+     "pts": 216.67,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426831,
+    "winner_id": 3234455,
+    "home_team": {
+     "id": 3233688,
+     "name": "Assago Farmers",
+     "pts": 243.44,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3234455,
+     "name": "Bol Bollerz",
+     "pts": 292.9,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426832,
+    "winner_id": 3233925,
+    "home_team": {
+     "id": 3233925,
+     "name": "Dame Time",
+     "pts": 230.97,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3234648,
+     "name": "OKCC",
+     "pts": 178.87,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426833,
+    "winner_id": 3233625,
+    "home_team": {
+     "id": 3233754,
+     "name": "San Antonio Spurs",
+     "pts": 167.92,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233625,
+     "name": "Chicago Spaccinos",
+     "pts": 189.5,
+     "goals": null
+    }
+   }
+  ]
+ },
+ "matchdayFuture": {
+  "data": [
+   {
+    "id": 8426834,
+    "winner_id": null,
+    "home_team": {
+     "id": 3233650,
+     "name": "Atlanto Non Vinco",
+     "pts": null,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233688,
+     "name": "Assago Farmers",
+     "pts": null,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426835,
+    "winner_id": null,
+    "home_team": {
+     "id": 3234157,
+     "name": "CUS Cosenza",
+     "pts": null,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233925,
+     "name": "Dame Time",
+     "pts": null,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426836,
+    "winner_id": null,
+    "home_team": {
+     "id": 3234455,
+     "name": "Bol Bollerz",
+     "pts": null,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233754,
+     "name": "San Antonio Spurs",
+     "pts": null,
+     "goals": null
+    }
+   },
+   {
+    "id": 8426837,
+    "winner_id": null,
+    "home_team": {
+     "id": 3234648,
+     "name": "OKCC",
+     "pts": null,
+     "goals": null
+    },
+    "away_team": {
+     "id": 3233625,
+     "name": "Chicago Spaccinos",
+     "pts": null,
+     "goals": null
+    }
+   }
+  ]
+ },
+ "match": {
+  "data": {
+   "id": 8426831,
+   "winner_id": 3234455,
+   "home_team": {
+    "id": 3233688,
+    "name": "Assago Farmers",
+    "pts": 243.44,
+    "goals": null,
+    "is_mvp": false,
+    "wildcard_used": false,
+    "trades": 0,
+    "updated_at": "2026-10-26T05:34:36.000000Z",
+    "players": {
+     "starters": [
+      {
+       "id": 140,
+       "first_name": "Alperen",
+       "last_name": "Sengun",
+       "court_position": 1,
+       "is_captain": true,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 51.19,
+       "stats_items": [],
+       "position": {
+        "id": 3,
+        "name": "Center"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 123,
+       "first_name": "Franz",
+       "last_name": "Wagner",
+       "court_position": 2,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 38.59,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 1796,
+       "first_name": "Keyonte",
+       "last_name": "George",
+       "court_position": 3,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 38,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 91,
+       "first_name": "Tyrese",
+       "last_name": "Maxey",
+       "court_position": 4,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 30.5,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 202,
+       "first_name": "Dyson",
+       "last_name": "Daniels",
+       "court_position": 5,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 5.5,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      }
+     ],
+     "bench": [
+      {
+       "id": 12,
+       "first_name": "Trae",
+       "last_name": "Young",
+       "court_position": 6,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": true,
+       "pts": 36,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 29,
+       "first_name": "Deandre",
+       "last_name": "Ayton",
+       "court_position": 7,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 4.5,
+       "stats_items": [],
+       "position": {
+        "id": 3,
+        "name": "Center"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 32,
+       "first_name": "Julius",
+       "last_name": "Randle",
+       "court_position": 8,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 17.5,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 83,
+       "first_name": "Michael",
+       "last_name": "Porter Jr",
+       "court_position": 9,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 2,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 347,
+       "first_name": "Trey",
+       "last_name": "Murphy III",
+       "court_position": 10,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 12.13,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": null,
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      }
+     ],
+     "coach": null
+    }
+   },
+   "away_team": {
+    "id": 3234455,
+    "name": "Bol Bollerz",
+    "pts": 292.9,
+    "goals": null,
+    "is_mvp": false,
+    "wildcard_used": false,
+    "trades": 0,
+    "updated_at": "2026-10-26T07:45:05.000000Z",
+    "players": {
+     "starters": [
+      {
+       "id": 4593,
+       "first_name": "Yves",
+       "last_name": "Missi",
+       "court_position": 1,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 28,
+       "stats_items": [],
+       "position": {
+        "id": 3,
+        "name": "Center"
+       },
+       "round": null,
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 4576,
+       "first_name": "Jaylen",
+       "last_name": "Wells",
+       "court_position": 2,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 28.88,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 72,
+       "first_name": "Jabari",
+       "last_name": "Smith Jr",
+       "court_position": 3,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 36.75,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 3,
+       "first_name": "Luka",
+       "last_name": "Doncic",
+       "court_position": 4,
+       "is_captain": true,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 72.19,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 7,
+       "first_name": "James",
+       "last_name": "Harden",
+       "court_position": 5,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 31.24,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      }
+     ],
+     "bench": [
+      {
+       "id": 1,
+       "first_name": "Nikola",
+       "last_name": "Jokic",
+       "court_position": 6,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": true,
+       "pts": 42.5,
+       "stats_items": [],
+       "position": {
+        "id": 3,
+        "name": "Center"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 713,
+       "first_name": "Chet",
+       "last_name": "Holmgren",
+       "court_position": 7,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 10.24,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 1887,
+       "first_name": "Toumani",
+       "last_name": "Camara",
+       "court_position": 8,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": null,
+       "stats_items": [],
+       "position": {
+        "id": 2,
+        "name": "Forward"
+       },
+       "round": {
+        "id": 2897,
+        "number": 3
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 352,
+       "first_name": "Nickeil",
+       "last_name": "Alexander-Walker",
+       "court_position": 9,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 5.75,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2896,
+        "number": 2
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      },
+      {
+       "id": 238,
+       "first_name": "Immanuel",
+       "last_name": "Quickley",
+       "court_position": 10,
+       "is_captain": false,
+       "has_scored": false,
+       "is_sixth_man": false,
+       "pts": 18.5,
+       "stats_items": [],
+       "position": {
+        "id": 1,
+        "name": "Guard"
+       },
+       "round": {
+        "id": 2895,
+        "number": 1
+       },
+       "captain_multiplier": 1.5,
+       "captain_config": null,
+       "probability_of_playing": 1
+      }
+     ],
+     "coach": null
+    }
+   }
+  }
+ },
+ "matchFuture": {
+  "data": {
+   "id": 8426834,
+   "winner_id": null,
+   "home_team": {
+    "id": 3233650,
+    "name": "Atlanto Non Vinco",
+    "pts": null,
+    "goals": null,
+    "is_mvp": false,
+    "wildcard_used": null,
+    "trades": null,
+    "updated_at": null,
+    "players": null
+   },
+   "away_team": {
+    "id": 3233688,
+    "name": "Assago Farmers",
+    "pts": null,
+    "goals": null,
+    "is_mvp": false,
+    "wildcard_used": null,
+    "trades": null,
+    "updated_at": null,
+    "players": null
+   }
+  }
+ }
+}
