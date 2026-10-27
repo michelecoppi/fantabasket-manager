@@ -3,11 +3,13 @@ import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
 import { DunkestLogo } from "@/components/dunkest";
+import { LeagueSource, MatchScore, StandingsTable, fpt, type TeamIndex } from "@/components/dunkest-league";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtEuro } from "@/lib/format";
-import { loadDunkest, loadLeague, loadProfile } from "@/lib/league-server";
+import { teamMatch } from "@/lib/dunkest-league";
+import { loadDunkest, loadLeague, loadLeagueDunkest, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -37,7 +39,7 @@ function PulseTile({ icon, label, value, tone, i }: { icon: IconName; label: str
 
 export default async function Home(props: PageProps<"/">) {
   const options = parseTeamListOptions(await props.searchParams);
-  const [league, profile, dunkest] = await Promise.all([loadLeague(), loadProfile(), loadDunkest()]);
+  const [league, profile, dunkest, view] = await Promise.all([loadLeague(), loadProfile(), loadDunkest(), loadLeagueDunkest()]);
   // Infortunati di ogni rosa secondo Dunkest (issue #68).
   const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
   const { settings } = league;
@@ -51,6 +53,12 @@ export default async function Home(props: PageProps<"/">) {
   const myPicks = myTeam ? league.picks.filter((p) => p.current_team_id === myTeam.team.id).length : 0;
   const startersTotal = settings.starters.G + settings.starters.A + settings.starters.C;
   const count = (filter: TeamFilter) => listTeams(league.teams, { sort: "nome", filter }).length;
+  // Lega su Dunkest (issue #72): classifica e ultima giornata, se il job le ha già scritte.
+  const teamIndex: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+  const hasStandings = view.available && view.standings.length > 0;
+  const latestDay = view.matchdays.find((d) => d.state === "latest");
+  const myStanding = myTeam ? view.standings.find((s) => s.teamId === myTeam.team.id) : undefined;
+  const myLatest = myTeam ? teamMatch(view, myTeam.team.id, "latest") : null;
 
   const sorts: { value: TeamSort; label: string }[] = [
     { value: "nome", label: "Nome" },
@@ -130,6 +138,30 @@ export default async function Home(props: PageProps<"/">) {
                 <p className="mt-2 mb-4 text-xs text-white/55">crediti · cap effettivo {fmt(myTeam.finance.effectiveCap)}</p>
                 <CapLine payroll={myTeam.finance.payroll} cap={myTeam.finance.effectiveCap} floor={myTeam.finance.floor} dark />
               </div>
+              {myStanding && (
+                <Link
+                  href={`/squadre/${myTeam.team.id}#formazione`}
+                  className="group mb-2 -mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm transition-colors hover:border-white/25 hover:bg-white/8"
+                >
+                  <span className="font-display tnum grid h-[22px] min-w-[22px] place-items-center rounded-md bg-gold px-1 text-base leading-none font-black text-nav">{myStanding.position}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-bold text-white">{myStanding.position}° in classifica</span>
+                    <span className="text-white/60">
+                      {" "}
+                      · {myStanding.wins}–{myStanding.losses}
+                      {myLatest && myLatest.match.homePts !== null && myLatest.match.awayPts !== null && (
+                        <>
+                          {" "}
+                          · G{myLatest.matchday}{" "}
+                          {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.homePts : myLatest.match.awayPts)}–
+                          {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.awayPts : myLatest.match.homePts)}
+                        </>
+                      )}
+                    </span>
+                  </span>
+                  <Icon name="arrow-right" size={16} strokeWidth={2.2} className="shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              )}
               {dunkest.available && (
                 <Link
                   href={`/squadre/${myTeam.team.id}#infermeria`}
@@ -201,6 +233,48 @@ export default async function Home(props: PageProps<"/">) {
         <PulseTile i={3} icon="clipboard" label="Rose incomplete" value={String(incomplete)} tone={incomplete > 0 ? "warn" : "good"} />
         <PulseTile i={4} icon="coins" label="Luxury tax da incassare" value={`${fmtEuro(taxDue)} €`} />
       </div>
+
+      {hasStandings && (
+        <section className="mt-12" aria-labelledby="league-standings-title">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div>
+              <p className="eyebrow text-muted">Lega su Dunkest{view.latest ? ` · giornata ${view.latest}` : ""}</p>
+              <h2 id="league-standings-title" className="font-display mt-1 text-5xl leading-none font-black">
+                Il campionato
+              </h2>
+            </div>
+            <Link href="/classifica" className="group inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue">
+              Classifica, calendario e formazioni
+              <Icon name="arrow-right" size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <StandingsTable league={view} teams={teamIndex} myTeamId={myTeam?.team.id} compact />
+            {latestDay && (
+              <div className="min-w-0">
+                <h3 className="eyebrow mb-2 flex items-center justify-between text-muted">
+                  <span>Giornata {latestDay.matchday} · ultima con punti</span>
+                </h3>
+                <ol className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+                  {latestDay.matches.map((m, i) => (
+                    <li key={m.id} className="rise" style={stagger(i)}>
+                      <Link
+                        href={`/classifica?giornata=${latestDay.matchday}`}
+                        className={`block rounded-2xl border bg-surface px-4 py-3 transition-colors hover:bg-surface-subtle/50 ${m.homeTeamId === myTeam?.team.id || m.awayTeamId === myTeam?.team.id ? "border-gold/60" : "border-line"}`}
+                      >
+                        <MatchScore match={m} teams={teamIndex} myTeamId={myTeam?.team.id} live />
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+          <div className="mt-3">
+            <LeagueSource league={view} />
+          </div>
+        </section>
+      )}
 
       <section className="mt-12" aria-labelledby="league-board-title">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
