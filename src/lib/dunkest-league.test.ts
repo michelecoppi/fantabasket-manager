@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS, type Position } from "./cap";
 import { SourceFormatError } from "./dunkest";
 import {
   buildLeaguePayload,
@@ -10,16 +11,21 @@ import {
   parseMatchday,
   parseMatchDetail,
   parseStandings,
+  parseTeamRoster,
+  rosterAlignment,
   parseTournament,
   teamForm,
   teamMatch,
   tokenDays,
   tokenState,
+  tribune,
   windowAround,
   type LeagueDbPlayer,
   type LeagueMatch,
   type LeagueSyncInfo,
   type LeagueTeamLink,
+  type AlignContract,
+  type DunkestRosterPlayer,
   type LineupPlayer,
   type RosterRef,
 } from "./dunkest-league";
@@ -211,5 +217,84 @@ describe("vista e confronto", () => {
     expect(c.bench[1].otherTeamId).toBe("okc");
     expect(c.stands).toEqual([6, 7]);
     expect(c.issues.map((x) => x.name)).toEqual(["Tre", "Quattro", "Cinque", "Ignoto"]);
+  });
+});
+
+describe("rose Dunkest", () => {
+  it("parseTeamRoster: 13 giocatori di un'altra squadra, con ruolo", () => {
+    const r = parseTeamRoster(fx.teamRoster);
+    expect(r).toHaveLength(13);
+    expect(r.find((p) => p.lastName === "Claxton")).toEqual({ fantasyId: 130, firstName: "Nicolas", lastName: "Claxton", pos: "C" });
+    expect(parseTeamRoster({ data: [] })).toEqual([]);
+    expect(() => parseTeamRoster({ data: {} })).toThrow(SourceFormatError);
+  });
+
+  it("buildLeaguePayload: rose per squadra e collegamenti trovati anche dai giocatori in tribuna", () => {
+    const payload = buildLeaguePayload({
+      seasonId: 1,
+      teams: TEAMS,
+      players: [p(20, "Darius", "Garland"), p(21, "Nic", "Claxton", 130)],
+      standings: parseStandings(fx.standings),
+      matchdays: [],
+      details: [],
+      full: false,
+      rosters: [{ dunkestTeamId: 3233688, players: parseTeamRoster(fx.teamRoster) }],
+    });
+    expect(payload.rosters).toHaveLength(13);
+    expect(payload.rosters!.every((r) => r.team_id === "asf")).toBe(true);
+    expect(payload.rosters!.find((r) => r.name === "Darius Garland")?.player_id).toBe(20);
+    // Claxton: nome diverso, collegato dall'id già salvato
+    expect(payload.rosters!.find((r) => r.fantasy_player_id === 130)?.player_id).toBe(21);
+    expect(payload.links).toContainEqual({ player_id: 20, fantasy_id: 37 });
+    // Senza rose la chiave manca: la RPC lascia quelle di prima.
+    expect("rosters" in buildLeaguePayload({ seasonId: 1, teams: TEAMS, players: [], standings: parseStandings(fx.standings), matchdays: [], details: [], full: false })).toBe(false);
+  });
+});
+
+describe("rosterAlignment", () => {
+  // Squadra di prova: 13 titolari (5G/5A/3C, id 1-13) e 3 riserve (id 14-16, una per ruolo).
+  const POS: Position[] = ["G", "G", "G", "G", "G", "A", "A", "A", "A", "A", "C", "C", "C", "G", "A", "C"];
+  const contracts: AlignContract[] = POS.map((pos, i) => ({
+    contractId: 100 + i, playerId: i + 1, name: `Gioc ${i + 1}`, pos, slot: i < 13 ? "starter" : "reserve", salary: i < 13 ? 18 : 10,
+  }));
+  const team = { contracts, cuts: [], bonus: 0 };
+  const rosters = new Map<number, RosterRef>(contracts.map((c) => [c.playerId, { teamId: "bol", slot: c.slot }]));
+  rosters.set(99, { teamId: "okc", slot: "starter" });
+  const dk = (ids: (number | null)[]): DunkestRosterPlayer[] => ids.map((id, i) => ({ fantasyId: 1000 + i, playerId: id, name: id === null ? "Ignoto" : `Gioc ${id}`, pos: null }));
+  const names = (id: string) => (id === "okc" ? "OKCC" : "?");
+
+  it("già allineata: niente da fare", () => {
+    const a = rosterAlignment("bol", team, dk([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]), rosters, names, DEFAULT_SETTINGS);
+    expect(a).toMatchObject({ promote: [], demote: [], blockers: [], warnings: [] });
+  });
+
+  it("riserve in rosa Dunkest salgono, titolari assenti scendono, ruolo per ruolo; cap sforato = avviso", () => {
+    // 14 (G), 15 (A), 16 (C) al posto di 1 (G), 6 (A), 11 (C): monte 234 → 210, riserve 30 → 54.
+    const a = rosterAlignment("bol", team, dk([14, 2, 3, 4, 5, 15, 7, 8, 9, 10, 16, 12, 13]), rosters, names, DEFAULT_SETTINGS);
+    expect(a.promote.map((c) => c.playerId)).toEqual([14, 15, 16]);
+    expect(a.demote.map((c) => c.playerId)).toEqual([1, 6, 11]);
+    expect(a.blockers).toEqual([]);
+    expect([a.before.payroll, a.after.payroll, a.after.reserveSpace]).toEqual([234, 210, 26]);
+    expect(a.warnings).toEqual([]);
+    const rich = { ...team, contracts: contracts.map((c) => (c.playerId === 14 ? { ...c, salary: 60 } : c)) };
+    const b = rosterAlignment("bol", rich, dk([14, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]), rosters, names, DEFAULT_SETTINGS);
+    expect(b.blockers).toEqual([]);
+    expect(b.warnings.join(" ")).toMatch(/supera il cap.*R-10/);
+  });
+
+  it("blocchi: non collegato, di un'altra squadra, rosa incompleta, ruoli oltre il massimo", () => {
+    const a = rosterAlignment("bol", team, dk([null, 99, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]), rosters, names, DEFAULT_SETTINGS);
+    expect(a.blockers).toEqual(["Ignoto non è collegato a un giocatore della lega.", "Gioc 99 è nella rosa Dunkest ma nell'app è di OKCC."]);
+    expect(rosterAlignment("bol", team, dk([1, 2, 3]), rosters, names, DEFAULT_SETTINGS).blockers[0]).toMatch(/3 giocatori invece di 13/);
+    // La riserva G (14) al posto di un centro (11): titolari G 6/5.
+    const roles = rosterAlignment("bol", team, dk([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 12, 13]), rosters, names, DEFAULT_SETTINGS);
+    expect(roles.blockers.join(" ")).toMatch(/Titolari G: 6/);
+  });
+
+  it("tribune: dalla rosa Dunkest se c'è, altrimenti titolari dell'app non schierati", () => {
+    const lineup: LineupPlayer[] = [{ fantasyId: 1000, playerId: 1, name: "Gioc 1", pos: "G", role: "starter", courtPosition: 1, isCaptain: false, isSixthMan: false, pts: 1 }];
+    const roster = dk([1, 2]);
+    expect(tribune(lineup, roster, [], { starters: [], bench: [], stands: [], issues: [] })).toEqual({ fromDunkest: true, players: [{ id: 1001, name: "Gioc 2", pos: null }] });
+    expect(tribune(lineup, undefined, [{ playerId: 7, name: "Sette", pos: "A" }], { starters: [], bench: [], stands: [7], issues: [] })).toEqual({ fromDunkest: false, players: [{ id: 7, name: "Sette", pos: "A" }] });
   });
 });

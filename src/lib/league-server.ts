@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
-import { buildLeagueView, EMPTY_LEAGUE, type LeagueReport, type DunkestLeagueView, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
+import { buildLeagueView, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
@@ -279,6 +279,23 @@ export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
     console.error(`[dunkest] lega non disponibile: ${e instanceof Error ? e.message : String(e)}`);
     return EMPTY_LEAGUE;
   }
+});
+
+/** Rose Dunkest della stagione corrente (13 giocatori per squadra, tribuna compresa): squadra → giocatori. Vuoto se non si leggono. */
+export const loadDunkestRosters = cache(async (): Promise<Map<string, DunkestRosterPlayer[]>> => {
+  const out = new Map<string, DunkestRosterPlayer[]>();
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db.from("dunkest_rosters").select("team_id,fantasy_player_id,player_id,name,pos").eq("season_id", sid).order("name");
+    if (r.error) throw new Error(r.error.message);
+    for (const row of r.data) {
+      out.set(row.team_id, [...(out.get(row.team_id) ?? []), { fantasyId: row.fantasy_player_id, playerId: row.player_id, name: row.name, pos: row.pos as DunkestRosterPlayer["pos"] }]);
+    }
+  } catch (e) {
+    console.error(`[dunkest] rose non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return out;
 });
 
 /** Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. */

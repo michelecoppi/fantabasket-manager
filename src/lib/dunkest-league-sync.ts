@@ -11,6 +11,7 @@ import {
   parseMatchday,
   parseMatchDetail,
   parseStandings,
+  parseTeamRoster,
   parseTournament,
   windowAround,
   type FetchedMatchday,
@@ -19,12 +20,13 @@ import {
   type LeagueReport,
   type LeagueTeamLink,
   type SourceMatchDetail,
+  type SourceRosterPlayer,
 } from "./dunkest-league";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
 export type LeagueSyncResult =
-  | { ok: true; standings: number; matches: number; lineups: number; report: LeagueReport }
+  | { ok: true; standings: number; matches: number; lineups: number; rosters: number | null; report: LeagueReport }
   | { ok: false; code: LeagueErrorCode; error: string };
 
 const TIMEOUT_MS = 15_000;
@@ -107,8 +109,8 @@ interface LeagueSourceRpc {
 }
 
 /**
- * Legge classifica, giornate (tutte una volta a settimana, altrimenti quelle intorno all'ultima giocata) e formazioni degli
- * scontri iniziati in quelle giornate, poi scrive tutto con `dunkest_league_apply` (una transazione). Se qualcosa va storto non
+ * Legge classifica, giornate (tutte una volta a settimana, altrimenti quelle intorno all'ultima giocata), formazioni degli
+ * scontri iniziati in quelle giornate e rose complete delle squadre, poi scrive tutto con `dunkest_league_apply` (una transazione). Se qualcosa va storto non
  * scrive nulla e `dunkest_league_fail` registra il motivo: un 401 diventa «token da rinnovare».
  */
 export async function runDunkestLeagueSync(db: Db, secret: string | null, token: string | undefined): Promise<LeagueSyncResult> {
@@ -147,6 +149,15 @@ export async function runDunkestLeagueSync(db: Db, secret: string | null, token:
     const details: SourceMatchDetail[] = await inBatches(started, async (m) => parseMatchDetail(await getJson(leagueUrls.match(m.id), token, `scontro ${m.id}`)));
 
     const teams: LeagueTeamLink[] = src.teams.map((t) => ({ teamId: t.team_id, dunkestTeamId: t.dunkest_team_id, name: t.name }));
+    // Rose complete (13 giocatori, tribuna compresa) di ogni squadra collegata: servono per allineare titolari e riserve.
+    const leagueId = src.league_id;
+    const rosters: { dunkestTeamId: number; players: SourceRosterPlayer[] }[] | undefined =
+      leagueId === null
+        ? undefined
+        : await inBatches(teams, async (t) => ({
+            dunkestTeamId: t.dunkestTeamId,
+            players: parseTeamRoster(await getJson(leagueUrls.teamRoster(leagueId, t.dunkestTeamId), token, `rosa di ${t.name}`)),
+          }));
     const payload = buildLeaguePayload({
       seasonId: src.season_id,
       teams,
@@ -155,10 +166,11 @@ export async function runDunkestLeagueSync(db: Db, secret: string | null, token:
       matchdays,
       details,
       full: plan.full,
+      rosters,
     });
     const applied = await db.rpc("dunkest_league_apply", { p_secret: secret, p_payload: payload });
     if (applied.error) throw new Error(`scrittura: ${applied.error.message}`);
-    const counts = applied.data as { standings: number; matches: number; lineups: number };
+    const counts = applied.data as { standings: number; matches: number; lineups: number; rosters: number | null };
     return { ok: true, ...counts, report: payload.report };
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);

@@ -251,9 +251,23 @@ function Block({ title, hint, children }: { title: string; hint?: ReactNode; chi
 
 /**
  * Formazione di una squadra in uno scontro: quintetto, panchina (col sesto uomo) e tribuna (titolari dell'app non schierati).
- * `stands`: i titolari in tribuna con nome e ruolo; `columns`: quintetto e panchina affiancati da `sm` (pagina squadra).
+ * `stands`: chi è in tribuna (dalla rosa Dunkest se c'è, altrimenti i titolari dell'app non schierati); `columns`: quintetto e
+ * panchina affiancati da `sm` (pagina squadra).
  */
-export function Lineup({ check, stands, teams, columns = true }: { check: LineupCheck; stands: { id: number; name: string; pos: string | null }[]; teams: TeamIndex; columns?: boolean }) {
+export function Lineup({
+  check,
+  stands,
+  teams,
+  columns = true,
+  standsFromDunkest = false,
+}: {
+  check: LineupCheck;
+  stands: { id: number; name: string; pos: string | null }[];
+  teams: TeamIndex;
+  columns?: boolean;
+  /** tribuna letta dalla rosa Dunkest (altrimenti: titolari dell'app non schierati) */
+  standsFromDunkest?: boolean;
+}) {
   return (
     <div className="space-y-4">
       <div className={`grid gap-4 ${columns ? "sm:grid-cols-2" : ""}`}>
@@ -264,9 +278,9 @@ export function Lineup({ check, stands, teams, columns = true }: { check: Lineup
           <LineupRows players={check.bench} teams={teams} muted />
         </Block>
       </div>
-      <Block title="Tribuna" hint="titolari dell'app non schierati">
+      <Block title="Tribuna" hint={standsFromDunkest ? "in rosa su Dunkest, non schierati" : "titolari dell'app non schierati"}>
         {stands.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-line px-3 py-2.5 text-sm text-muted">Nessuno: tutti i titolari sono in formazione.</p>
+          <p className="rounded-2xl border border-dashed border-line px-3 py-2.5 text-sm text-muted">Nessuno: tutta la rosa è in formazione.</p>
         ) : (
           <ul className="flex flex-wrap gap-1.5">
             {stands.map((s) => (

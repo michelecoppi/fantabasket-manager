@@ -1,8 +1,9 @@
 // Lega privata su Dunkest (issue #72): classifica, calendario e formazioni dall'API dell'app della lega (Fantaking), payload
 // per `dunkest_league_apply`, vista per le pagine e confronto tra formazioni schierate e rose dell'app. Tutto puro e testato;
 // le richieste di rete stanno in dunkest-league-sync.ts, che gira solo nel job giornaliero.
-import type { Position } from "./cap";
+import { rosterLimitErrors, teamFinance, type CutEntry, type LeagueSettings, type Position, type TeamFinance } from "./cap";
 import { linkPlayers, SourceFormatError, type DbPlayer, type LinkReport } from "./dunkest";
+import { fmt, fmtEuro } from "./format";
 
 // ---------- Fonte (API interna di fantasy.dunkest.com, non documentata: verificata il 2026-10-27) ----------
 // Tutte le route chiedono il token personale di un membro della lega (Bearer). Solo letture.
@@ -16,7 +17,16 @@ export const leagueUrls = {
   matchday: (tournamentId: number, matchdayId: number) => `${API}/tournaments/${tournamentId}/matchdays/${matchdayId}/fantasy-matches`,
   /** uno scontro con le due formazioni (`players: null` finché la giornata non è iniziata) */
   match: (matchId: number) => `${API}/fantasy-matches/${matchId}`,
+  /** rosa completa di una squadra della lega (quintetto, panchina e tribuna), anche delle altre */
+  teamRoster: (leagueId: number, dunkestTeamId: number) => `${API}/fantasy-leagues/${leagueId}/fantasy-teams/${dunkestTeamId}`,
 };
+
+export interface SourceRosterPlayer {
+  fantasyId: number;
+  firstName: string;
+  lastName: string;
+  pos: Position | null;
+}
 
 export interface SourceStanding {
   dunkestTeamId: number;
@@ -135,6 +145,19 @@ function lineupPlayers(list: unknown, role: "starter" | "bench"): SourceLineupPl
   });
 }
 
+/** Rosa di una squadra: lista di giocatori (può essere vuota prima dell'asta). */
+export function parseTeamRoster(json: unknown): SourceRosterPlayer[] {
+  const rows = data(json, "rosa");
+  if (!Array.isArray(rows)) throw new SourceFormatError("rosa: la risposta non è una lista");
+  return rows.map((p) => {
+    const o = obj(p);
+    const id = int(o?.id);
+    const last = String(o?.last_name ?? "").trim();
+    if (!o || id === null || !last) throw new SourceFormatError(`rosa: giocatore senza id o nome (${JSON.stringify(p).slice(0, 100)})`);
+    return { fantasyId: id, firstName: String(o.first_name ?? "").trim(), lastName: last, pos: POS[String(obj(o.position)?.name ?? "")] ?? null };
+  });
+}
+
 export function parseMatchDetail(json: unknown): SourceMatchDetail {
   const d = obj(data(json, "scontro"));
   const id = int(d?.id);
@@ -213,6 +236,7 @@ export interface LeagueReport {
   standings?: number;
   matches?: number;
   lineups?: number;
+  rosters?: number | null;
   links?: number;
 }
 
@@ -235,6 +259,8 @@ export interface LeaguePayload {
     is_sixth_man: boolean;
     pts: number | null;
   }[];
+  /** se presente, sostituisce per intero le rose Dunkest della stagione (migrazione 20261027120328) */
+  rosters?: { team_id: string; fantasy_player_id: number; player_id: number | null; name: string; pos: Position | null }[];
   links: { player_id: number; fantasy_id: number }[];
   report: LeagueReport;
 }
@@ -257,6 +283,8 @@ export function buildLeaguePayload(input: {
   matchdays: FetchedMatchday[];
   details: SourceMatchDetail[];
   full: boolean;
+  /** rose complete per squadra (assenti se la stagione non ha l'id della lega) */
+  rosters?: { dunkestTeamId: number; players: SourceRosterPlayer[] }[];
 }): LeaguePayload {
   const teamOf = new Map(input.teams.map((t) => [t.dunkestTeamId, t.teamId]));
   const team = (id: number, name: string) => {
@@ -286,11 +314,21 @@ export function buildLeaguePayload(input: {
   }
 
   const lineupPlayers = input.details.flatMap((d) => d.sides.flatMap((s) => s.players ?? []));
-  const label = (p: SourceLineupPlayer) => (p.firstName ? `${p.firstName} ${p.lastName}` : p.lastName);
+  const rosterPlayers = (input.rosters ?? []).flatMap((r) => r.players);
+  const label = (p: { firstName: string; lastName: string }) => (p.firstName ? `${p.firstName} ${p.lastName}` : p.lastName);
   const { links, newLinks, ambiguous, unlinked } = linkPlayers(
     input.players.map((p) => ({ id: p.id, firstName: p.firstName, lastName: p.lastName, nbaTeam: p.nbaTeam, dunkestId: p.fantasyId, rostered: false })),
-    lineupPlayers.map((p) => ({ dunkestId: p.fantasyId, name: label(p), team: null, label: label(p) })),
+    [...rosterPlayers, ...lineupPlayers].map((p) => ({ dunkestId: p.fantasyId, name: label(p), team: null, label: label(p) })),
   );
+  const rosters: LeaguePayload["rosters"] = input.rosters?.flatMap((r) => {
+    const teamId = team(r.dunkestTeamId, names.get(r.dunkestTeamId) ?? "");
+    const seen = new Set<number>();
+    return r.players.flatMap((p) => {
+      if (seen.has(p.fantasyId)) return [];
+      seen.add(p.fantasyId);
+      return [{ team_id: teamId, fantasy_player_id: p.fantasyId, player_id: links.get(p.fantasyId) ?? null, name: label(p), pos: p.pos }];
+    });
+  });
 
   const lineups: LeaguePayload["lineups"] = [];
   const lineupMatches: number[] = [];
@@ -327,6 +365,7 @@ export function buildLeaguePayload(input: {
     matches,
     lineup_matches: lineupMatches,
     lineups,
+    ...(rosters ? { rosters } : {}),
     links: newLinks.map((l) => ({ player_id: l.playerId, fantasy_id: l.dunkestId })),
     report: {
       unlinked: [...new Set(unlinked.map((s) => s.label))].sort(byName),
@@ -526,4 +565,107 @@ export function rosterRefs(teams: { team: { id: string }; starters: { playerId: 
     for (const p of t.reserves) out.set(p.playerId, { teamId: t.team.id, slot: "reserve" });
   }
   return out;
+}
+
+// ---------- Allineamento titolari ↔ riserve alla rosa Dunkest ----------
+// Decisione dell'utente (2026-10-27): chi è nella rosa Dunkest di una squadra (quintetto, panchina o tribuna) è un titolare
+// nell'app. L'app propone lo scambio e un admin lo conferma; se il cap sfora avvisa e allinea lo stesso.
+
+/** Giocatore della rosa Dunkest salvata (`dunkest_rosters`). */
+export interface DunkestRosterPlayer {
+  fantasyId: number;
+  playerId: number | null;
+  name: string;
+  pos: Position | null;
+}
+
+/** Contratto della squadra nell'app, quanto basta per spostarlo e calcolarne l'effetto. */
+export interface AlignContract {
+  contractId: number;
+  playerId: number;
+  name: string;
+  pos: Position | null;
+  slot: "starter" | "reserve";
+  salary: number;
+}
+
+export interface Alignment {
+  /** riserve dell'app che su Dunkest sono in rosa: diventano titolari */
+  promote: AlignContract[];
+  /** titolari dell'app che su Dunkest non ci sono: diventano riserve */
+  demote: AlignContract[];
+  /** motivi per cui non si può allineare in automatico (giocatori non collegati, di altre squadre, numeri che non tornano) */
+  blockers: string[];
+  /** cap e budget riserve dopo l'allineamento: avvisi, non blocchi (decisione dell'utente) */
+  warnings: string[];
+  before: TeamFinance;
+  after: TeamFinance;
+}
+
+/**
+ * Cosa cambia per far coincidere i titolari dell'app con la rosa Dunkest di una squadra. Blocca (e lascia fare all'admin a mano)
+ * se un giocatore Dunkest non è collegato o è di un'altra squadra nell'app, se la rosa Dunkest non ha tanti giocatori quanti i
+ * titolari previsti, se entrano e escono numeri diversi o se si superano i massimi per ruolo (R-01..R-03, come le altre
+ * operazioni admin). Cap e riserve sforati sono solo avvisi.
+ */
+export function rosterAlignment(
+  teamId: string,
+  team: { contracts: AlignContract[]; cuts: CutEntry[]; bonus: number },
+  dunkest: DunkestRosterPlayer[],
+  rosters: Map<number, RosterRef>,
+  teamName: (id: string) => string,
+  s: LeagueSettings,
+): Alignment {
+  const blockers: string[] = [];
+  const startersTotal = s.starters.G + s.starters.A + s.starters.C;
+  if (dunkest.length !== startersTotal) blockers.push(`La rosa su Dunkest ha ${dunkest.length} giocatori invece di ${startersTotal}.`);
+  const inDunkest = new Set<number>();
+  for (const p of dunkest) {
+    if (p.playerId === null) {
+      blockers.push(`${p.name} non è collegato a un giocatore della lega.`);
+      continue;
+    }
+    inDunkest.add(p.playerId);
+    const r = rosters.get(p.playerId);
+    if (!r) blockers.push(`${p.name} è nella rosa Dunkest ma nell'app non è in nessuna squadra.`);
+    else if (r.teamId !== teamId) blockers.push(`${p.name} è nella rosa Dunkest ma nell'app è di ${teamName(r.teamId)}.`);
+  }
+  const promote = team.contracts.filter((c) => c.slot === "reserve" && inDunkest.has(c.playerId));
+  const demote = team.contracts.filter((c) => c.slot === "starter" && !inDunkest.has(c.playerId));
+  if (blockers.length === 0 && promote.length !== demote.length) {
+    blockers.push(`Entrerebbero ${promote.length} titolari e ne uscirebbero ${demote.length}: i conti non tornano.`);
+  }
+
+  const moved = new Set([...promote, ...demote].map((c) => c.contractId));
+  const entry = (c: AlignContract, slot: AlignContract["slot"]) => ({ position: c.pos, slot, salary: c.salary });
+  const before = team.contracts.map((c) => entry(c, c.slot));
+  const after = team.contracts.map((c) => entry(c, moved.has(c.contractId) ? (c.slot === "starter" ? "reserve" : "starter") : c.slot));
+  if (moved.size > 0) blockers.push(...rosterLimitErrors(before, after, s));
+
+  const fBefore = teamFinance(before, team.cuts, team.bonus, s);
+  const fAfter = teamFinance(after, team.cuts, team.bonus, s);
+  const warnings: string[] = [];
+  if (moved.size > 0 && fAfter.overCap) {
+    warnings.push(`Dopo l'allineamento il monte ingaggi (${fmt(fAfter.payroll)}) supera il cap di ${fmt(fAfter.effectiveCap)} (R-10): luxury tax ${fmtEuro(fAfter.luxuryTaxEur)} €.`);
+  }
+  if (moved.size > 0 && fAfter.reserveSpace < 0) warnings.push(`Dopo l'allineamento le riserve superano il budget di ${fmt(-fAfter.reserveSpace)} (R-03).`);
+  return { promote, demote, blockers, warnings, before: fBefore, after: fAfter };
+}
+
+/**
+ * Tribuna di una squadra in uno scontro: dalla rosa Dunkest (in rosa e non schierati) se c'è, altrimenti i titolari dell'app
+ * non schierati (`check.stands`).
+ */
+export function tribune(
+  lineup: LineupPlayer[],
+  dunkestRoster: DunkestRosterPlayer[] | undefined,
+  appStarters: { playerId: number; name: string; pos: Position | null }[],
+  check: LineupCheck,
+): { fromDunkest: boolean; players: { id: number; name: string; pos: Position | null }[] } {
+  if (dunkestRoster && dunkestRoster.length > 0) {
+    const fielded = new Set(lineup.map((p) => p.fantasyId));
+    return { fromDunkest: true, players: dunkestRoster.filter((p) => !fielded.has(p.fantasyId)).map((p) => ({ id: p.fantasyId, name: p.name, pos: p.pos })) };
+  }
+  const byId = new Map(appStarters.map((p) => [p.playerId, p]));
+  return { fromDunkest: false, players: check.stands.flatMap((id) => (byId.has(id) ? [{ id, name: byId.get(id)!.name, pos: byId.get(id)!.pos }] : [])) };
 }
