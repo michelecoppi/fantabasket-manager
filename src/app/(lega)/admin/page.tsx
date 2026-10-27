@@ -40,7 +40,8 @@ export default function AdminHome() {
   return (
     <>
       <PageTitle icon="badge" eyebrow="Area admin · ogni modifica finisce nel registro" sub="Strumenti per aggiornare la lega. Ogni operazione tocca più tabelle insieme e viene annullata per intero se qualcosa non va.">Pannello admin</PageTitle>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Con un numero dispari di strumenti l'ultimo prende due colonne: nessun buco in fondo alla griglia. */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:[&>:last-child:nth-child(odd)]:col-span-2">
         {adminTools.map((t, i) => (
           <Link key={t.href} href={t.href} className="lift group rise relative overflow-hidden rounded-2xl border border-line bg-surface p-5 hover:border-foreground/25" style={stagger(i)}>
             <span aria-hidden className="absolute -top-6 -right-6 text-foreground/[0.04] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">

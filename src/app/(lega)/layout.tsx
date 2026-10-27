@@ -14,7 +14,7 @@ async function UserBadge() {
     <Link
       href="/account"
       title="Il tuo account e la password"
-      className="hidden min-w-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 py-1 pr-3 pl-1 text-xs text-white/75 transition-colors hover:border-gold/60 hover:text-white lg:flex"
+      className="hidden min-w-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 py-1 pr-3 pl-1 text-xs text-white/75 transition-colors hover:border-gold/60 hover:text-white xl:flex"
     >
       <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white">
         <Icon name="user" size={15} />
@@ -45,7 +45,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex h-16 max-w-[1440px] items-stretch gap-3 px-4 sm:px-6 lg:gap-6 lg:px-10">
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Fantabasket Manager — home">
             <Image src="/logo.png" alt="" width={270} height={360} priority className="h-11 w-auto drop-shadow-[0_0_12px_rgb(244_180_42/0.25)]" />
-            <span className="flex flex-col">
+            <span className="flex flex-col lg:hidden xl:flex">
               <span className="font-display text-[1.65rem] leading-none font-black tracking-wide">Fantabasket</span>
               <span className="mt-0.5 text-[0.5625rem] font-bold tracking-[0.3em] text-gold/80 uppercase">League office</span>
             </span>
@@ -74,7 +74,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={<LeagueTickerFallback />}>
         <LeagueTicker />
       </Suspense>
-      <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 md:pb-14 lg:px-10 lg:pt-10">{children}</main>
+      <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10">{children}</main>
       <Suspense fallback={<TabBar />}>
         <Navs bar="bottom" />
       </Suspense>

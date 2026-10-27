@@ -55,14 +55,16 @@ export default async function DraftPage() {
         return (
           <Section key={y} title={`Draft ${y}`} icon="ticket" aside={`${moved} scelte scambiate`}>
             <div role="region" aria-label={`Pick del draft ${y} per squadra, scorri in orizzontale`} tabIndex={0} className="overflow-x-auto rounded-2xl border border-line bg-surface">
-              <table className="w-full min-w-[46rem] border-collapse text-sm">
+              <table className="w-full min-w-[21rem] border-collapse text-sm md:min-w-[40rem]">
                 <caption className="sr-only">Chi possiede ora ogni pick del draft {y}, per squadra di origine e giro</caption>
                 <thead>
                   <tr className="eyebrow border-b border-line bg-surface-subtle/60 text-left text-muted">
-                    <th scope="col" className="sticky left-0 z-[1] bg-surface-subtle px-4 py-2 font-bold">Pick di</th>
+                    <th scope="col" className="sticky left-0 z-[1] bg-surface-subtle px-3 py-2 font-bold md:px-4">Pick di</th>
                     {ROUNDS.map((r) => (
-                      <th key={r} scope="col" className="px-2 py-2 text-center font-bold">
-                        {r}° giro
+                      <th key={r} scope="col" className="px-1 py-2 text-center font-bold md:px-2">
+                        {/* Su telefono basta il numero: così tutti i giri stanno nello schermo. */}
+                        <span aria-hidden className="md:hidden">{r}°</span>
+                        <span className="sr-only md:not-sr-only">{r}° giro</span>
                       </th>
                     ))}
                   </tr>
@@ -70,8 +72,8 @@ export default async function DraftPage() {
                 <tbody className="divide-y divide-line">
                   {league.teams.map(({ team }, ti) => (
                     <tr key={team.id} className="rise" style={stagger(ti)}>
-                      <th scope="row" className="sticky left-0 z-[1] border-r border-line bg-surface px-4 py-2 text-left font-semibold whitespace-nowrap">
-                        <Link href={`/squadre/${team.id}`} className="flex min-h-11 max-w-[11rem] items-center gap-2 hover:underline">
+                      <th scope="row" className="sticky left-0 z-[1] border-r border-line bg-surface px-3 py-2 text-left font-semibold whitespace-nowrap md:px-4">
+                        <Link href={`/squadre/${team.id}`} className="flex min-h-11 max-w-[8.5rem] items-center gap-2 hover:underline sm:max-w-[11rem]">
                           <TeamCrest name={team.name} color={color(team.id)} size="xs" />
                           <span className="truncate">{team.name}</span>
                         </Link>
@@ -79,7 +81,7 @@ export default async function DraftPage() {
                       {ROUNDS.map((r) => {
                         const p = picks.find((x) => x.original_team_id === team.id && x.round === r);
                         return (
-                          <td key={r} className="px-2 py-1.5 text-center">
+                          <td key={r} className="px-1 py-1.5 text-center md:px-2">
                             {!p ? (
                               <span className="text-muted">–</span>
                             ) : p.current_team_id === team.id ? (
@@ -90,11 +92,11 @@ export default async function DraftPage() {
                             ) : p.current_team_id ? (
                               <Link
                                 href={`/squadre/${p.current_team_id}`}
-                                className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-lg border py-1 pr-2 pl-1 text-xs font-bold transition-[filter] hover:brightness-95"
+                                className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-lg border p-1 text-xs font-bold transition-[filter] hover:brightness-95 md:pr-2"
                                 style={{ borderColor: `color-mix(in oklab, ${color(p.current_team_id)} 45%, transparent)`, background: `color-mix(in oklab, ${color(p.current_team_id)} 12%, transparent)` }}
                               >
                                 <TeamCrest name={name(p.current_team_id)} color={color(p.current_team_id)} size="xs" />
-                                <span className="truncate">{name(p.current_team_id)}</span>
+                                <span className="sr-only md:not-sr-only md:truncate">{name(p.current_team_id)}</span>
                                 {p.to_confirm && (
                                   <span className="text-warning">
                                     <span aria-hidden>?</span>

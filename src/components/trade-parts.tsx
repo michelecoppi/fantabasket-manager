@@ -60,7 +60,7 @@ export function TradePicker({ team, give, onChange, color = "#1d47b5" }: { team:
       <div className="flex items-center gap-3 border-b border-line px-4 py-3" style={{ background: `linear-gradient(90deg, color-mix(in oklab, ${color} 14%, transparent), transparent)` }}>
         <TeamCrest name={team.name} color={color} size="sm" />
         <div className="min-w-0 flex-1">
-          <h3 className="font-display truncate text-2xl leading-none font-black">{team.name}</h3>
+          <h3 className="font-display truncate text-xl leading-none font-black sm:text-2xl">{team.name}</h3>
           <p className="eyebrow text-muted">cede</p>
         </div>
         <div className="text-right">

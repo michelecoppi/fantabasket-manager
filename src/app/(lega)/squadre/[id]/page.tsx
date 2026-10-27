@@ -29,13 +29,13 @@ function Roster({ players, offset = 0 }: { players: RosterPlayer[]; offset?: num
   );
 }
 
-/** Contatore di ruolo: "Guardie 4/5" con tacche piene per i posti occupati. */
+/** Contatore di ruolo: "Guardie 4/5" con tacche piene per i posti occupati. Su telefono le tacche vanno sotto, in tre colonne uguali. */
 function SlotMeter({ label, have, need }: { label: string; have: number; need: number }) {
   const ok = have === need;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
       <span className="text-sm font-semibold">{label}</span>
-      <span className="flex gap-[3px]" aria-hidden>
+      <span className="order-1 flex basis-full gap-[3px] sm:order-none sm:basis-auto" aria-hidden>
         {Array.from({ length: Math.max(need, have) }, (_, i) => (
           <span key={i} className={`h-2 w-4 rounded-sm ${i < have ? (i < need ? "bg-brand-blue" : "bg-danger") : "bg-foreground/12"}`} />
         ))}
@@ -127,7 +127,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
       <div className="mt-10 grid gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
         <div>
           <Section title="Titolari" icon="jersey" aside={`${t.starters.length}/${positions.reduce((n, p) => n + league.settings.starters[p], 0)}`}>
-            <div className="mb-3 flex flex-wrap gap-x-6 gap-y-2">
+            <div className="mb-3 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
               {positions.map((p) => (
                 <SlotMeter key={p} label={POS_LABEL[p]} have={t.starters.filter((x) => x.pos === p).length} need={league.settings.starters[p]} />
               ))}
@@ -235,7 +235,14 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                         </span>
                       )}
                     </span>
-                    {x.entry_credits !== null && <span className="font-display tnum text-2xl font-black">{fmt(Number(x.entry_credits))}</span>}
+                    {x.entry_credits !== null ? (
+                      <span className="font-display tnum text-2xl font-black">{fmt(Number(x.entry_credits))}</span>
+                    ) : (
+                      <span title="Crediti non indicati" className="font-display text-2xl font-black text-muted/60">
+                        <span aria-hidden>–</span>
+                        <span className="sr-only">Crediti non indicati</span>
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
