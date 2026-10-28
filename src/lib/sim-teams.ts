@@ -1,4 +1,4 @@
-import type { SimTeam } from "@/components/trade-parts";
+import type { SimTeam } from "./trade-draft";
 import type { LeagueView, Versions } from "./league";
 
 /** Squadre nella forma che usano simulatore e scambio admin; con `versions` ogni riga porta la versione vista (concorrenza, migrazione 0006). */

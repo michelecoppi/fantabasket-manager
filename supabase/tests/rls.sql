@@ -331,9 +331,9 @@ begin
   perform rls_t.chk('sign_contract con revisione di rosa vecchia',
     rls_t.try('select public.admin_sign_contract(900002, t.id, ''reserve'', 1, false, 1, false, null, null, t.roster_rev - 1) from public.teams t limit 1'), array['error: CONFLICT%']);
   perform rls_t.chk('execute_trade senza revisioni di rosa',
-    rls_t.try('select public.admin_execute_trade(a.id, b.id, ''{}'', ''{}'', null, null, null) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: INVALID%']);
+    rls_t.try('select public.admin_execute_trade(array[a.id, b.id], ''[]'', null, null, null) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: INVALID%']);
   perform rls_t.chk('execute_trade con revisione di rosa vecchia',
-    rls_t.try('select public.admin_execute_trade(a.id, b.id, ''{}'', ''{}'', null, null, jsonb_build_object(a.id::text, a.roster_rev - 1, b.id::text, b.roster_rev)) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: CONFLICT%']);
+    rls_t.try('select public.admin_execute_trade(array[a.id, b.id], ''[]'', null, null, jsonb_build_object(a.id::text, a.roster_rev - 1, b.id::text, b.roster_rev)) from public.teams a, public.teams b where a.id < b.id limit 1'), array['error: CONFLICT%']);
   perform rls_t.chk('cut_player con versione null',
     rls_t.try('select public.admin_cut_player((select id from public.contracts limit 1), null, 0)'), array['error: INVALID%']);
   perform rls_t.chk('set_pick con versione null',
@@ -631,35 +631,66 @@ begin
   update contracts set slot = 'starter' where id = 900001;
 end $$;
 
--- ---------- admin_execute_trade: slot di arrivo ----------
+-- ---------- admin_execute_trade: slot di arrivo e scambi a più squadre ----------
 do $$
 declare
   c contracts;
   o uuid;
+  o2 uuid;
   revs jsonb;
-  gives_bad jsonb;
-  gives_ok jsonb;
+  revs3 jsonb;
+  pk draft_picks;
   v int;
+  mv jsonb;
 begin
   select * into c from contracts where id = 900001;
   select id into o from teams where id <> c.team_id order by name limit 1;
+  select id into o2 from teams where id not in (c.team_id, o) order by name limit 1;
   select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (c.team_id, o);
-  gives_bad := jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'bench')));
-  gives_ok := jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'reserve')));
+  select jsonb_object_agg(id::text, roster_rev) into revs3 from teams where id in (c.team_id, o, o2);
+  mv := jsonb_build_object('kind', 'contract', 'id', c.id, 'version', c.version, 'from', c.team_id, 'to', o);
   perform rls_t.become('authenticated', rls_t.admin());
   perform rls_t.chk('trade con slot di arrivo non valido',
-    rls_t.try(format('select public.admin_execute_trade(%L, %L, %L, ''{}'', null, null, %L)', c.team_id, o, gives_bad, revs)), array['error: INVALID%']);
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, o], jsonb_build_array(mv || '{"slot": "bench"}'), revs)), array['error: INVALID%']);
   perform rls_t.chk('trade verso la squadra talenti',
-    rls_t.try(format('select public.admin_execute_trade(%L, %L, %L, ''{}'', null, null, %L)', c.team_id, o,
-      jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'talent'))), revs)), array['error: INVALID%']);
-  v := public.admin_execute_trade(c.team_id, o, gives_ok, '{}'::jsonb, null, null, revs);
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, o], jsonb_build_array(mv || '{"slot": "talent"}'), revs)), array['error: INVALID%']);
+  perform rls_t.chk('trade con squadra ripetuta',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, c.team_id], jsonb_build_array(mv), revs)), array['error: INVALID%']);
+  perform rls_t.chk('trade verso una squadra fuori dallo scambio',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, o], jsonb_build_array(mv || jsonb_build_object('to', o2)), revs)), array['error: INVALID%']);
+  perform rls_t.chk('trade a tre con una squadra che non partecipa',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, o, o2], jsonb_build_array(mv), revs3)), array['error: INVALID%']);
+  perform rls_t.chk('trade a tre senza la revisione della terza squadra',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, null, null, %L)', array[c.team_id, o, o2], jsonb_build_array(mv), revs)), array['error: INVALID%']);
+  v := public.admin_execute_trade(array[c.team_id, o], jsonb_build_array(mv || '{"slot": "reserve"}'), null, null, revs);
   perform rls_t.become('postgres');
   perform rls_t.ok('trade con slot non applicato',
     (select team_id from contracts where id = 900001) = o and (select slot from contracts where id = 900001) = 'reserve');
   perform rls_t.ok('trade senza audit dello slot',
     exists (select 1 from audit_log where action = 'trade' and table_name = 'contracts' and row_id = '900001'
       and before->>'slot' = c.slot::text and after->>'slot' = 'reserve' and user_id = rls_t.admin()));
+  perform rls_t.ok('trade senza payload a movimenti',
+    (select payload -> 'moves' -> 0 ->> 'to' from trades where id = v) = o::text and jsonb_array_length((select payload -> 'teams' from trades where id = v)) = 2);
   update contracts set team_id = c.team_id, slot = c.slot where id = 900001;
+
+  -- A tre: il giocatore va da A a C, una pick di C va a B.
+  select * into c from contracts where id = 900001;
+  select * into pk from draft_picks where current_team_id = o2 order by id limit 1;
+  if pk.id is null then
+    update draft_picks set current_team_id = o2 where id = (select id from draft_picks order by id limit 1) returning * into pk;
+  end if;
+  select jsonb_object_agg(id::text, roster_rev) into revs3 from teams where id in (c.team_id, o, o2);
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := public.admin_execute_trade(array[c.team_id, o, o2], jsonb_build_array(
+    jsonb_build_object('kind', 'contract', 'id', c.id, 'version', c.version, 'from', c.team_id, 'to', o2),
+    jsonb_build_object('kind', 'pick', 'id', pk.id, 'version', pk.version, 'from', o2, 'to', o)), null, null, revs3);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('trade a tre non applicato',
+    (select team_id from contracts where id = 900001) = o2 and (select current_team_id from draft_picks where id = pk.id) = o);
+  perform rls_t.ok('trade a tre senza riepilogo nel registro',
+    exists (select 1 from audit_log where table_name = 'trades' and row_id = v::text and after->>'summary' like 'Scambio % ⇄ % ⇄ % · 1 giocatori, 1 pick'));
+  update contracts set team_id = c.team_id where id = 900001;
+  update draft_picks set current_team_id = pk.current_team_id where id = pk.id;
 end $$;
 
 do $$ begin

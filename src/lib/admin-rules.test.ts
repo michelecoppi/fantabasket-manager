@@ -25,12 +25,18 @@ const party = (
   name: string,
   s: TradeSide,
   picks: PickInfo[] = [],
-  gives: { contracts?: number[]; picks?: number[]; slots?: [number, Slot][] } = {},
+  gives: { contracts?: number[]; picks?: number[]; slots?: [number, Slot][]; to?: [number, string][]; picksTo?: [number, string][] } = {},
 ): TradeParty => ({
+  id: name,
   name,
   side: s,
   picks,
-  gives: { contracts: new Set(gives.contracts ?? []), picks: new Set(gives.picks ?? []), slots: new Map(gives.slots ?? []) },
+  gives: {
+    contracts: new Set(gives.contracts ?? []),
+    picks: new Set(gives.picks ?? []),
+    slots: new Map(gives.slots ?? []),
+    to: { contracts: new Map(gives.to ?? []), picks: new Map(gives.picksTo ?? []) },
+  },
 });
 
 describe("minimo d'asta da ultimo contratto (R-25)", () => {
@@ -151,7 +157,7 @@ describe("evaluateTrade (R-57, R-33)", () => {
   it("scambio alla pari: nessun errore, nessuno sfora", () => {
     const a = party("A", side(0, [starter(1, 20)]), [], { contracts: [1] });
     const b = party("B", side(0, [starter(2, 20)]), [], { contracts: [2] });
-    const r = evaluateTrade(a, b, S);
+    const r = evaluateTrade([a, b], S);
     expect(r.errors).toEqual([]);
     expect(r.capBreakers).toEqual([]);
     expect(r.impacts[0].after.payroll).toBe(20);
@@ -161,24 +167,24 @@ describe("evaluateTrade (R-57, R-33)", () => {
     const a = party("A", side(0, [starter(1, 10)]), [], { contracts: [1] });
     const b = party("B", side(0, [starter(2, 60), starter(3, 190)]), [], { contracts: [2] });
     // A: 10 → 60 (resta sotto 250). B: 250 → 200 (scende). Nessuno sfora.
-    expect(evaluateTrade(a, b, S).capBreakers).toEqual([]);
+    expect(evaluateTrade([a, b], S).capBreakers).toEqual([]);
 
     const c = party("C", side(0, [starter(1, 200)]), [], { contracts: [] });
     const d = party("D", side(0, [starter(2, 80)]), [], { contracts: [2] });
-    const r = evaluateTrade(c, d, S); // C passa da 200 a 280
+    const r = evaluateTrade([c, d], S); // C passa da 200 a 280
     expect(r.capBreakers).toEqual(["C"]);
     expect(r.impacts[0].after.overCap).toBe(true);
   });
 
   it("una squadra già sforata può scambiare solo se non aumenta il monte ingaggi", () => {
     const over = side(0, [starter(1, 260)]);
-    expect(evaluateTrade(party("A", over, [], { contracts: [1] }), party("B", side(30, [starter(2, 250)]), [], { contracts: [2] }), S).capBreakers).toEqual([]);
-    expect(evaluateTrade(party("A", over, [], { contracts: [1] }), party("B", side(30, [starter(2, 270)]), [], { contracts: [2] }), S).capBreakers).toEqual(["A"]);
+    expect(evaluateTrade([party("A", over, [], { contracts: [1] }), party("B", side(30, [starter(2, 250)]), [], { contracts: [2] })], S).capBreakers).toEqual([]);
+    expect(evaluateTrade([party("A", over, [], { contracts: [1] }), party("B", side(30, [starter(2, 270)]), [], { contracts: [2] })], S).capBreakers).toEqual(["A"]);
   });
 
   it("scambio vuoto = errore; giocatore non della squadra = errore", () => {
-    expect(evaluateTrade(party("A", side(0, [])), party("B", side(0, [])), S).errors).toContain("Lo scambio è vuoto.");
-    const r = evaluateTrade(party("A", side(0, [starter(1, 5)]), [], { contracts: [99] }), party("B", side(0, [])), S);
+    expect(evaluateTrade([party("A", side(0, [])), party("B", side(0, []))], S).errors).toContain("Lo scambio è vuoto.");
+    const r = evaluateTrade([party("A", side(0, [starter(1, 5)]), [], { contracts: [99] }), party("B", side(0, []))], S);
     expect(r.errors.some((e) => e.includes("non appartiene a A"))).toBe(true);
   });
 
@@ -186,7 +192,7 @@ describe("evaluateTrade (R-57, R-33)", () => {
     const pick = (id: number, round = 1): PickInfo => ({ id, year: 2027, round, toConfirm: false });
     const a = party("A", side(0, []), [pick(1), pick(2)], { picks: [] });
     const b = party("B", side(0, []), [pick(3)], { picks: [3] });
-    const r = evaluateTrade(a, b, S);
+    const r = evaluateTrade([a, b], S);
     expect(r.errors).toEqual([]);
     expect(r.capBreakers).toEqual([]);
     expect(r.warnings.some((w) => w.includes("A: 3 pick del 1° giro 2027"))).toBe(true);
@@ -194,23 +200,23 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
   it("avvisa se una pick ceduta è da confermare", () => {
     const a = party("A", side(0, []), [{ id: 1, year: 2026, round: 1, toConfirm: true }], { picks: [1] });
-    expect(evaluateTrade(a, party("B", side(0, [])), S).warnings.some((w) => w.includes("da confermare"))).toBe(true);
+    expect(evaluateTrade([a, party("B", side(0, []))], S).warnings.some((w) => w.includes("da confermare"))).toBe(true);
   });
 
   it("blocca i massimi di rosa peggiorati dallo scambio, ma permette di rientrare", () => {
     const reserve = (id: number, position: "G" | "A" | "C" = "G") => ({ id, position, slot: "reserve" as const, salary: 5 });
     const six = Array.from({ length: 6 }, (_, i) => reserve(i + 1));
     const over = evaluateTrade(
-      party("A", side(0, six), [], { contracts: [1] }),
-      party("B", side(0, [reserve(7), reserve(8)]), [], { contracts: [7, 8] }),
+      [party("A", side(0, six), [], { contracts: [1] }),
+      party("B", side(0, [reserve(7), reserve(8)]), [], { contracts: [7, 8] })],
       S,
     );
     expect(over.errors).toContain("A: Riserve: 7 (max 6).");
     expect(over.errors).toContain("A: Riserve G: 7 (max 3).");
 
     const legal = evaluateTrade(
-      party("A", side(0, six), [], { contracts: [1, 2] }),
-      party("B", side(0, [reserve(7)]), [], { contracts: [7] }),
+      [party("A", side(0, six), [], { contracts: [1, 2] }),
+      party("B", side(0, [reserve(7)]), [], { contracts: [7] })],
       S,
     );
     expect(legal.errors).toEqual([]);
@@ -218,8 +224,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
     const seven = [...six, reserve(7)];
     const improving = evaluateTrade(
-      party("A", side(0, seven), [], { contracts: [1, 2] }),
-      party("B", side(0, [reserve(8)]), [], { contracts: [8] }),
+      [party("A", side(0, seven), [], { contracts: [1, 2] }),
+      party("B", side(0, [reserve(8)]), [], { contracts: [8] })],
       S,
     );
     expect(improving.errors).toEqual([]);
@@ -234,8 +240,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
       ...Array.from({ length: 3 }, () => ({ position: "C" as const, slot: "starter" as const, salary: 5 })),
     ].map((entry, i) => ({ ...entry, id: i + 1 }));
     const result = evaluateTrade(
-      party("A", side(0, thirteen), [], { contracts: [1] }),
-      party("B", side(0, [starter(14, 5, "A"), starter(15, 5, "C")]), [], { contracts: [14, 15] }),
+      [party("A", side(0, thirteen), [], { contracts: [1] }),
+      party("B", side(0, [starter(14, 5, "A"), starter(15, 5, "C")]), [], { contracts: [14, 15] })],
       S,
     );
     expect(result.errors).toContain("A: Titolari: 14 (max 13).");
@@ -246,8 +252,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
     it("senza scelta il giocatore mantiene lo slot che aveva", () => {
       const r = evaluateTrade(
-        party("A", side(0, [starter(1, 30)]), [], { contracts: [1] }),
-        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2] }),
+        [party("A", side(0, [starter(1, 30)]), [], { contracts: [1] }),
+        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2] })],
         S,
       );
       // A cede un titolare e riceve una riserva: il cap si libera e il budget riserve si riempie
@@ -257,8 +263,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
     it("la riserva in arrivo può diventare titolare e far tornare i conti", () => {
       const r = evaluateTrade(
-        party("A", side(0, [starter(1, 30)]), [], { contracts: [1] }),
-        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2], slots: [[2, "starter"]] }),
+        [party("A", side(0, [starter(1, 30)]), [], { contracts: [1] }),
+        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2], slots: [[2, "starter"]] })],
         S,
       );
       expect(r.errors).toEqual([]);
@@ -268,8 +274,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
     it("anche il titolare ceduto può arrivare come riserva", () => {
       const r = evaluateTrade(
-        party("A", side(0, [starter(1, 30)]), [], { contracts: [1], slots: [[1, "reserve"]] }),
-        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2] }),
+        [party("A", side(0, [starter(1, 30)]), [], { contracts: [1], slots: [[1, "reserve"]] }),
+        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2] })],
         S,
       );
       expect(r.impacts[1].after.payroll).toBe(0);
@@ -278,8 +284,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
 
     it("una riserva che diventa titolare conta per il cap (R-57)", () => {
       const r = evaluateTrade(
-        party("A", side(0, [starter(1, 240)]), [], { contracts: [] }),
-        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2], slots: [[2, "starter"]] }),
+        [party("A", side(0, [starter(1, 240)]), [], { contracts: [] }),
+        party("B", side(0, [reserve(2, 30)]), [], { contracts: [2], slots: [[2, "starter"]] })],
         S,
       );
       expect(r.capBreakers).toEqual(["A"]);
@@ -288,8 +294,8 @@ describe("evaluateTrade (R-57, R-33)", () => {
     it("i massimi di rosa valgono per lo slot di arrivo", () => {
       const thirteen = Array.from({ length: 13 }, (_, i) => starter(i + 1, 5, i < 5 ? "G" : i < 10 ? "A" : "C"));
       const r = evaluateTrade(
-        party("A", side(0, thirteen), [], { contracts: [] }),
-        party("B", side(0, [reserve(20, 5, "G")]), [], { contracts: [20], slots: [[20, "starter"]] }),
+        [party("A", side(0, thirteen), [], { contracts: [] }),
+        party("B", side(0, [reserve(20, 5, "G")]), [], { contracts: [20], slots: [[20, "starter"]] })],
         S,
       );
       expect(r.errors).toContain("A: Titolari: 14 (max 13).");
@@ -298,24 +304,94 @@ describe("evaluateTrade (R-57, R-33)", () => {
     it("rifiuta la squadra talenti e uno slot per chi non viene ceduto", () => {
       const talent = { id: 3, position: "G" as const, slot: "talent" as const, salary: 1 };
       const toTalent = evaluateTrade(
-        party("A", side(0, [starter(1, 5)]), [], { contracts: [1], slots: [[1, "talent"]] }),
-        party("B", side(0, [])),
+        [party("A", side(0, [starter(1, 5)]), [], { contracts: [1], slots: [[1, "talent"]] }),
+        party("B", side(0, []))],
         S,
       );
       expect(toTalent.errors).toContain("A: la squadra talenti non si cambia in uno scambio.");
       const fromTalent = evaluateTrade(
-        party("A", side(0, [talent]), [], { contracts: [3], slots: [[3, "starter"]] }),
-        party("B", side(0, [])),
+        [party("A", side(0, [talent]), [], { contracts: [3], slots: [[3, "starter"]] }),
+        party("B", side(0, []))],
         S,
       );
       expect(fromTalent.errors).toContain("A: la squadra talenti non si cambia in uno scambio.");
       const stray = evaluateTrade(
-        party("A", side(0, [starter(1, 5)]), [], { contracts: [], slots: [[1, "reserve"]] }),
-        party("B", side(0, [starter(2, 5)]), [], { contracts: [2] }),
+        [party("A", side(0, [starter(1, 5)]), [], { contracts: [], slots: [[1, "reserve"]] }),
+        party("B", side(0, [starter(2, 5)]), [], { contracts: [2] })],
         S,
       );
       expect(stray.errors).toContain("A: slot indicato per un giocatore che non cede.");
     });
+  });
+});
+
+describe("evaluateTrade a più squadre (R-56)", () => {
+  const pick = (id: number): PickInfo => ({ id, year: 2027, round: 1, toConfirm: false });
+
+  it("a tre: ogni giocatore arriva alla squadra indicata", () => {
+    // A → B, B → C, C → A (giro classico)
+    const a = party("A", side(0, [starter(1, 30)]), [], { contracts: [1], to: [[1, "B"]] });
+    const b = party("B", side(0, [starter(2, 20)]), [], { contracts: [2], to: [[2, "C"]] });
+    const c = party("C", side(0, [starter(3, 10)]), [], { contracts: [3], to: [[3, "A"]] });
+    const r = evaluateTrade([a, b, c], S);
+    expect(r.errors).toEqual([]);
+    expect(r.impacts.map((i) => i.after.payroll)).toEqual([10, 30, 20]);
+  });
+
+  it("una squadra può ricevere da due squadre e non cedere nulla", () => {
+    const a = party("A", side(0, [starter(1, 30)]), [], { contracts: [1], to: [[1, "C"]] });
+    const b = party("B", side(0, []), [pick(9)], { picks: [9], picksTo: [[9, "C"]] });
+    const c = party("C", side(0, [starter(3, 200)]));
+    const r = evaluateTrade([a, b, c], S);
+    expect(r.errors).toEqual([]);
+    expect(r.impacts[2].after.payroll).toBe(230);
+    expect(r.impacts[1].after.payroll).toBe(0);
+  });
+
+  it("con più di due squadre la destinazione è obbligatoria e deve essere nello scambio", () => {
+    const b = party("B", side(0, [starter(2, 5)]), [], { contracts: [2], to: [[2, "A"]] });
+    const c = party("C", side(0, []));
+    const missing = evaluateTrade([party("A", side(0, [starter(1, 5)]), [], { contracts: [1] }), b, c], S);
+    expect(missing.errors).toContain("A: manca la squadra che riceve un giocatore.");
+    const outside = evaluateTrade([party("A", side(0, [starter(1, 5)]), [], { contracts: [1], to: [[1, "Z"]] }), b, c], S);
+    expect(outside.errors).toContain("A: un giocatore va a una squadra che non è nello scambio.");
+    const self = evaluateTrade([party("A", side(0, []), [pick(4)], { picks: [4], picksTo: [[4, "A"]] }), b, c], S);
+    expect(self.errors).toContain("A: una pick va a una squadra che non è nello scambio.");
+  });
+
+  it("ogni squadra deve cedere o ricevere qualcosa", () => {
+    const a = party("A", side(0, [starter(1, 5)]), [], { contracts: [1], to: [[1, "B"]] });
+    const r = evaluateTrade([a, party("B", side(0, [])), party("C", side(0, []))], S);
+    expect(r.errors).toEqual(["C: non cede e non riceve nulla."]);
+  });
+
+  it("rispetta il massimo di squadre di lega e rifiuta doppioni", () => {
+    const teams = ["A", "B", "C", "D", "E"].map((n, i) => party(n, side(0, [starter(i + 1, 5)]), [], { contracts: [i + 1], to: [[i + 1, i === 4 ? "A" : "ABCDE"[i + 1]]] }));
+    expect(evaluateTrade(teams, S).errors).toContain("Al massimo 4 squadre in uno scambio.");
+    expect(evaluateTrade(teams, { ...S, tradeMaxTeams: 5 }).errors).toEqual([]);
+    const a = party("A", side(0, [starter(1, 5)]), [], { contracts: [1] });
+    expect(evaluateTrade([a, a], S).errors).toContain("Una squadra compare due volte nello scambio.");
+    expect(evaluateTrade([a], S).errors).toContain("Servono almeno due squadre.");
+  });
+
+  it("cap, slot di arrivo e limite pick valgono per chi riceve davvero", () => {
+    const reserve = { id: 2, position: "G" as const, slot: "reserve" as const, salary: 30 };
+    const a = party("A", side(0, [starter(1, 240)]), [pick(10), pick(11)]);
+    const b = party("B", side(0, [reserve]), [], { contracts: [2], to: [[2, "A"]], slots: [[2, "starter"]] });
+    const c = party("C", side(0, []), [pick(12)], { picks: [12], picksTo: [[12, "A"]] });
+    const r = evaluateTrade([a, b, c], S);
+    expect(r.capBreakers).toEqual(["A"]);
+    expect(r.warnings).toContain("A: 3 pick del 1° giro 2027 (max 2, R-33)");
+  });
+
+  it("avvisa (non blocca) se le riserve di chi riceve sforano il budget", () => {
+    const reserve = (id: number, salary: number) => ({ id, position: "G" as const, slot: "reserve" as const, salary });
+    const r = evaluateTrade(
+      [party("A", side(0, [reserve(1, 70)])), party("B", side(0, [reserve(2, 20)]), [], { contracts: [2] })],
+      S,
+    );
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toContain(`A: riserve oltre il budget di ${S.reserveBudget} (R-03).`);
   });
 });
 

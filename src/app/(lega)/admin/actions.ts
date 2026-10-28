@@ -181,16 +181,19 @@ export async function cutPlayer(input: { contractId: number; version: number }):
 }
 
 // ---------- Scambio ----------
-interface Gives {
-  /** `slot`: dove arriva il giocatore (default: lo slot che aveva) */
-  contracts: { id: number; version: number; slot?: "starter" | "reserve" }[];
-  picks: { id: number; version: number }[];
+/** Un giocatore (`contract`) o una pick che passa da `from` a `to`; `slot`: dove arriva il giocatore (default: lo slot che aveva). */
+export interface TradeMoveInput {
+  kind: "contract" | "pick";
+  id: number;
+  version: number;
+  from: string;
+  to: string;
+  slot?: "starter" | "reserve";
 }
 export interface TradeInput {
-  teamA: string;
-  teamB: string;
-  aGives: Gives;
-  bGives: Gives;
+  /** squadre dello scambio, nell'ordine scelto (R-56: due o più, al massimo `tradeMaxTeams`) */
+  teams: string[];
+  moves: TradeMoveInput[];
   approvedBy: string;
   overrideReason: string;
 }
@@ -198,54 +201,66 @@ export interface TradeInput {
 export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
+  if (!Array.isArray(input.teams) || !Array.isArray(input.moves)) return fail("Dati non validi.");
+  const badMove = input.moves.some(
+    (m) =>
+      (m.kind !== "contract" && m.kind !== "pick") ||
+      !isNum(m.id) ||
+      !isNum(m.version) ||
+      !input.teams.includes(m.from) ||
+      !input.teams.includes(m.to) ||
+      (m.slot !== undefined && (m.kind !== "contract" || (m.slot !== "starter" && m.slot !== "reserve"))),
+  );
+  if (badMove) return fail("Dati dello scambio non validi.");
   const league = await loadLeague();
-  const ta = league.teams.find((t) => t.team.id === input.teamA);
-  const tb = league.teams.find((t) => t.team.id === input.teamB);
-  if (!ta || !tb || ta === tb) return fail("Servono due squadre diverse.");
+  const views = input.teams.map((id) => league.teams.find((t) => t.team.id === id));
+  if (views.some((t) => !t)) return fail("Una squadra dello scambio non esiste.");
 
-  const party = (t: typeof ta, g: Gives): TradeParty => ({
-    name: t.team.name,
-    side: teamSide(t),
-    picks: teamPicks(league, t.team.id),
-    gives: {
-      contracts: new Set(g.contracts.map((c) => c.id)),
-      picks: new Set(g.picks.map((p) => p.id)),
-      slots: new Map(g.contracts.flatMap((c) => (c.slot ? [[c.id, c.slot] as const] : []))),
-    },
+  const parties = input.teams.map((id, i): TradeParty => {
+    const t = views[i]!;
+    const contracts = input.moves.filter((m) => m.kind === "contract" && m.from === id);
+    const picks = input.moves.filter((m) => m.kind === "pick" && m.from === id);
+    return {
+      id,
+      name: t.team.name,
+      side: teamSide(t),
+      picks: teamPicks(league, id),
+      gives: {
+        contracts: new Set(contracts.map((m) => m.id)),
+        picks: new Set(picks.map((m) => m.id)),
+        slots: new Map(contracts.flatMap((m) => (m.slot ? [[m.id, m.slot] as const] : []))),
+        to: { contracts: new Map(contracts.map((m) => [m.id, m.to])), picks: new Map(picks.map((m) => [m.id, m.to])) },
+      },
+    };
   });
-  const badSlot = [...input.aGives.contracts, ...input.bGives.contracts].some((c) => c.slot !== undefined && c.slot !== "starter" && c.slot !== "reserve");
-  if (badSlot) return fail("Slot di arrivo non valido.");
-  const ev = evaluateTrade(party(ta, input.aGives), party(tb, input.bGives), league.settings);
+  const ev = evaluateTrade(parties, league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
   const reason = input.overrideReason.trim();
   if (ev.capBreakers.length && !reason) {
-    return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(" e ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
+    return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(", ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
   }
 
   // Le etichette restano nello storico anche se il giocatore viene poi tagliato (le RPC leggono solo id e version).
   const players = new Map(league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => [p.id, p.name] as const)));
-  const label = (g: Gives) => ({
-    contracts: g.contracts.map((c) => ({ ...c, label: players.get(c.id) })),
-    picks: g.picks.map((p) => {
-      const pick = league.picks.find((x) => x.id === p.id);
-      return { ...p, label: pick ? `Draft ${pick.year} · ${pick.round}° giro (${league.teamNames.get(pick.original_team_id) ?? "?"})` : undefined };
-    }),
-  });
+  const label = (m: TradeMoveInput) => {
+    if (m.kind === "contract") return players.get(m.id);
+    const pick = league.picks.find((x) => x.id === m.id);
+    return pick ? `Draft ${pick.year} · ${pick.round}° giro (${league.teamNames.get(pick.original_team_id) ?? "?"})` : undefined;
+  };
 
   const { rosterRev } = await loadVersions();
   const db = await createClient();
   const { error } = await db.rpc("admin_execute_trade", {
-    p_team_a: input.teamA,
-    p_team_b: input.teamB,
-    p_a_gives: label(input.aGives),
-    p_b_gives: label(input.bGives),
+    p_teams: input.teams,
+    p_moves: input.moves.map((m) => ({ ...m, label: label(m) })),
     p_approved_by: input.approvedBy,
     p_override_reason: ev.capBreakers.length ? reason : "",
-    p_roster_revs: { [input.teamA]: rosterRev[input.teamA] ?? null, [input.teamB]: rosterRev[input.teamB] ?? null },
+    p_roster_revs: Object.fromEntries(input.teams.map((id) => [id, rosterRev[id] ?? null])),
   });
   if (error) return rpcError(error.message);
   refresh();
-  return done(`Scambio registrato tra ${ta.team.name} e ${tb.team.name}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
+  const names = views.map((t) => t!.team.name);
+  return done(`Scambio registrato tra ${names.slice(0, -1).join(", ")} e ${names.at(-1)}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
 }
 
 // ---------- Rimozione (correzione di un errore, senza quota di taglio) ----------
