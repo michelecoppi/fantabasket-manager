@@ -8,6 +8,7 @@ const SETTING_ROWS: SettingRow[] = Object.entries({
   contract_max_years: 3, rookie_max_years: 2, last_contract_min_fraction: 0.5, last_contract_valid_months: 12, max_picks_per_round: 2, pick_horizon_years: 3, draft_rounds: 5,
   rank_bonus_1: 5, rank_bonus_2: 4, rank_bonus_3: 3, rank_bonus_4: 2, rank_bonus_5: 0, rank_bonus_6: -1, rank_bonus_7: -2, rank_bonus_8: -3,
   lottery_teams: 4,
+  trade_max_teams: 4,
 }).map(([key, value]) => ({ key, value }));
 
 const raw: RawLeague = {

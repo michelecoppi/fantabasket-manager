@@ -120,7 +120,7 @@ psqlq -c "delete from seasons where year = 2999; update seasons set is_current =
 reset
 RA=$(rev "$TA"); RB=$(rev "$TB"); VA=$(version 910011); VB=$(version 910012)
 REVS="jsonb_build_object('$TA', $RA, '$TB', $RB)"
-trade() { echo "select 'traded:' || public.admin_execute_trade('$1', '$2', '{\"contracts\":[{\"id\":$3,\"version\":$4}]}'::jsonb, '{\"contracts\":[{\"id\":$5,\"version\":$6}]}'::jsonb, 'conc-test', null, $REVS);"; }
+trade() { echo "select 'traded:' || public.admin_execute_trade(array['$1', '$2']::uuid[], '[{\"kind\":\"contract\",\"id\":$3,\"version\":$4,\"from\":\"$1\",\"to\":\"$2\"},{\"kind\":\"contract\",\"id\":$5,\"version\":$6,\"from\":\"$2\",\"to\":\"$1\"}]'::jsonb, 'conc-test', null, $REVS);"; }
 session "$TMP/s1" "$(trade "$TA" "$TB" 910011 "$VA" 910012 "$VB")" "select pg_sleep(2);" &
 sleep 0.5
 session "$TMP/s2" "$(trade "$TB" "$TA" 910012 "$VB" 910011 "$VA")" &

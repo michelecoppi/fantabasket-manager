@@ -30,6 +30,8 @@ export interface LeagueSettings {
   lastContractValidMonths: number;
   /** R-33: massimo di pick per giro per squadra (ASSUNZIONE: contate per anno di draft) */
   maxPicksPerRound: number;
+  /** R-56: squadre al massimo in uno scambio (decisione di lega, non nel regolamento: docs/OPEN-QUESTIONS.md) */
+  tradeMaxTeams: number;
   /** R-34: le pick diventano di proprietà solo questi anni prima del draft */
   pickHorizonYears: number;
   /** R-31: giri del draft */
@@ -141,16 +143,24 @@ export interface PickInfo {
   toConfirm: boolean;
 }
 
-/** Una delle due squadre di uno scambio, con ciò che cede (id contratto / id pick). */
+/** Una squadra di uno scambio, con ciò che cede (id contratto / id pick) e a chi. */
 export interface TradeParty {
+  /** id della squadra: è il valore delle destinazioni in `gives.to` */
+  id: string;
   name: string;
   side: TradeSide;
   picks: PickInfo[];
   /**
    * `slots`: slot con cui un giocatore ceduto entra nella squadra che lo riceve; senza voce mantiene quello che aveva
    * (docs/OPEN-QUESTIONS.md). Solo titolare o riserva: la squadra talenti si gestisce a parte.
+   * `to`: squadra che riceve ogni giocatore (`contracts`) e ogni pick (`picks`) ceduto; con due squadre si può omettere.
    */
-  gives: { contracts: ReadonlySet<number>; picks: ReadonlySet<number>; slots?: ReadonlyMap<number, Slot> };
+  gives: {
+    contracts: ReadonlySet<number>;
+    picks: ReadonlySet<number>;
+    slots?: ReadonlyMap<number, Slot>;
+    to?: { contracts?: ReadonlyMap<number, string>; picks?: ReadonlyMap<number, string> };
+  };
 }
 
 /** R-33: avvisi per le squadre che hanno più di `maxPicksPerRound` pick dello stesso giro e anno di draft. */
@@ -173,8 +183,8 @@ export function pickYearAllowed(year: number, seasonYear: number, s: LeagueSetti
 }
 
 export interface TradeEvaluation {
-  /** nello stesso ordine di (a, b) */
-  impacts: [TradeImpact, TradeImpact];
+  /** nello stesso ordine delle squadre passate */
+  impacts: TradeImpact[];
   /** impediscono di registrare lo scambio */
   errors: string[];
   /** da mostrare ma non bloccanti */
@@ -183,7 +193,7 @@ export interface TradeEvaluation {
   capBreakers: string[];
 }
 
-/** Slot con cui il giocatore `id` ceduto da `giver` arriva all'altra squadra; uno slot non ammesso finisce in `errors`. */
+/** Slot con cui il giocatore `id` ceduto da `giver` arriva a destinazione; uno slot non ammesso finisce in `errors`. */
 function arrivalSlot(giver: TradeParty, id: number, current: Slot, errors: string[]): Slot {
   const chosen = giver.gives.slots?.get(id);
   if (!chosen || chosen === current) return current;
@@ -195,51 +205,75 @@ function arrivalSlot(giver: TradeParty, id: number, current: Slot, errors: strin
 }
 
 /**
- * Valutazione completa di uno scambio, condivisa da simulatore (sola lettura) e server action (che poi chiama la RPC).
- * R-57 (cap) è bloccante a meno di eccezione del moderatore; i massimi di rosa (R-01..R-03) bloccano come per firma e modifica.
- * Minimi di rosa, floor e limite di pick per giro (R-33) avvisano soltanto.
+ * Valutazione completa di uno scambio tra due o più squadre (R-56), condivisa da simulatore (sola lettura) e server action
+ * (che poi chiama la RPC). Ogni giocatore o pick ceduto va a una sola squadra (`gives.to`; con due squadre è l'altra).
+ * R-57 (cap) è bloccante a meno di eccezione del moderatore; i massimi di rosa (R-01..R-03) bloccano come per firma e modifica,
+ * e così il numero massimo di squadre (`tradeMaxTeams`). Minimi di rosa, floor, budget riserve (se peggiora) e limite di pick per giro (R-33)
+ * avvisano soltanto.
  */
-export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): TradeEvaluation {
+export function evaluateTrade(parties: readonly TradeParty[], s: LeagueSettings): TradeEvaluation {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const parties = [
-    { me: a, other: b },
-    { me: b, other: a },
-  ] as const;
+  const ids = new Set(parties.map((p) => p.id));
+  if (parties.length < 2) errors.push("Servono almeno due squadre.");
+  if (parties.length > s.tradeMaxTeams) errors.push(`Al massimo ${s.tradeMaxTeams} squadre in uno scambio.`);
+  if (ids.size !== parties.length) errors.push("Una squadra compare due volte nello scambio.");
 
-  const impacts = parties.map(({ me, other }) => {
-    const owned = new Set(me.side.roster.map((r) => r.id));
-    for (const id of me.gives.contracts) if (!owned.has(id)) errors.push(`Un giocatore ceduto non appartiene a ${me.name}.`);
-    const ownedPicks = new Set(me.picks.map((p) => p.id));
-    for (const id of me.gives.picks) if (!ownedPicks.has(id)) errors.push(`Una pick ceduta non appartiene a ${me.name}.`);
+  /** Squadra che riceve un giocatore/pick ceduto da `giver`; null (con errore) se manca o non è nello scambio. */
+  const destination = (giver: TradeParty, kind: "contracts" | "picks", id: number): string | null => {
+    const to = giver.gives.to?.[kind]?.get(id) ?? (parties.length === 2 ? parties.find((p) => p !== giver)?.id : undefined);
+    const what = kind === "contracts" ? "un giocatore" : "una pick";
+    if (!to) errors.push(`${giver.name}: manca la squadra che riceve ${what}.`);
+    else if (to === giver.id || !ids.has(to)) errors.push(`${giver.name}: ${what} va a una squadra che non è nello scambio.`);
+    else return to;
+    return null;
+  };
 
-    const incoming = other.side.roster
-      .filter((r) => other.gives.contracts.has(r.id))
-      .map(({ id, position, slot, salary }) => ({ position, slot: arrivalSlot(other, id, slot, errors), salary }));
-    const impact = tradeImpact(me.side, me.gives.contracts, incoming, s);
-    const rosterAfter = [...me.side.roster.filter((r) => !me.gives.contracts.has(r.id)), ...incoming];
+  // Chi riceve cosa, con lo slot di arrivo dei giocatori.
+  const incoming = new Map(parties.map((p) => [p.id, { roster: [] as RosterEntry[], picks: [] as PickInfo[] }]));
+  for (const giver of parties) {
+    const owned = new Set(giver.side.roster.map((r) => r.id));
+    for (const id of giver.gives.contracts) if (!owned.has(id)) errors.push(`Un giocatore ceduto non appartiene a ${giver.name}.`);
+    const ownedPicks = new Set(giver.picks.map((p) => p.id));
+    for (const id of giver.gives.picks) if (!ownedPicks.has(id)) errors.push(`Una pick ceduta non appartiene a ${giver.name}.`);
     // slot di arrivo indicato per un giocatore che non viene ceduto: dati incoerenti, non si applicano in silenzio
-    for (const id of other.gives.slots?.keys() ?? []) {
-      if (!other.gives.contracts.has(id)) errors.push(`${other.name}: slot indicato per un giocatore che non cede.`);
+    for (const id of giver.gives.slots?.keys() ?? []) {
+      if (!giver.gives.contracts.has(id)) errors.push(`${giver.name}: slot indicato per un giocatore che non cede.`);
     }
-    errors.push(...rosterLimitErrors(me.side.roster, rosterAfter, s).map((error) => `${me.name}: ${error}`));
-
-    const picksAfter = [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...other.picks.filter((p) => other.gives.picks.has(p.id))];
-    warnings.push(...pickLimitWarnings(me.name, picksAfter, s));
-    return impact;
-  }) as [TradeImpact, TradeImpact];
-
-  const giveCount = (p: TradeParty) => p.gives.contracts.size + p.gives.picks.size;
-  if (giveCount(a) + giveCount(b) === 0) errors.push("Lo scambio è vuoto.");
-  for (const p of [a, b]) {
-    if (p.picks.some((x) => p.gives.picks.has(x.id) && x.toConfirm)) warnings.push(`${p.name} cede una pick con proprietà da confermare.`);
+    for (const r of giver.side.roster) {
+      if (!giver.gives.contracts.has(r.id)) continue;
+      const to = destination(giver, "contracts", r.id);
+      if (to) incoming.get(to)?.roster.push({ position: r.position, slot: arrivalSlot(giver, r.id, r.slot, errors), salary: r.salary });
+    }
+    for (const p of giver.picks) {
+      if (!giver.gives.picks.has(p.id)) continue;
+      const to = destination(giver, "picks", p.id);
+      if (to) incoming.get(to)?.picks.push(p);
+    }
   }
 
+  const giveCount = (p: TradeParty) => p.gives.contracts.size + p.gives.picks.size;
+  const impacts = parties.map((me) => {
+    const got = incoming.get(me.id) ?? { roster: [], picks: [] };
+    const impact = tradeImpact(me.side, me.gives.contracts, got.roster, s);
+    const rosterAfter = [...me.side.roster.filter((r) => !me.gives.contracts.has(r.id)), ...got.roster];
+    errors.push(...rosterLimitErrors(me.side.roster, rosterAfter, s).map((error) => `${me.name}: ${error}`));
+    warnings.push(...pickLimitWarnings(me.name, [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...got.picks], s));
+    if (me.picks.some((x) => me.gives.picks.has(x.id) && x.toConfirm)) warnings.push(`${me.name} cede una pick con proprietà da confermare.`);
+    if (impact.after.reserveSpace < 0 && impact.after.reserveSpace < impact.before.reserveSpace) {
+      warnings.push(`${me.name}: riserve oltre il budget di ${s.reserveBudget} (R-03).`);
+    }
+    return { impact, involved: giveCount(me) + got.roster.length + got.picks.length > 0 };
+  });
+
+  if (parties.reduce((n, p) => n + giveCount(p), 0) === 0) errors.push("Lo scambio è vuoto.");
+  else for (const [i, p] of parties.entries()) if (!impacts[i].involved) errors.push(`${p.name}: non cede e non riceve nulla.`);
+
   return {
-    impacts,
+    impacts: impacts.map((x) => x.impact),
     errors: [...new Set(errors)],
     warnings,
-    capBreakers: [a, b].filter((_, i) => impacts[i].breaksCap).map((p) => p.name),
+    capBreakers: parties.filter((_, i) => impacts[i].impact.breaksCap).map((p) => p.name),
   };
 }
 
@@ -429,6 +463,7 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   lastContractMinFraction: 0.5,
   lastContractValidMonths: 12,
   maxPicksPerRound: 2,
+  tradeMaxTeams: 4,
   pickHorizonYears: 3,
   draftRounds: 5,
   rankBonus: [5, 4, 3, 2, 0, -1, -2, -3],
