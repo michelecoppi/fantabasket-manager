@@ -36,25 +36,43 @@ export function Stat({ label, value, tone, sub }: { label: string; value: ReactN
   );
 }
 
-/** Valore dopo un'operazione, con quello di prima sotto: non va a capo su telefono e mostra la direzione. */
-export function StatChange({ label, before, after, worseWhenLower = false, bad }: { label: string; before: number; after: number; worseWhenLower?: boolean; bad?: boolean }) {
+/**
+ * Valore dopo un'operazione, con quello di prima sotto: non va a capo su telefono e mostra la direzione.
+ * `compact`: cifra più piccola e solo la variazione, per i riepiloghi fitti (esito di uno scambio a più squadre).
+ */
+export function StatChange({
+  label,
+  before,
+  after,
+  worseWhenLower = false,
+  bad,
+  compact = false,
+}: {
+  label: string;
+  before: number;
+  after: number;
+  worseWhenLower?: boolean;
+  bad?: boolean;
+  compact?: boolean;
+}) {
   const delta = Math.round((after - before) * 10) / 10;
   const worse = worseWhenLower ? delta < 0 : false;
   const better = worseWhenLower && delta > 0;
   return (
     <div className="min-w-0">
       <div className="eyebrow truncate text-muted">{label}</div>
-      <div className={`font-display tnum text-4xl leading-none font-extrabold ${bad ? "text-danger" : ""}`}>{fmt(after)}</div>
-      <div className="mt-1 text-xs text-muted tnum">
+      <div className={`font-display tnum leading-none font-extrabold ${compact ? "text-2xl" : "text-4xl"} ${bad ? "text-danger" : ""}`}>{fmt(after)}</div>
+      <div className={`tnum text-muted ${compact ? "mt-0.5 text-[0.6875rem]" : "mt-1 text-xs"}`}>
         {delta === 0 ? (
-          "invariato"
+          compact ? "=" : "invariato"
         ) : (
           <>
             <span className={`font-bold ${worse ? "text-danger" : better ? "text-success" : "text-foreground"}`}>
               {delta > 0 ? "▲ +" : "▼ −"}
               {fmt(Math.abs(delta))}
-            </span>{" "}
-            · era {fmt(before)}
+            </span>
+            {!compact && <> · era {fmt(before)}</>}
+            {compact && <span className="sr-only"> (era {fmt(before)})</span>}
           </>
         )}
       </div>

@@ -5,7 +5,7 @@ import { loadLeague } from "@/lib/league-server";
 import { playerName } from "@/lib/league";
 import { createClient } from "@/lib/supabase/server";
 import { teamColors } from "@/lib/team-colors";
-import { parseTrade, type TradeItem, type TradeSide } from "@/lib/trades";
+import { parseTrade, type TradeMove } from "@/lib/trades";
 
 const PAGE_SIZE = 20;
 const when = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Rome" });
@@ -37,7 +37,7 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
   const trades = rows.map((r) => ({ row: r, view: parseTrade(r.payload) }));
 
   // Gli scambi vecchi hanno solo gli id: i nomi si recuperano dai contratti, se esistono ancora.
-  const missing = [...new Set(trades.flatMap(({ view }) => [view.aGives, view.bGives].flatMap((s) => s.contracts.filter((c) => !c.label).map((c) => c.id))))];
+  const missing = [...new Set(trades.flatMap(({ view }) => view.moves.filter((m) => m.kind === "contract" && !m.label).map((m) => m.id)))];
   const names = new Map<number, string>();
   if (missing.length) {
     const r = await db.from("contracts").select("id,players(first_name,last_name,pos,nba_team)").in("id", missing);
@@ -47,13 +47,10 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
     const p = league.picks.find((x) => x.id === id);
     return p ? `Draft ${p.year} · ${p.round}° giro (${league.teamNames.get(p.original_team_id) ?? "?"})` : undefined;
   };
-  const itemsOf = (s: TradeSide): string[] => [
-    ...s.contracts.map((c: TradeItem) => {
-      const name = c.label ?? names.get(c.id) ?? "Giocatore non più in archivio";
-      return c.slot ? `${name} (arriva come ${c.slot === "starter" ? "titolare" : "riserva"})` : name;
-    }),
-    ...s.picks.map((p: TradeItem) => p.label ?? pickLabel(p.id) ?? "Pick non più in archivio"),
-  ];
+  const itemLabel = (m: TradeMove): string =>
+    m.kind === "contract"
+      ? `${m.label ?? names.get(m.id) ?? "Giocatore non più in archivio"}${m.slot ? ` (come ${m.slot === "starter" ? "titolare" : "riserva"})` : ""}`
+      : (m.label ?? pickLabel(m.id) ?? "Pick non più in archivio");
 
   const colors = teamColors(league.teams.map((t) => t.team.id));
   const team = (id: string | null) => {
@@ -78,8 +75,6 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
         <Section title="Scambi" icon="swap" aside={`${count ?? trades.length} in archivio`}>
           <ul className="space-y-3">
             {trades.map(({ row, view }) => {
-              const a = team(view.teamA);
-              const b = team(view.teamB);
               return (
                 <li key={row.id} className="rounded-2xl border border-line bg-surface p-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -89,32 +84,48 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
                     {row.status !== "approved" && <span className="text-xs font-semibold text-warning">{STATUS[row.status] ?? row.status}</span>}
                   </div>
                   {view.complete ? (
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {[
-                        { t: a, other: b, gives: view.aGives, id: view.teamA },
-                        { t: b, other: a, gives: view.bGives, id: view.teamB },
-                      ].map(({ t, other, gives, id }) => {
-                        const items = itemsOf(gives);
-                        return (
-                          <div key={id} className="min-w-0">
-                            <Link href={id ? `/squadre/${id}` : "#"} className="flex min-h-11 items-center gap-2 font-semibold hover:underline">
-                              <TeamCrest name={t.name} color={t.color} size="xs" />
-                              <span className="truncate">{t.name}</span>
-                              <span className="text-xs font-normal text-muted">cede a {other.name}</span>
-                            </Link>
-                            {items.length ? (
-                              <ul className="mt-1 list-inside list-disc text-sm">
-                                {items.map((it, i) => (
-                                  <li key={i}>{it}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="mt-1 text-sm text-muted">Niente</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <>
+                      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-display text-lg leading-none font-extrabold">
+                        {view.teams.map((id, i) => (
+                          <span key={id} className="inline-flex items-center gap-1.5">
+                            {i > 0 && <span aria-hidden className="text-accent">⇄</span>}
+                            <TeamCrest name={team(id).name} color={team(id).color} size="xs" />
+                            <span className="sr-only">{i > 0 ? " e " : ""}</span>
+                            {team(id).name}
+                          </span>
+                        ))}
+                      </p>
+                      <div className={`mt-3 grid gap-3 sm:grid-cols-2 ${view.teams.length > 2 ? "lg:grid-cols-3" : ""}`}>
+                        {view.teams.map((id) => {
+                          const got = view.moves.filter((m) => m.to === id);
+                          return (
+                            <div key={id} className="min-w-0 rounded-xl bg-surface-subtle/60 p-2.5">
+                              <Link href={`/squadre/${id}`} className="flex min-h-9 items-center gap-2 text-sm font-semibold hover:underline">
+                                <TeamCrest name={team(id).name} color={team(id).color} size="xs" />
+                                <span className="truncate">{team(id).name}</span>
+                                <span className="eyebrow ml-auto shrink-0 text-muted">riceve</span>
+                              </Link>
+                              {got.length ? (
+                                <ul className="mt-1 space-y-1 text-sm">
+                                  {got.map((m) => (
+                                    <li key={`${m.kind}-${m.id}`} className="flex items-start gap-2">
+                                      <span className="min-w-0 flex-1">{itemLabel(m)}</span>
+                                      {view.teams.length > 2 && (
+                                        <span className="shrink-0 text-xs text-muted" title={`Da ${team(m.from).name}`}>
+                                          da {team(m.from).name}
+                                        </span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="mt-1 text-sm text-muted">Niente</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
                   ) : (
                     <p className="mt-2 text-sm text-muted">Dettagli non disponibili: scambio importato o registrato senza elenco di giocatori e pick.</p>
                   )}
