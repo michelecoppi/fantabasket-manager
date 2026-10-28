@@ -10,7 +10,7 @@ Tutti i valori numerici sono **parametri di lega** (tabella `league_settings`), 
 - R-01 Rosa obbligatoria: **13 titolari + 3..6 riserve**.
 - R-02 Titolari: 5 Guardie, 5 Ali, 3 Centri.
 - R-03 Riserve: min 3, max 6, qualsiasi ruolo, max 3 per ruolo; non schierabili. Stipendi pagati col **budget riserve = 80 crediti** (Z).
-- R-04 Scambio titolare↔riserva ruolo per ruolo, **una volta ogni due settimane** in data prestabilita, solo se fattibile in crediti.
+- R-04 Scambio titolare↔riserva ruolo per ruolo, **una volta ogni due settimane** in data prestabilita, solo se fattibile in crediti. (L'app permette anche di scegliere lo slot di arrivo di ogni giocatore in uno scambio: ASSUNZIONE in OPEN-QUESTIONS.)
 - Lo staff è fantasia, nessun impatto → fuori scope.
 
 ## Salary cap / floor / luxury tax

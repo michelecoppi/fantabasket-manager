@@ -48,7 +48,10 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
     return p ? `Draft ${p.year} · ${p.round}° giro (${league.teamNames.get(p.original_team_id) ?? "?"})` : undefined;
   };
   const itemsOf = (s: TradeSide): string[] => [
-    ...s.contracts.map((c: TradeItem) => c.label ?? names.get(c.id) ?? "Giocatore non più in archivio"),
+    ...s.contracts.map((c: TradeItem) => {
+      const name = c.label ?? names.get(c.id) ?? "Giocatore non più in archivio";
+      return c.slot ? `${name} (arriva come ${c.slot === "starter" ? "titolare" : "riserva"})` : name;
+    }),
     ...s.picks.map((p: TradeItem) => p.label ?? pickLabel(p.id) ?? "Pick non più in archivio"),
   ];
 

@@ -52,7 +52,7 @@ Gli alias di squadra usati nel foglio sono in `ALIASES` di `scripts/lib/names.ts
 
 ## ASSUNZIONI del simulatore di scambio (issue #13)
 - **ASSUNZIONE** R-57: se una squadra è già sopra il cap, lo scambio è accettabile solo se non aumenta il suo monte ingaggi; altrimenti "non deve far sforare" = capienza ≥ 0 dopo lo scambio. Da confermare con il moderatore.
-- **ASSUNZIONE**: un giocatore scambiato mantiene lo slot (titolare/riserva) che aveva; le riserve pesano sul budget riserve, non sul cap.
+- **ASSUNZIONE**: di default un giocatore scambiato mantiene lo slot (titolare/riserva) che aveva, ma lo scambio può indicare per ciascuno se arriva come titolare o riserva (proposta di un utente, 2026-10-28: altrimenti dare un titolare per una riserva sposta il peso dal cap al budget riserve senza poterlo sistemare). Cap e massimi di rosa si valutano sullo slot di arrivo; le riserve pesano sul budget riserve, non sul cap. **Da chiedere alla lega**: R-04 prevede lo scambio titolare↔riserva solo a date prestabilite, quindi scegliere lo slot in uno scambio lo aggira? Ogni scambio va rifatto anche su Dunkest.
 - **ASSUNZIONE**: la stagione di scadenza di un contratto è `stagione corrente + ceil(anni residui) - 1` (½ e 1 anno scadono a fine stagione corrente); la team option sposta la scadenza di una stagione.
 
 ## ASSUNZIONI del pannello admin (issue #6)

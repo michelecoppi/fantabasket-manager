@@ -13,6 +13,14 @@ describe("parseTrade", () => {
     expect(t.aGives.contracts).toEqual([{ id: 1, label: "Mario Rossi" }]);
     expect(t.bGives.picks).toEqual([{ id: 9, label: undefined }]);
   });
+  it("legge lo slot di arrivo e scarta valori non ammessi", () => {
+    const t = parseTrade({
+      team_a: "a",
+      team_b: "b",
+      a_gives: { contracts: [{ id: 1, slot: "reserve" }, { id: 2, slot: "talent" }, { id: 3 }] },
+    });
+    expect(t.aGives.contracts.map((c) => c.slot)).toEqual(["reserve", undefined, undefined]);
+  });
   it("segna incompleti i payload importati o vuoti", () => {
     expect(parseTrade({}).complete).toBe(false);
     expect(parseTrade(null).complete).toBe(false);

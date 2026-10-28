@@ -18,7 +18,7 @@ export function toParty(t: SimTeam, give: Give): TradeParty {
     name: t.name,
     side: { roster: t.players.map((p) => ({ id: p.id, position: p.pos, slot: p.slot, salary: p.salary })), cuts: t.cuts, bonus: t.bonus },
     picks: t.picks.map((p) => ({ id: p.id, year: p.year, round: p.round, toConfirm: p.toConfirm })),
-    gives: { contracts: give.players, picks: give.picks },
+    gives: { contracts: give.players, picks: give.picks, slots: give.slots },
   };
 }
 
@@ -127,8 +127,11 @@ export function TradeSimulator({ teams, settings }: { teams: SimTeam[]; settings
         </div>
       )}
       <p className="mt-4 text-xs text-muted">
-        Assunzioni: i giocatori restano nel ruolo di rosa (titolare/riserva) che avevano; se una squadra è già sopra il cap, lo scambio è accettabile solo se non
-        aumenta il suo monte ingaggi. Un moderatore può autorizzare eccezioni (R-57).
+        Assunzioni: se non scegli altro, i giocatori arrivano nello stesso slot (titolare/riserva) che avevano; se una squadra è già sopra il cap, lo scambio è
+        accettabile solo se non aumenta il suo monte ingaggi. Un moderatore può autorizzare eccezioni (R-57).
+      </p>
+      <p className="mt-2 text-xs font-semibold text-warning">
+        Ogni scambio va fatto anche su Dunkest, titolari e riserve compresi: questa app non modifica le rose Dunkest.
       </p>
     </>
   );

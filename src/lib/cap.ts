@@ -146,7 +146,11 @@ export interface TradeParty {
   name: string;
   side: TradeSide;
   picks: PickInfo[];
-  gives: { contracts: ReadonlySet<number>; picks: ReadonlySet<number> };
+  /**
+   * `slots`: slot con cui un giocatore ceduto entra nella squadra che lo riceve; senza voce mantiene quello che aveva
+   * (docs/OPEN-QUESTIONS.md). Solo titolare o riserva: la squadra talenti si gestisce a parte.
+   */
+  gives: { contracts: ReadonlySet<number>; picks: ReadonlySet<number>; slots?: ReadonlyMap<number, Slot> };
 }
 
 /** R-33: avvisi per le squadre che hanno più di `maxPicksPerRound` pick dello stesso giro e anno di draft. */
@@ -179,6 +183,17 @@ export interface TradeEvaluation {
   capBreakers: string[];
 }
 
+/** Slot con cui il giocatore `id` ceduto da `giver` arriva all'altra squadra; uno slot non ammesso finisce in `errors`. */
+function arrivalSlot(giver: TradeParty, id: number, current: Slot, errors: string[]): Slot {
+  const chosen = giver.gives.slots?.get(id);
+  if (!chosen || chosen === current) return current;
+  if (current === "talent" || chosen === "talent") {
+    errors.push(`${giver.name}: la squadra talenti non si cambia in uno scambio.`);
+    return current;
+  }
+  return chosen;
+}
+
 /**
  * Valutazione completa di uno scambio, condivisa da simulatore (sola lettura) e server action (che poi chiama la RPC).
  * R-57 (cap) è bloccante a meno di eccezione del moderatore; i massimi di rosa (R-01..R-03) bloccano come per firma e modifica.
@@ -198,9 +213,15 @@ export function evaluateTrade(a: TradeParty, b: TradeParty, s: LeagueSettings): 
     const ownedPicks = new Set(me.picks.map((p) => p.id));
     for (const id of me.gives.picks) if (!ownedPicks.has(id)) errors.push(`Una pick ceduta non appartiene a ${me.name}.`);
 
-    const incoming = other.side.roster.filter((r) => other.gives.contracts.has(r.id)).map(({ position, slot, salary }) => ({ position, slot, salary }));
+    const incoming = other.side.roster
+      .filter((r) => other.gives.contracts.has(r.id))
+      .map(({ id, position, slot, salary }) => ({ position, slot: arrivalSlot(other, id, slot, errors), salary }));
     const impact = tradeImpact(me.side, me.gives.contracts, incoming, s);
     const rosterAfter = [...me.side.roster.filter((r) => !me.gives.contracts.has(r.id)), ...incoming];
+    // slot di arrivo indicato per un giocatore che non viene ceduto: dati incoerenti, non si applicano in silenzio
+    for (const id of other.gives.slots?.keys() ?? []) {
+      if (!other.gives.contracts.has(id)) errors.push(`${other.name}: slot indicato per un giocatore che non cede.`);
+    }
     errors.push(...rosterLimitErrors(me.side.roster, rosterAfter, s).map((error) => `${me.name}: ${error}`));
 
     const picksAfter = [...me.picks.filter((p) => !me.gives.picks.has(p.id)), ...other.picks.filter((p) => other.gives.picks.has(p.id))];

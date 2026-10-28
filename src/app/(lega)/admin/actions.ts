@@ -182,7 +182,8 @@ export async function cutPlayer(input: { contractId: number; version: number }):
 
 // ---------- Scambio ----------
 interface Gives {
-  contracts: { id: number; version: number }[];
+  /** `slot`: dove arriva il giocatore (default: lo slot che aveva) */
+  contracts: { id: number; version: number; slot?: "starter" | "reserve" }[];
   picks: { id: number; version: number }[];
 }
 export interface TradeInput {
@@ -206,8 +207,14 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
     name: t.team.name,
     side: teamSide(t),
     picks: teamPicks(league, t.team.id),
-    gives: { contracts: new Set(g.contracts.map((c) => c.id)), picks: new Set(g.picks.map((p) => p.id)) },
+    gives: {
+      contracts: new Set(g.contracts.map((c) => c.id)),
+      picks: new Set(g.picks.map((p) => p.id)),
+      slots: new Map(g.contracts.flatMap((c) => (c.slot ? [[c.id, c.slot] as const] : []))),
+    },
   });
+  const badSlot = [...input.aGives.contracts, ...input.bGives.contracts].some((c) => c.slot !== undefined && c.slot !== "starter" && c.slot !== "reserve");
+  if (badSlot) return fail("Slot di arrivo non valido.");
   const ev = evaluateTrade(party(ta, input.aGives), party(tb, input.bGives), league.settings);
   if (ev.errors.length) return fail(ev.errors.join(" "));
   const reason = input.overrideReason.trim();
@@ -238,7 +245,7 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   });
   if (error) return rpcError(error.message);
   refresh();
-  return done(`Scambio registrato tra ${ta.team.name} e ${tb.team.name}.`, ev.warnings);
+  return done(`Scambio registrato tra ${ta.team.name} e ${tb.team.name}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
 }
 
 // ---------- Rimozione (correzione di un errore, senza quota di taglio) ----------

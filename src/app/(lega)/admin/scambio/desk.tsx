@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Callout, Field, inputClass } from "@/components/controls";
 import { emptyGive, ImpactCard, TradePicker, type Give, type SimTeam } from "@/components/trade-parts";
@@ -14,7 +15,10 @@ type Outcome = { ok: boolean; text: string; warnings: string[] } | null;
 /** Elenco leggibile di ciò che una squadra cede. */
 function summary(t: SimTeam, g: Give): string[] {
   return [
-    ...t.players.filter((p) => g.players.has(p.id)).map((p) => p.name),
+    ...t.players.filter((p) => g.players.has(p.id)).map((p) => {
+      const slot = g.slots.get(p.id);
+      return slot && slot !== p.slot ? `${p.name} (arriva come ${slot === "starter" ? "titolare" : "riserva"})` : p.name;
+    }),
     ...t.picks.filter((p) => g.picks.has(p.id)).map((p) => `Pick ${p.year} ${p.round}°`),
   ];
 }
@@ -79,7 +83,7 @@ export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: Lea
   const blocked = empty || ev.errors.length > 0 || (needsReason && !reason.trim());
 
   const versioned = (t: SimTeam, g: Give) => ({
-    contracts: t.players.filter((p) => g.players.has(p.id)).map((p) => ({ id: p.id, version: p.version ?? 0 })),
+    contracts: t.players.filter((p) => g.players.has(p.id)).map((p) => ({ id: p.id, version: p.version ?? 0, slot: g.slots.get(p.id) })),
     picks: t.picks.filter((p) => g.picks.has(p.id)).map((p) => ({ id: p.id, version: p.version ?? 0 })),
   });
 
@@ -144,6 +148,13 @@ export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: Lea
         {ev.warnings.length > 0 && (
           <Callout tone="warn" title="Da controllare (non bloccano)">
             <ul className="list-disc pl-5">{ev.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+          </Callout>
+        )}
+
+        {!empty && (
+          <Callout tone="warn" title="Fallo anche su Dunkest">
+            Questa app non modifica le rose Dunkest: dopo la registrazione le due squadre devono fare lo scambio anche lì, titolari e riserve compresi. Finché non lo fanno,{" "}
+            <Link href="/admin/dunkest" className="font-semibold underline">Allinea a Dunkest</Link> segnala le differenze.
           </Callout>
         )}
 

@@ -2,6 +2,8 @@
 export interface TradeItem {
   id: number;
   label?: string;
+  /** slot di arrivo, solo se il giocatore è cambiato di slot nello scambio */
+  slot?: "starter" | "reserve";
 }
 export interface TradeSide {
   contracts: TradeItem[];
@@ -20,8 +22,10 @@ const asItems = (v: unknown): TradeItem[] =>
   Array.isArray(v)
     ? v.flatMap((x) => {
         if (!x || typeof x !== "object") return [];
-        const { id, label } = x as { id?: unknown; label?: unknown };
-        return typeof id === "number" ? [{ id, label: typeof label === "string" && label ? label : undefined }] : [];
+        const { id, label, slot } = x as { id?: unknown; label?: unknown; slot?: unknown };
+        return typeof id === "number"
+          ? [{ id, label: typeof label === "string" && label ? label : undefined, slot: slot === "starter" || slot === "reserve" ? slot : undefined }]
+          : [];
       })
     : [];
 

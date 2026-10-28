@@ -20,8 +20,48 @@ export interface SimTeam {
 export interface Give {
   players: Set<number>;
   picks: Set<number>;
+  /** slot con cui i giocatori ceduti arrivano all'altra squadra; senza voce restano come sono */
+  slots: Map<number, ArrivalSlotValue>;
 }
-export const emptyGive = (): Give => ({ players: new Set(), picks: new Set() });
+/** Dove può arrivare un giocatore scambiato: la squadra talenti non si cambia. */
+export type ArrivalSlotValue = Exclude<Slot, "talent">;
+export const emptyGive = (): Give => ({ players: new Set(), picks: new Set(), slots: new Map() });
+
+/** Seleziona o deseleziona un giocatore; deselezionato, perde anche lo slot di arrivo scelto. */
+function togglePlayer(give: Give, id: number): Give {
+  const players = toggle(give.players, id);
+  const slots = new Map(give.slots);
+  if (!players.has(id)) slots.delete(id);
+  return { ...give, players, slots };
+}
+
+const SLOT_LABEL = { starter: "Titolare", reserve: "Riserva" } as const;
+
+/** Sotto un giocatore ceduto: come entra nell'altra squadra. Scegliere lo slot che ha già equivale a non scegliere. */
+function ArrivalSlot({ current, value, onChange, color }: { current: ArrivalSlotValue; value: ArrivalSlotValue; onChange: (slot: ArrivalSlotValue | null) => void; color: string }) {
+  return (
+    <div role="group" aria-label="Arriva come" className="flex items-center gap-1.5 pr-1 pb-1.5 pl-12 text-xs">
+      <span className="text-muted">Arriva come</span>
+      {(["starter", "reserve"] as const).map((slot) => {
+        const on = value === slot;
+        return (
+          <button
+            key={slot}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(slot === current ? null : slot)}
+            className={`min-h-9 rounded-lg border px-2.5 font-semibold transition-[background-color,border-color,color] focus-visible:ring-2 focus-visible:ring-gold ${
+              on ? "border-transparent text-white" : "border-line hover:border-foreground/40"
+            }`}
+            style={on ? { background: color } : undefined}
+          >
+            {SLOT_LABEL[slot]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function toggle(set: Set<number>, id: number): Set<number> {
   const next = new Set(set);
@@ -73,7 +113,7 @@ export function TradePicker({ team, give, onChange, color = "#1d47b5" }: { team:
       <ul className="max-h-[28rem] space-y-0.5 overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:thin]">
         {team.players.map((p) => (
           <li key={p.id}>
-            <ToggleRow checked={give.players.has(p.id)} color={color} onChange={() => onChange({ ...give, players: toggle(give.players, p.id) })}>
+            <ToggleRow checked={give.players.has(p.id)} color={color} onChange={() => onChange(togglePlayer(give, p.id))}>
               <PosChip pos={p.pos} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{p.name}</span>
@@ -81,6 +121,19 @@ export function TradePicker({ team, give, onChange, color = "#1d47b5" }: { team:
               </span>
               <span className="font-display tnum w-10 text-right text-xl leading-none font-black">{fmt(p.salary)}</span>
             </ToggleRow>
+            {give.players.has(p.id) && p.slot !== "talent" && (
+              <ArrivalSlot
+                current={p.slot}
+                value={give.slots.get(p.id) ?? p.slot}
+                color={color}
+                onChange={(slot) => {
+                  const slots = new Map(give.slots);
+                  if (slot) slots.set(p.id, slot);
+                  else slots.delete(p.id);
+                  onChange({ ...give, slots });
+                }}
+              />
+            )}
           </li>
         ))}
       </ul>

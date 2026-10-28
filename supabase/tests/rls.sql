@@ -631,6 +631,37 @@ begin
   update contracts set slot = 'starter' where id = 900001;
 end $$;
 
+-- ---------- admin_execute_trade: slot di arrivo ----------
+do $$
+declare
+  c contracts;
+  o uuid;
+  revs jsonb;
+  gives_bad jsonb;
+  gives_ok jsonb;
+  v int;
+begin
+  select * into c from contracts where id = 900001;
+  select id into o from teams where id <> c.team_id order by name limit 1;
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (c.team_id, o);
+  gives_bad := jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'bench')));
+  gives_ok := jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'reserve')));
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('trade con slot di arrivo non valido',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, %L, ''{}'', null, null, %L)', c.team_id, o, gives_bad, revs)), array['error: INVALID%']);
+  perform rls_t.chk('trade verso la squadra talenti',
+    rls_t.try(format('select public.admin_execute_trade(%L, %L, %L, ''{}'', null, null, %L)', c.team_id, o,
+      jsonb_build_object('contracts', jsonb_build_array(jsonb_build_object('id', c.id, 'version', c.version, 'slot', 'talent'))), revs)), array['error: INVALID%']);
+  v := public.admin_execute_trade(c.team_id, o, gives_ok, '{}'::jsonb, null, null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('trade con slot non applicato',
+    (select team_id from contracts where id = 900001) = o and (select slot from contracts where id = 900001) = 'reserve');
+  perform rls_t.ok('trade senza audit dello slot',
+    exists (select 1 from audit_log where action = 'trade' and table_name = 'contracts' and row_id = '900001'
+      and before->>'slot' = c.slot::text and after->>'slot' = 'reserve' and user_id = rls_t.admin()));
+  update contracts set team_id = c.team_id, slot = c.slot where id = 900001;
+end $$;
+
 do $$ begin
   raise notice 'RLS: tutti i test passati (% tabelle, % RPC)', (select count(*) from rls_t.tbl), (select count(*) from rls_t.rpc);
 end $$;
