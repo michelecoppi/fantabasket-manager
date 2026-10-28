@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Icon } from "@/components/icons";
+import { InstallHint } from "@/components/install";
 import { LeagueTicker, LeagueTickerFallback } from "@/components/league-ticker";
 import { MainNav, TabBar } from "@/components/nav";
 import { RefreshButton } from "@/components/refresh-button";
@@ -41,7 +42,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <a href="#contenuto" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-gold focus:px-4 focus:py-3 focus:font-bold focus:text-nav">
         Vai al contenuto
       </a>
-      <header style={{ viewTransitionName: "site-header" }} className="sticky top-0 z-30 bg-nav text-white shadow-[0_10px_30px_-20px_rgb(0_0_0/0.8)]">
+      <header style={{ viewTransitionName: "site-header" }} className="sticky top-0 z-30 bg-nav pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_30px_-20px_rgb(0_0_0/0.8)]">
         <div className="mx-auto flex h-16 max-w-[1440px] items-stretch gap-3 px-4 sm:px-6 lg:gap-6 lg:px-10">
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Fantabasket Manager — home">
             <Image src="/logo.png" alt="" width={270} height={360} priority className="h-11 w-auto drop-shadow-[0_0_12px_rgb(244_180_42/0.25)]" />
@@ -74,7 +75,7 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={<LeagueTickerFallback />}>
         <LeagueTicker />
       </Suspense>
-      <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10">{children}</main>
+      <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"><InstallHint />{children}</main>
       <Suspense fallback={<TabBar />}>
         <Navs bar="bottom" />
       </Suspense>

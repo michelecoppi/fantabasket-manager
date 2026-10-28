@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: "Gestionale della lega di fantabasket: rose, contratti, salary cap e draft.",
   icons: { apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Fantabasket", statusBarStyle: "black-translucent" },
+  // Next emette solo mobile-web-app-capable; iOS Safari richiede questa per aprire la Home in standalone.
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#060a14", viewportFit: "cover" };
@@ -26,7 +28,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="it" className={`${body.variable} ${display.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">{children}</body>
     </html>
   );
 }

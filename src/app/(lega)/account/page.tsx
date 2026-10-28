@@ -1,4 +1,5 @@
 import { TeamCrest } from "@/components/crest";
+import { InstallSteps } from "@/components/install";
 import { Card, PageTitle, Section } from "@/components/ui";
 import { loadLeague, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
@@ -42,6 +43,12 @@ export default async function AccountPage() {
           </Card>
         </Section>
       </div>
+
+      <Section title="Installa l’app" icon="download" id="installa">
+        <Card className="max-w-xl p-5 sm:p-6">
+          <InstallSteps />
+        </Card>
+      </Section>
     </>
   );
 }
