@@ -32,24 +32,24 @@ function LoginScreen() {
       </span>
       <div className="relative z-[2] grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_26rem]">
         <div className="rise hidden lg:block">
-          <p className="eyebrow flex items-center gap-2 text-gold">
+          <p className="eyebrow flex items-center gap-2 text-highlight">
             <span className="h-2 w-2 rounded-full bg-gold shadow-[0_0_10px_var(--gold)]" />
             League office
           </p>
           <h1 className="font-display mt-4 text-[6.5rem] leading-[0.86] font-black">
             <span className="block">Benvenuto</span>
-            <span className="outline-text mt-3 block text-gold">in sede.</span>
+            <span className="outline-text mt-3 block text-highlight">in sede.</span>
           </h1>
           <p className="mt-6 max-w-md text-base leading-7 text-white/65">Rose, contratti, salary cap e pick della lega. Entra per vedere a che punto è la tua franchigia.</p>
         </div>
 
-        <div className="pop mx-auto w-full max-w-sm overflow-hidden rounded-3xl border border-white/12 bg-nav/70 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.9)] backdrop-blur-xl lg:max-w-none">
+        <div className="pop mx-auto w-full max-w-sm overflow-hidden rounded-3xl border border-white/12 bg-chrome/80 shadow-[0_30px_80px_-30px_rgb(6_10_20/0.35)] dark:shadow-[0_30px_80px_-30px_rgb(0_0_0/0.9)] backdrop-blur-xl lg:max-w-none">
           <div aria-hidden className="h-1 bg-linear-to-r from-brand-red via-[#1d47b5] to-gold" />
           <div className="flex flex-col gap-6 p-6 sm:p-8">
             <div className="flex flex-col items-center gap-3 text-center">
               <Image src="/logo.png" alt="" width={270} height={360} priority className="h-28 w-auto drop-shadow-[0_0_28px_rgb(244_180_42/0.35)]" />
               <h1 className="font-display text-4xl leading-none font-black lg:hidden">
-                Fantabasket <span className="text-gold">Manager</span>
+                Fantabasket <span className="text-highlight">Manager</span>
               </h1>
               <p className="text-sm text-white/60">Accedi per vedere la lega.</p>
             </div>
@@ -75,7 +75,7 @@ function LoginScreen() {
                 {pwPending ? "Accesso…" : "Accedi"}
               </button>
               {pw.error && (
-                <p role="alert" className="text-sm text-[#ff8a95]">
+                <p role="alert" className="text-sm text-arena-bad">
                   {pw.error}
                 </p>
               )}
@@ -102,11 +102,11 @@ function LoginScreen() {
                 {mlPending ? "Invio…" : "Invia link"}
               </button>
               {ml.error && (
-                <p role="alert" className="text-sm text-[#ff8a95]">
+                <p role="alert" className="text-sm text-arena-bad">
                   {ml.error}
                 </p>
               )}
-              {ml.info && <p className="text-sm text-[#7be3b4]">{ml.info}</p>}
+              {ml.info && <p className="text-sm text-arena-good">{ml.info}</p>}
             </form>
           </div>
         </div>

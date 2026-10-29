@@ -41,7 +41,7 @@ export function DunkestSource({ dunkest, dark = false, className = "" }: { dunke
         </span>
       )}
       {state === "failed" && (
-        <span className={`inline-flex min-w-0 items-center gap-1 font-semibold ${dark ? "text-gold" : "text-warning"}`} title={dunkest.sync?.lastError ?? undefined}>
+        <span className={`inline-flex min-w-0 items-center gap-1 font-semibold ${dark ? "text-arena-warn" : "text-warning"}`} title={dunkest.sync?.lastError ?? undefined}>
           <Icon name="alert" size={13} strokeWidth={2.4} />
           <span className="truncate">{last ? `aggiornamento fallito · dati del ${fmtDateTime(last)}` : "aggiornamento fallito"}</span>
         </span>

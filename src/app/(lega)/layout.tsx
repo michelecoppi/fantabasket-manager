@@ -42,13 +42,15 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <a href="#contenuto" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-gold focus:px-4 focus:py-3 focus:font-bold focus:text-nav">
         Vai al contenuto
       </a>
-      <header style={{ viewTransitionName: "site-header" }} className="sticky top-0 z-30 bg-nav pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_30px_-20px_rgb(0_0_0/0.8)]">
+      <header style={{ viewTransitionName: "site-header" }} className="chrome sticky top-0 z-30 pt-[env(safe-area-inset-top)] shadow-[0_10px_30px_-22px_rgb(6_10_20/0.3)] backdrop-blur-md dark:shadow-[0_10px_30px_-20px_rgb(0_0_0/0.8)]">
+        {/* App installata su iPhone: la barra di stato ha sempre testo bianco (black-translucent), quindi sotto resta una striscia scura alta quanto lei; altrove è alta zero. */}
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[env(safe-area-inset-top)] bg-nav" />
         <div className="mx-auto flex h-16 max-w-[1440px] items-stretch gap-3 px-4 sm:px-6 lg:gap-6 lg:px-10">
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Fantabasket Manager — home">
             <Image src="/logo.png" alt="" width={270} height={360} priority className="h-11 w-auto drop-shadow-[0_0_12px_rgb(244_180_42/0.25)]" />
             <span className="flex flex-col lg:hidden xl:flex">
               <span className="font-display text-[1.65rem] leading-none font-black tracking-wide">Fantabasket</span>
-              <span className="mt-0.5 text-[0.5625rem] font-bold tracking-[0.3em] text-gold/80 uppercase">League office</span>
+              <span className="mt-0.5 text-[0.5625rem] font-bold tracking-[0.3em] text-highlight uppercase dark:text-gold/80">League office</span>
             </span>
           </Link>
           <Suspense fallback={<MainNav />}>

@@ -47,7 +47,7 @@ export default function AdminHome() {
             <span aria-hidden className="absolute -top-6 -right-6 text-foreground/[0.04] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">
               <Icon name={t.icon} size={120} strokeWidth={1.25} />
             </span>
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-nav text-gold transition-transform duration-300 group-hover:scale-105">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold transition-transform duration-300 group-hover:scale-105">
               <Icon name={t.icon} size={22} strokeWidth={2} />
             </span>
             <h2 className="font-display mt-4 flex items-center gap-1.5 text-3xl leading-none font-black">

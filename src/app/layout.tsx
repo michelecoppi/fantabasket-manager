@@ -23,7 +23,16 @@ export const metadata: Metadata = {
   other: { "apple-mobile-web-app-capable": "yes" },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#060a14", viewportFit: "cover" };
+// Colore della barra del browser uguale all'header: bianco nel tema chiaro, blu notte nello scuro.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#03060d" },
+  ],
+  viewportFit: "cover",
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

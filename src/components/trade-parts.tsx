@@ -117,7 +117,7 @@ export function TradeMachine({
                   aria-selected={on}
                   onClick={() => setActive(t.id)}
                   className={`relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 transition-[background-color,color] sm:min-h-12 sm:flex-row sm:gap-1.5 sm:px-2 ${
-                    on ? "bg-nav text-white shadow-md dark:bg-gold dark:text-nav" : "text-muted hover:bg-surface-subtle hover:text-foreground"
+                    on ? "bg-brand-blue text-white shadow-md dark:bg-gold dark:text-nav" : "text-muted hover:bg-surface-subtle hover:text-foreground"
                   }`}
                 >
                   <TeamCrest name={t.name} color={color(t.id)} size="xs" mine={t.id === myTeamId} />
@@ -425,7 +425,7 @@ function MoveControls({
                   type="button"
                   aria-pressed={on}
                   onClick={() => slot.onChange(s === slot.current ? null : s)}
-                  className={`min-h-8 rounded-md px-2.5 font-semibold transition-[background-color,color] ${on ? "bg-nav text-white dark:bg-gold dark:text-nav" : "text-muted hover:text-foreground"}`}
+                  className={`min-h-8 rounded-md px-2.5 font-semibold transition-[background-color,color] ${on ? "bg-brand-blue text-white dark:bg-gold dark:text-nav" : "text-muted hover:text-foreground"}`}
                 >
                   {SLOT_LABEL[s]}
                 </button>
@@ -453,7 +453,7 @@ function TradeDock({ teams, moves, ev, color }: { teams: SimTeam[]; moves: Draft
     <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-3 lg:bottom-4">
       <a
         href="#esito"
-        className="pop flex min-h-12 items-center gap-3 rounded-2xl border border-white/10 bg-nav/95 py-1.5 pr-2 pl-3 text-white shadow-[0_10px_30px_rgb(6_10_20/0.35)] backdrop-blur-md"
+        className="pop flex min-h-12 items-center gap-3 chrome rounded-2xl border border-white/10 py-1.5 pr-2 pl-3 shadow-[0_10px_30px_rgb(6_10_20/0.2)] backdrop-blur-md dark:shadow-[0_10px_30px_rgb(6_10_20/0.35)]"
       >
         <span className="flex shrink-0 -space-x-2" aria-hidden>
           {teams.map((t) => (
@@ -464,7 +464,7 @@ function TradeDock({ teams, moves, ev, color }: { teams: SimTeam[]; moves: Draft
           <span className="font-display tnum block truncate text-lg leading-none font-extrabold">
             {moves.length} {moves.length === 1 ? "movimento" : "movimenti"}
           </span>
-          <span className={`block truncate text-[0.6875rem] font-bold tracking-wide uppercase ${v.tone === "good" ? "text-[#7be3b4]" : v.tone === "warn" ? "text-gold" : "text-[#ff8a95]"}`}>
+          <span className={`block truncate text-[0.6875rem] font-bold tracking-wide uppercase ${v.tone === "good" ? "text-arena-good" : v.tone === "warn" ? "text-arena-warn" : "text-arena-bad"}`}>
             {v.label}
           </span>
         </span>
@@ -497,7 +497,7 @@ function TradeOutcome({
   return (
     <section id="esito" aria-labelledby="esito-title" className="mt-10 scroll-mt-24">
       <div className="mb-3 flex min-w-0 items-center gap-2.5 sm:gap-3">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-nav text-gold">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold">
           <Icon name="coins" size={17} strokeWidth={2} />
         </span>
         <h2 id="esito-title" className="font-display text-3xl leading-none font-extrabold">

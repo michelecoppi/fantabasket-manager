@@ -7,15 +7,27 @@
  */
 :root {
   color-scheme: light;
-  --background: #eef1f6;
+  --background: #f6f7fb;
   --foreground: #0b1220;
   --surface: #ffffff;
-  --surface-subtle: #e5e9f1;
-  --line: #d3d9e4;
+  --surface-subtle: #eceff5;
+  --line: #e2e6ee;
   --muted: #566176;
-  /* Header, hero e superfici "arena": scure in entrambi i temi. */
+  /* Inchiostro: testo sopra l'oro (`text-nav`) e piccoli accenti scuri. */
   --nav: #060a14;
-  --arena: #0b1226;
+  /*
+   * Superfici "arena" (testate, hero, pannelli in evidenza) e "chrome" (header, tab bar, barre fisse): carta chiara nel tema
+   * chiaro, blu notte nello scuro (decisione dell'utente del 2026-10-29: in chiaro c'erano troppi blocchi scuri).
+   */
+  --arena: #ffffff;
+  --chrome: #ffffff;
+  /* Celle del tabellone (`Scoreboard`) e colori di stato sopra arena e chrome. */
+  --board: #f6f8fc;
+  --arena-bad: #cf2338;
+  --arena-good: #12784f;
+  --arena-warn: #8a5a00;
+  /* Cifra eroe (`.jumbo`): oro scuro, leggibile sulla carta. */
+  --jumbo: #a86f00;
   --brand-blue: #1d47b5;
   --brand-red: #cf2338;
   --accent: #cf2338;
@@ -40,6 +52,12 @@
     --muted: #97a3bd;
     --nav: #03060d;
     --arena: #0a1022;
+    --chrome: #03060d;
+    --board: rgb(6 10 22 / 0.85);
+    --arena-bad: #ff8a95;
+    --arena-good: #7be3b4;
+    --arena-warn: #f8c24a;
+    --jumbo: #f8c24a;
     --brand-blue: #7aa0ff;
     --brand-red: #e43a4e;
     --accent: #ff6170;
@@ -60,6 +78,11 @@
   --color-muted: var(--muted);
   --color-nav: var(--nav);
   --color-arena: var(--arena);
+  --color-chrome: var(--chrome);
+  --color-board: var(--board);
+  --color-arena-bad: var(--arena-bad);
+  --color-arena-good: var(--arena-good);
+  --color-arena-warn: var(--arena-warn);
   --color-brand-blue: var(--brand-blue);
   --color-brand-red: var(--brand-red);
   --color-accent: var(--accent);
@@ -140,26 +163,74 @@ select {
 
 /* ---------- Superfici arena ---------- */
 
-/* Pannello scuro con linee del campo (metà campo, area, lunetta) e luci da palazzetto. */
+/*
+ * Pannello con linee del campo (metà campo, area, lunetta) e luci da palazzetto. Nel tema chiaro è carta bianca con linee
+ * blu e luci appena accennate; nel tema scuro blu notte con linee bianche.
+ */
 .arena {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(60rem 30rem at 110% -20%, color-mix(in oklab, var(--brand-blue) 55%, transparent), transparent 60%),
-    radial-gradient(40rem 26rem at -10% 120%, color-mix(in oklab, #cf2338 40%, transparent), transparent 60%),
+    radial-gradient(60rem 30rem at 110% -20%, color-mix(in oklab, var(--brand-blue) 13%, transparent), transparent 60%),
+    radial-gradient(40rem 26rem at -10% 120%, color-mix(in oklab, #cf2338 8%, transparent), transparent 60%),
     var(--arena);
-  color: #fff;
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 1px 2px rgb(6 10 20 / 0.04);
+  color: var(--foreground);
 }
 .arena::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='white' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cline x1='470' y1='0' x2='470' y2='500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Ccircle cx='470' cy='250' r='20'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Cpath d='M0 30 H140 A237 237 0 0 1 140 470 H0'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M940 30 H800 A237 237 0 0 0 800 470 H940'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='%231d47b5' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cline x1='470' y1='0' x2='470' y2='500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Ccircle cx='470' cy='250' r='20'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Cpath d='M0 30 H140 A237 237 0 0 1 140 470 H0'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M940 30 H800 A237 237 0 0 0 800 470 H940'/%3E%3C/svg%3E");
   background-size: cover;
   background-position: center;
-  opacity: 0.07;
+  opacity: 0.06;
+}
+
+/* Header, tab bar e barre fisse: bianche nel tema chiaro, blu notte nello scuro. */
+.chrome {
+  background-color: color-mix(in oklab, var(--chrome) 96%, transparent);
+  color: var(--foreground);
+}
+
+/*
+ * Dentro arena e chrome i componenti scrivono `text-white`, `bg-white/10`, `border-white/12`... pensati per il fondo scuro.
+ * Nel tema chiaro "bianco" diventa l'inchiostro: le stesse classi danno testo scuro e veli scuri sulla carta. Le superfici a
+ * colore pieno (gettoni ruolo, tessere V/P, pulsanti blu o rossi) tengono il testo bianco.
+ */
+.arena,
+.chrome {
+  --color-white: var(--foreground);
+}
+/* `~=` confronta la classe intera: solo i fondi pieni, non le tinte leggere come `bg-brand-blue/10`. */
+:is(.arena, .chrome) :where([class~="bg-brand-blue"], [class~="bg-brand-red"], [class~="bg-danger"], [class~="bg-danger/85"], [class~="bg-success"], [class~="bg-accent"]) {
+  --color-white: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .arena {
+    background:
+      radial-gradient(60rem 30rem at 110% -20%, color-mix(in oklab, var(--brand-blue) 55%, transparent), transparent 60%),
+      radial-gradient(40rem 26rem at -10% 120%, color-mix(in oklab, #cf2338 40%, transparent), transparent 60%),
+      var(--arena);
+    box-shadow: none;
+    color: #fff;
+  }
+  .arena::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 940 500' fill='none' stroke='white' stroke-width='2'%3E%3Crect x='1' y='1' width='938' height='498'/%3E%3Cline x1='470' y1='0' x2='470' y2='500'/%3E%3Ccircle cx='470' cy='250' r='60'/%3E%3Ccircle cx='470' cy='250' r='20'/%3E%3Crect x='0' y='170' width='190' height='160'/%3E%3Ccircle cx='190' cy='250' r='60'/%3E%3Cpath d='M0 30 H140 A237 237 0 0 1 140 470 H0'/%3E%3Crect x='750' y='170' width='190' height='160'/%3E%3Ccircle cx='750' cy='250' r='60'/%3E%3Cpath d='M940 30 H800 A237 237 0 0 0 800 470 H940'/%3E%3C/svg%3E");
+    opacity: 0.07;
+  }
+  .chrome {
+    color: #fff;
+  }
+  .arena,
+  .chrome {
+    --color-white: #fff;
+  }
 }
 
 /* Riflesso di luce che attraversa una superficie una volta sola all'ingresso. */
@@ -174,12 +245,17 @@ select {
   animation: sweep 1.4s var(--ease-out) 0.35s both;
 }
 
-/* Testo cifra "jumbotron": oro con bagliore. */
+/* Testo cifra "jumbotron": oro con bagliore (oro scuro e alone leggero sulla carta del tema chiaro). */
 .jumbo {
-  color: var(--gold);
-  text-shadow:
-    0 0 24px color-mix(in oklab, var(--gold) 45%, transparent),
-    0 2px 0 rgb(0 0 0 / 0.35);
+  color: var(--jumbo);
+  text-shadow: 0 0 22px color-mix(in oklab, var(--gold) 30%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  .jumbo {
+    text-shadow:
+      0 0 24px color-mix(in oklab, var(--gold) 45%, transparent),
+      0 2px 0 rgb(0 0 0 / 0.35);
+  }
 }
 
 /* Testo con solo contorno, per le parole grandi di sfondo. */

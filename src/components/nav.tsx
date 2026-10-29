@@ -51,7 +51,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
               active ? "text-white" : "text-white/55 hover:text-white"
             }`}
           >
-            <span className={active ? "text-gold" : "transition-colors group-hover:text-gold"}>
+            <span className={active ? "text-brand-blue dark:text-gold" : "transition-colors group-hover:text-brand-blue dark:group-hover:text-gold"}>
               <PendingIcon name={l.icon} size={18} />
             </span>
             {l.label}
@@ -74,7 +74,7 @@ export function TabBar({ admin = false }: { admin?: boolean }) {
     <nav
       aria-label="Navigazione principale"
       style={{ viewTransitionName: "tab-bar" }}
-      className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-nav/95 text-white backdrop-blur-md lg:hidden"
+      className="chrome safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-white/10 backdrop-blur-md lg:hidden"
     >
       <div className="mx-auto flex max-w-lg">
         {items.map((l) => {
@@ -85,7 +85,7 @@ export function TabBar({ admin = false }: { admin?: boolean }) {
               href={l.href}
               aria-current={active ? "page" : undefined}
               className={`relative flex min-h-[3.75rem] flex-1 flex-col items-center justify-center gap-1 text-[0.625rem] font-bold tracking-wide uppercase transition-colors ${
-                active ? "text-gold" : "text-white/55 active:text-white"
+                active ? "text-brand-blue dark:text-gold" : "text-white/55 active:text-white"
               }`}
             >
               <span aria-hidden className={`absolute top-0 h-[3px] w-8 rounded-b-full bg-gold transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`} />

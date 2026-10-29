@@ -91,7 +91,7 @@ function ScenarioPanel({
   return (
     <section aria-labelledby="ipotesi" className="rise overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-nav text-gold">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold">
           <Icon name="sliders" size={17} />
         </span>
         <h2 id="ipotesi" className="font-display min-w-0 flex-1 text-2xl leading-none font-extrabold">
@@ -198,7 +198,7 @@ function RankPicker({ value, bonuses, onChange }: { value: number | null; bonuse
               aria-label={o.rank === null ? "Cap base, nessun bonus" : `${o.top} posto, bonus ${o.bottom}`}
               onClick={() => onChange(o.rank)}
               className={`flex min-h-12 min-w-12 shrink-0 flex-col items-center justify-center rounded-lg border px-2 transition-[background-color,border-color,color] ${
-                on ? "border-nav bg-nav text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface hover:border-foreground/40"
+                on ? "border-brand-blue bg-brand-blue text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface hover:border-foreground/40"
               }`}
             >
               <span className="font-display text-lg leading-none font-black">{o.top}</span>
