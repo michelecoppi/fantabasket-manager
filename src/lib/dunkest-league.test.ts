@@ -7,6 +7,7 @@ import {
   buildLeaguePayload,
   buildLeagueView,
   checkLineup,
+  lineupBackfill,
   matchdaysToRead,
   parseMatchday,
   parseMatchDetail,
@@ -116,6 +117,26 @@ describe("giornate da leggere", () => {
   });
 });
 
+describe("lineupBackfill (6.0)", () => {
+  const md = (matchday: number, scored: boolean, hasLineups?: boolean) => ({ dunkestMatchdayId: 1857 + matchday, matchday, scored, hasLineups });
+
+  it("giornate giocate senza formazioni, fuori da quelle già lette, dalla più recente, con un tetto", () => {
+    const known = [md(1, true, false), md(2, true, false), md(3, true, false), md(4, true, false), md(5, true, true), md(6, true, false), md(7, false, false)];
+    expect(lineupBackfill(known, [5, 6, 7]).map((m) => m.matchday)).toEqual([4, 3, 2]);
+    expect(lineupBackfill(known, [5, 6, 7], 10).map((m) => m.matchday)).toEqual([4, 3, 2, 1]);
+  });
+
+  it("nessun buco, giornate da giocare o sorgente vecchia (senza has_lineups): niente da recuperare", () => {
+    expect(lineupBackfill([md(1, true, true), md(2, true, true)], [2])).toEqual([]);
+    expect(lineupBackfill([md(1, false, false)], [])).toEqual([]);
+    expect(lineupBackfill([md(1, true)], [])).toEqual([]);
+  });
+
+  it("il caso del 2026-10-29: giornata 1 senza formazioni, il job legge 3, 4 e 5", () => {
+    expect(lineupBackfill([md(1, true, false), md(2, true, true), md(3, true, true), md(4, true, false), md(5, false, false)], [3, 4, 5]).map((m) => m.matchday)).toEqual([1]);
+  });
+});
+
 describe("buildLeaguePayload", () => {
   const detail = parseMatchDetail(fx.match);
   const base = {
@@ -217,6 +238,22 @@ describe("vista e confronto", () => {
     expect(c.bench[1].otherTeamId).toBe("okc");
     expect(c.stands).toEqual([6, 7]);
     expect(c.issues.map((x) => x.name)).toEqual(["Tre", "Quattro", "Cinque", "Ignoto"]);
+    expect(c.replaced).toEqual([]);
+  });
+
+  it("chi non è più nella rosa Dunkest è stato sostituito dopo: non è un avviso", () => {
+    const rosters = new Map<number, RosterRef>([[1, { teamId: "bol", slot: "starter" }], [3, { teamId: "bol", slot: "reserve" }]]);
+    const lp = (fantasyId: number, playerId: number | null, name: string): LineupPlayer => ({
+      fantasyId, playerId, name, pos: "G", role: "starter", courtPosition: fantasyId, isCaptain: false, isSixthMan: false, pts: 10,
+    });
+    // giornata 1 del 2026-10-29: DeRozan schierato, poi uscito dalla rosa Dunkest e passato a riserva nell'app
+    const lineup = [lp(1, 1, "Doncic"), lp(3, 3, "DeRozan"), lp(9, null, "Ignoto")];
+    const c = checkLineup("bol", lineup, [1], rosters, [{ fantasyId: 1 }, { fantasyId: 9 }]);
+    expect(c.starters.map((x) => x.status)).toEqual(["ok", "replaced", "unlinked"]);
+    expect(c.replaced.map((x) => x.name)).toEqual(["DeRozan"]);
+    expect(c.issues.map((x) => x.name)).toEqual(["Ignoto"]);
+    // rosa Dunkest non letta: il confronto resta quello di prima
+    expect(checkLineup("bol", lineup, [1], rosters).issues.map((x) => x.name)).toEqual(["DeRozan", "Ignoto"]);
   });
 });
 
@@ -294,7 +331,7 @@ describe("rosterAlignment", () => {
   it("tribune: dalla rosa Dunkest se c'è, altrimenti titolari dell'app non schierati", () => {
     const lineup: LineupPlayer[] = [{ fantasyId: 1000, playerId: 1, name: "Gioc 1", pos: "G", role: "starter", courtPosition: 1, isCaptain: false, isSixthMan: false, pts: 1 }];
     const roster = dk([1, 2]);
-    expect(tribune(lineup, roster, [], { starters: [], bench: [], stands: [], issues: [] })).toEqual({ fromDunkest: true, players: [{ id: 1001, name: "Gioc 2", pos: null }] });
-    expect(tribune(lineup, undefined, [{ playerId: 7, name: "Sette", pos: "A" }], { starters: [], bench: [], stands: [7], issues: [] })).toEqual({ fromDunkest: false, players: [{ id: 7, name: "Sette", pos: "A" }] });
+    expect(tribune(lineup, roster, [], { starters: [], bench: [], stands: [], issues: [], replaced: [] })).toEqual({ fromDunkest: true, players: [{ id: 1001, name: "Gioc 2", pos: null }] });
+    expect(tribune(lineup, undefined, [{ playerId: 7, name: "Sette", pos: "A" }], { starters: [], bench: [], stands: [7], issues: [], replaced: [] })).toEqual({ fromDunkest: false, players: [{ id: 7, name: "Sette", pos: "A" }] });
   });
 });

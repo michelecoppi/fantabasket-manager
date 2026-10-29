@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { MatchdayCard } from "@/components/matchday-card";
 import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
 import { DunkestLogo } from "@/components/dunkest";
-import { LeagueSource, MatchScore, StandingsTable, fpt, type TeamIndex } from "@/components/dunkest-league";
+import { LeagueSource, StandingsTable, fpt, type TeamIndex } from "@/components/dunkest-league";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtEuro } from "@/lib/format";
+import { matchdayAwards } from "@/lib/awards";
 import { teamMatch } from "@/lib/dunkest-league";
-import { loadDunkest, loadLeague, loadLeagueDunkest, loadProfile } from "@/lib/league-server";
+import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -59,6 +61,9 @@ export default async function Home(props: PageProps<"/">) {
   const latestDay = view.matchdays.find((d) => d.state === "latest");
   const myStanding = myTeam ? view.standings.find((s) => s.teamId === myTeam.team.id) : undefined;
   const myLatest = myTeam ? teamMatch(view, myTeam.team.id, "latest") : null;
+  // Fase 6.1: MVP dell'ultima giornata chiusa (l'ultima con punti può essere in corso), se ne ha le formazioni.
+  const lastPlayed = [...view.matchdays].reverse().find((d) => d.state === "played");
+  const mvp = lastPlayed ? matchdayAwards(lastPlayed.matches, await loadLineups(lastPlayed.matches.map((m) => m.id))).find((a) => a.kind === "mvp") : undefined;
 
   const sorts: { value: TeamSort; label: string }[] = [
     { value: "nome", label: "Nome" },
@@ -82,7 +87,7 @@ export default async function Home(props: PageProps<"/">) {
           </p>
           <h1 id="dashboard-title" className="rise font-display mt-5 text-[clamp(3.6rem,8.5vw,7.25rem)] leading-[0.86] font-black tracking-[-0.01em]" style={stagger(1)}>
             <span className="block">Il cap detta</span>
-            <span className="outline-text mt-2 block text-gold sm:mt-3">il gioco.</span>
+            <span className="outline-text mt-2 block text-highlight sm:mt-3">il gioco.</span>
           </h1>
           <p className="rise mt-6 max-w-md text-sm leading-6 text-white/70 sm:text-base" style={stagger(2)}>
             Payroll, contratti e pick delle {league.teams.length} franchigie. Ogni mossa di mercato parte da qui.
@@ -115,7 +120,7 @@ export default async function Home(props: PageProps<"/">) {
           </div>
         </div>
 
-        <div className="relative z-[2] border-t border-white/10 bg-black/20 px-5 py-8 backdrop-blur-[2px] sm:px-9 lg:border-t-0 lg:border-l lg:px-9 lg:py-12">
+        <div className="relative z-[2] border-t border-white/10 bg-brand-blue/[0.04] px-5 py-8 dark:bg-black/20 backdrop-blur-[2px] sm:px-9 lg:border-t-0 lg:border-l lg:px-9 lg:py-12">
           {myTeam ? (
             <div className="flex h-full flex-col justify-center">
               <div className="flex items-center gap-4">
@@ -123,16 +128,16 @@ export default async function Home(props: PageProps<"/">) {
                   <TeamCrest name={myTeam.team.name} color={colors.get(myTeam.team.id) ?? "#1d47b5"} size="lg" mine />
                 </span>
                 <div className="min-w-0">
-                  <p className="eyebrow text-gold">La tua franchigia</p>
+                  <p className="eyebrow text-highlight">La tua franchigia</p>
                   <Link href={`/squadre/${myTeam.team.id}`} className="font-display mt-1 block truncate text-4xl leading-none font-black hover:underline">
                     {myTeam.team.name}
                   </Link>
                   <p className="mt-1 truncate text-sm text-white/60">{myTeam.team.owner_name}</p>
                 </div>
               </div>
-              <div className="my-7 rounded-2xl border border-white/10 bg-black/30 px-5 py-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+              <div className="my-7 rounded-2xl border border-white/10 bg-board px-5 py-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
                 <p className="eyebrow text-white/60">{myTeam.finance.overCap ? "Oltre il cap" : "Spazio salariale"}</p>
-                <p className={`font-display tnum mt-1 text-[clamp(4.5rem,11vw,7rem)] leading-[0.85] font-black ${myTeam.finance.overCap ? "text-[#ff8a95]" : "jumbo"}`}>
+                <p className={`font-display tnum mt-1 text-[clamp(4.5rem,11vw,7rem)] leading-[0.85] font-black ${myTeam.finance.overCap ? "text-arena-bad" : "jumbo"}`}>
                   <CountUp value={myTeam.finance.capSpace} />
                 </p>
                 <p className="mt-2 mb-4 text-xs text-white/55">crediti · cap effettivo {fmt(myTeam.finance.effectiveCap)}</p>
@@ -173,7 +178,7 @@ export default async function Home(props: PageProps<"/">) {
                       <span className="text-white/75">Nessun infortunato nella tua rosa</span>
                     ) : (
                       <>
-                        <span className="font-bold text-[#ff8a95]">
+                        <span className="font-bold text-arena-bad">
                           {injuredOf(myTeam).length} {injuredOf(myTeam).length === 1 ? "infortunato" : "infortunati"}
                         </span>
                         <span className="text-white/60"> · {injuredOf(myTeam).map((p) => p.name.split(" ").at(-1)).join(", ")}</span>
@@ -203,7 +208,7 @@ export default async function Home(props: PageProps<"/">) {
             </div>
           ) : (
             <div className="flex h-full flex-col">
-              <p className="eyebrow text-gold">League pulse</p>
+              <p className="eyebrow text-highlight">League pulse</p>
               <h2 className="font-display mt-2 text-6xl leading-[0.85] font-black">
                 La lega
                 <br />
@@ -244,30 +249,14 @@ export default async function Home(props: PageProps<"/">) {
               </h2>
             </div>
             <Link href="/classifica" className="group inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue">
-              Classifica, calendario e formazioni
+              Classifica, andamento e premi
               <Icon name="arrow-right" size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <StandingsTable league={view} teams={teamIndex} myTeamId={myTeam?.team.id} compact />
             {latestDay && (
-              <div className="min-w-0">
-                <h3 className="eyebrow mb-2 flex items-center justify-between text-muted">
-                  <span>Giornata {latestDay.matchday} · ultima con punti</span>
-                </h3>
-                <ol className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
-                  {latestDay.matches.map((m, i) => (
-                    <li key={m.id} className="rise" style={stagger(i)}>
-                      <Link
-                        href={`/classifica?giornata=${latestDay.matchday}`}
-                        className={`block rounded-2xl border bg-surface px-4 py-3 transition-colors hover:bg-surface-subtle/50 ${m.homeTeamId === myTeam?.team.id || m.awayTeamId === myTeam?.team.id ? "border-gold/60" : "border-line"}`}
-                      >
-                        <MatchScore match={m} teams={teamIndex} myTeamId={myTeam?.team.id} live />
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              <MatchdayCard day={latestDay} mvp={mvp && lastPlayed ? { award: mvp, matchday: lastPlayed.matchday } : null} teams={teamIndex} myTeamId={myTeam?.team.id ?? null} />
             )}
           </div>
           <div className="mt-3">

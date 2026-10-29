@@ -125,9 +125,9 @@ export function Scoreboard({ items }: { items: { label: string; value: ReactNode
       className={`grid gap-px overflow-hidden rounded-xl border border-white/12 bg-white/12 ${items.length > 3 ? "grid-cols-2 sm:grid-cols-4" : "auto-cols-fr grid-flow-col"}`}
     >
       {items.map((it) => (
-        <div key={it.label} className="flex min-w-0 flex-col justify-between gap-0.5 bg-[#060a16]/85 px-3.5 py-3 backdrop-blur-sm sm:px-5">
+        <div key={it.label} className="flex min-w-0 flex-col justify-between gap-0.5 bg-board px-3.5 py-3 backdrop-blur-sm sm:px-5">
           <dt className="eyebrow leading-tight text-white/55">{it.label}</dt>
-          <dd className={`font-display tnum text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-[#ff8a95]" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
+          <dd className={`font-display tnum text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-arena-bad" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
         </div>
       ))}
     </dl>
@@ -143,7 +143,7 @@ export function Section({ title, children, aside, icon, id }: { title: string; c
     <section className="mt-12 first:mt-0" aria-labelledby={id}>
       <div className="mb-4 flex items-center gap-3">
         {icon && (
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-nav text-gold">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold">
             <Icon name={icon} size={17} strokeWidth={2} />
           </span>
         )}

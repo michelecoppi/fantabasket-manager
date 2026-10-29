@@ -18,7 +18,7 @@ export function CapLine({ payroll, cap, floor, dark = false, compact = false }: 
       {!compact && (
         <div className={`flex items-center justify-between gap-3 text-[0.625rem] font-bold tracking-[0.12em] uppercase ${dark ? "text-white/60" : "text-muted"}`}>
           <span className="tnum">Payroll {fmt(payroll)}</span>
-          <span className="tnum">{over ? <span className={dark ? "text-[#ff8a95]" : "text-danger"}>+{fmt(payroll - cap)} oltre</span> : `Cap ${fmt(cap)}`}</span>
+          <span className="tnum">{over ? <span className={dark ? "text-arena-bad" : "text-danger"}>+{fmt(payroll - cap)} oltre</span> : `Cap ${fmt(cap)}`}</span>
         </div>
       )}
       <div className={`relative ${compact ? "h-1.5" : "mt-1.5 h-2.5"} overflow-hidden rounded-full ${dark ? "bg-white/12" : "bg-foreground/[0.08]"}`}>

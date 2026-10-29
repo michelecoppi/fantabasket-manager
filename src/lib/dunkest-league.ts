@@ -181,6 +181,8 @@ export interface KnownMatchday {
   matchday: number;
   /** almeno uno scontro ha punti */
   scored: boolean;
+  /** almeno una formazione salvata (Fase 6.0; assente con la `dunkest_league_source` di prima) */
+  hasLineups?: boolean;
 }
 
 /** Il calendario completo si rilegge al primo giro e poi una volta a settimana (gli accoppiamenti dei playoff arrivano dopo). */
@@ -209,6 +211,26 @@ export function windowAround<T extends { scored: boolean }>(sorted: T[]): T[] {
   return sorted.slice(Math.max(0, last - 1), last + 2);
 }
 
+/**
+ * Giornate da recuperare per giro: 3 giornate = 12 scontri da leggere in più, per non allungare il cron. Basta a riempire
+ * qualche giorno saltato; un buco più lungo si chiude in più mattine.
+ */
+export const LINEUP_BACKFILL_MAX = 3;
+
+/**
+ * Storico completo delle formazioni (Fase 6.0): giornate con punti senza formazioni salvate e fuori da quelle che il job
+ * legge già (`reading`), dalla più recente, al massimo `max`. La giornata 1 non le aveva perché il primo giro (27/10) ha
+ * letto le formazioni solo intorno all'ultima giocata. Se Dunkest non le dà più, la giornata resta nella lista e si riprova
+ * il giorno dopo (al massimo `max` letture in più).
+ */
+export function lineupBackfill(known: KnownMatchday[], reading: number[], max = LINEUP_BACKFILL_MAX): KnownMatchday[] {
+  const skip = new Set(reading);
+  return known
+    .filter((m) => m.scored && m.hasLineups === false && !skip.has(m.matchday))
+    .sort((a, b) => b.matchday - a.matchday)
+    .slice(0, max);
+}
+
 // ---------- Payload per `dunkest_league_apply` ----------
 
 export interface LeagueTeamLink {
@@ -232,6 +254,8 @@ export interface LeagueReport {
   full: boolean;
   /** giornate lette */
   matchdays: number[];
+  /** giornate di cui si sono recuperate le formazioni mancanti (Fase 6.0) */
+  backfilled?: number[];
   /** conteggi scritti dalla RPC (solo nello storico) */
   standings?: number;
   matches?: number;
@@ -514,9 +538,11 @@ export interface RosterRef {
 /**
  * Stato di un giocatore schierato su Dunkest rispetto all'app:
  * ok = titolare della stessa squadra; reserve = riserva della stessa squadra (le riserve non sono schierabili, R-03);
- * other_team = a contratto con un'altra squadra; free = in nessuna rosa; unlinked = non collegato a un giocatore della lega.
+ * other_team = a contratto con un'altra squadra; free = in nessuna rosa; unlinked = non collegato a un giocatore della lega;
+ * replaced = non è più nella rosa Dunkest della squadra: era in rosa quando è stato schierato ed è stato sostituito dopo
+ * (richiesta dell'utente del 2026-10-29: i cambi tra la giornata 1 e la 2 non sono un errore). Non è un avviso.
  */
-export type LineupStatus = "ok" | "reserve" | "other_team" | "free" | "unlinked";
+export type LineupStatus = "ok" | "reserve" | "other_team" | "free" | "unlinked" | "replaced";
 
 export interface CheckedPlayer extends LineupPlayer {
   status: LineupStatus;
@@ -529,8 +555,10 @@ export interface LineupCheck {
   bench: CheckedPlayer[];
   /** titolari dell'app non schierati: in tribuna su Dunkest (o assenti dalla rosa Dunkest) */
   stands: number[];
-  /** giocatori schierati con stato diverso da ok */
+  /** giocatori schierati che non tornano con le rose (stato diverso da ok e da replaced) */
   issues: CheckedPlayer[];
+  /** schierati poi usciti dalla rosa Dunkest della squadra */
+  replaced: CheckedPlayer[];
 }
 
 /**
@@ -538,10 +566,19 @@ export interface LineupCheck {
  * su Dunkest le aggiornano a mano i proprietari e possono essere indietro di qualche ora (ASSUNZIONE in OPEN-QUESTIONS).
  * `starterIds`: titolari della squadra nell'app; `rosters`: giocatore → squadra e slot per tutte le squadre.
  */
-export function checkLineup(teamId: string, lineup: LineupPlayer[], starterIds: number[], rosters: Map<number, RosterRef>): LineupCheck {
+export function checkLineup(
+  teamId: string,
+  lineup: LineupPlayer[],
+  starterIds: number[],
+  rosters: Map<number, RosterRef>,
+  /** rosa Dunkest di oggi della squadra: chi è stato schierato e non c'è più è stato sostituito dopo (vuota = non si sa) */
+  dunkestRoster: { fantasyId: number }[] = [],
+): LineupCheck {
+  const now = new Set(dunkestRoster.map((p) => p.fantasyId));
   const checked = [...lineup]
     .sort((a, b) => a.courtPosition - b.courtPosition)
     .map((p): CheckedPlayer => {
+      if (now.size > 0 && !now.has(p.fantasyId)) return { ...p, status: "replaced", otherTeamId: null };
       if (p.playerId === null) return { ...p, status: "unlinked", otherTeamId: null };
       const r = rosters.get(p.playerId);
       if (!r) return { ...p, status: "free", otherTeamId: null };
@@ -553,7 +590,8 @@ export function checkLineup(teamId: string, lineup: LineupPlayer[], starterIds: 
     starters: checked.filter((p) => p.role === "starter"),
     bench: checked.filter((p) => p.role === "bench"),
     stands: starterIds.filter((id) => !fielded.has(id)),
-    issues: checked.filter((p) => p.status !== "ok"),
+    issues: checked.filter((p) => p.status !== "ok" && p.status !== "replaced"),
+    replaced: checked.filter((p) => p.status === "replaced"),
   };
 }
 

@@ -101,3 +101,11 @@ Classifica, calendario e formazioni dall'app della lega; nessuna regola nuova. L
 - «Tribuna» = in rosa su Dunkest e non schierati nello scontro (rosa letta da `fantasy-leagues/<lega>/fantasy-teams/<squadra>`); se la rosa non c'è, i titolari dell'app non schierati.
 - **ASSUNZIONE**: l'ultima giornata con punti non si dichiara chiusa (Dunkest non lo dice): la pagina scrive «in testa» e non «vince», e la forma (V/P) conta solo le giornate prima.
 - La classifica Dunkest **non** scrive `team_season.final_rank` (bonus R-60, lottery R-32): resta da decidere quale classifica conta (domanda 7) e se quella di Dunkest è la classifica ufficiale.
+
+## Fase 6: la lega che si racconta
+Novità di sola lettura sui dati Dunkest (piano in [product/PIANO-FASE-6.md](product/PIANO-FASE-6.md)); nessuna regola di lega, le soglie sono costanti di presentazione nei moduli.
+- **ASSUNZIONE** (6.4, `src/lib/standings-history.ts`): nella classifica Dunkest un **pareggio vale mezza vittoria** (`DRAW_WEIGHT`); a pari vittorie decidono i punti totali (verificato sulla classifica del 2026-10-29, senza pareggi). Se Dunkest li conta diversamente, il controllo `checkOfficial` vede che la ricostruzione non torna con la classifica ufficiale e `/classifica` nasconde il grafico invece di mostrarlo sbagliato.
+- **Da chiarire** (6.1): i punti del capitano nelle formazioni comprendono già il bonus del capitano? Cambia solo l'etichetta del premio, non il calcolo; per ora la pagina dice «punti come li dà Dunkest».
+- **Da confermare** (6.2, `src/lib/value.ts`): soglie di «Affari e flop» = almeno 3 partite giocate (`VALUE_MIN_GAMES`) e 10 righe per lista (`VALUE_LIST_SIZE`). Il 2026-10-29 entrano 125 giocatori a contratto (titolari e riserve).
+- **ASSUNZIONE** (cambi di rosa): un giocatore schierato in una giornata che oggi non è più nella rosa Dunkest della sua squadra è stato sostituito dopo quella giornata, quindi non è un avviso («Sostituito dopo»). Se un proprietario schierasse una riserva e poi la togliesse dalla rosa Dunkest, l'avviso di quella giornata sparirebbe: il registro dei cambi (`dunkest_roster_moves`) resta come traccia.
+- I premi di una giornata senza formazioni salvate (la 1) sono solo quelli di squadra e di scontro; la bacheca stagionale aspetta lo storico completo delle formazioni (6.0).

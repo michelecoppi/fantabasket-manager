@@ -240,12 +240,12 @@ function AlignmentSection({ league, rosters, teams }: { league: LeagueView; rost
 async function LineupIssues({ league, view, teams }: { league: LeagueView; view: DunkestLeagueView; teams: TeamIndex }) {
   const day = view.matchdays.find((d) => d.state === "latest");
   if (!day) return <p className="text-sm text-muted">Nessuna giornata con punti: niente da confrontare.</p>;
-  const lineups = await loadLineups(day.matches.map((m) => m.id));
+  const [lineups, dunkestRosters] = await Promise.all([loadLineups(day.matches.map((m) => m.id)), loadDunkestRosters()]);
   const rosters = rosterRefs(league.teams);
   const rows = league.teams.map((t) => {
     const m = teamMatch(view, t.team.id, "latest");
     const lineup = m ? (lineups.get(m.match.id)?.get(t.team.id) ?? []) : [];
-    const issues = lineup.length ? issuesText(checkLineup(t.team.id, lineup, t.starters.map((p) => p.playerId), rosters), teams) : [];
+    const issues = lineup.length ? issuesText(checkLineup(t.team.id, lineup, t.starters.map((p) => p.playerId), rosters, dunkestRosters.get(t.team.id)), teams) : [];
     return { t, read: lineup.length > 0, issues };
   });
   const total = rows.reduce((n, r) => n + r.issues.length, 0);
@@ -456,6 +456,7 @@ export default async function AdminDunkestPage() {
                             <>
                               classifica di {lr.standings ?? "?"} squadre · {lr.matches ?? "?"} scontri · {lr.lineups ?? 0} schierati
                               {lr.full ? " · calendario completo" : ""}
+                              {lr.backfilled?.length ? ` · formazioni recuperate: giornat${lr.backfilled.length === 1 ? "a" : "e"} ${lr.backfilled.join(", ")}` : ""}
                               {r.links_count ? ` · ${r.links_count} nuovi collegamenti` : ""}
                             </>
                           ) : r.ok ? (

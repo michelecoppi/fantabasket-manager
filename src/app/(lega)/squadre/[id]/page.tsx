@@ -7,13 +7,24 @@ import { issuesText, LeagueSource, Lineup, MatchScore, type TeamIndex } from "@/
 import { Callout } from "@/components/controls";
 import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
+import { RivalryList } from "@/components/rivalries";
+import { RosterMovesList } from "@/components/roster-moves";
+import { PositionSparkline } from "@/components/standings-chart";
 import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
+import { TeamValue } from "@/components/value-board";
+import { TrophyCase } from "@/components/trophy-case";
+import { ViewSwitch } from "@/components/chips";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
 import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
-import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups } from "@/lib/league-server";
+import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves } from "@/lib/league-server";
+import { teamRosterMoves } from "@/lib/roster-moves";
+import { seasonTrophies } from "@/lib/awards";
+import { headToHead, rivalryBadges } from "@/lib/rivalries";
+import { standingsByMatchday, teamPositions } from "@/lib/standings-history";
 import { teamColors } from "@/lib/team-colors";
+import { teamValue, valueBoard, valueContracts } from "@/lib/value";
 
 function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number }) {
   return (
@@ -72,7 +83,7 @@ function Infirmary({ players, dunkest }: { players: RosterPlayer[]; dunkest: Dun
           </div>
         </div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
           {injured.map(({ p, injury }, i) => {
             const doubt = injury.status === "doubtful";
             return (
@@ -111,13 +122,27 @@ function Infirmary({ players, dunkest }: { players: RosterPlayer[]; dunkest: Dun
  * «Formazione su Dunkest»: quintetto, panchina e tribuna della squadra nell'ultima giornata con punti (issue #72), con gli
  * avvisi quando chi è schierato non torna con le rose dell'app. Sotto, il prossimo scontro.
  */
-async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: LeagueView; view: DunkestLeagueView; teams: TeamIndex }) {
+async function DunkestLineup({
+  t,
+  league,
+  view,
+  teams,
+  positions,
+}: {
+  t: TeamView;
+  league: LeagueView;
+  view: DunkestLeagueView;
+  teams: TeamIndex;
+  /** posizione dopo ogni giornata chiusa (Fase 6.4), per la mini linea accanto alla classifica */
+  positions: { matchday: number; position: number }[];
+}) {
   const id = t.team.id;
   const latest = teamMatch(view, id, "latest");
   const next = teamMatch(view, id, "next");
   const lineup = latest ? ((await loadLineups([latest.match.id])).get(latest.match.id)?.get(id) ?? []) : [];
-  const check = checkLineup(id, lineup, t.starters.map((p) => p.playerId), rosterRefs(league.teams));
-  const stands = tribune(lineup, (await loadDunkestRosters()).get(id), t.starters, check);
+  const dunkestRoster = (await loadDunkestRosters()).get(id);
+  const check = checkLineup(id, lineup, t.starters.map((p) => p.playerId), rosterRefs(league.teams), dunkestRoster);
+  const stands = tribune(lineup, dunkestRoster, t.starters, check);
   const issues = issuesText(check, teams);
   const standing = view.standings.find((s) => s.teamId === id);
 
@@ -134,7 +159,7 @@ async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: 
       ) : (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch">
-            <Link href={`/classifica?giornata=${latest.matchday}`} className="rise block rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:bg-surface-subtle/50">
+            <Link href={`/classifica?vista=calendario&giornata=${latest.matchday}`} className="rise block rounded-2xl border border-line bg-surface px-4 py-3 transition-colors hover:bg-surface-subtle/50">
               <span className="eyebrow mb-2 flex items-center justify-between text-muted">
                 <span>Giornata {latest.matchday} · ultima con punti</span>
                 <Icon name="arrow-right" size={14} strokeWidth={2.2} />
@@ -142,10 +167,10 @@ async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: 
               <MatchScore match={latest.match} teams={teams} myTeamId={id} live />
             </Link>
             {standing && (
-              <Link href="/classifica" className="rise flex items-center gap-4 rounded-2xl bg-nav px-5 py-3 text-white transition-[filter] hover:brightness-125" style={stagger(1)}>
+              <Link href="/classifica" className="arena rise flex items-center gap-4 rounded-2xl px-5 py-3 transition-[filter] hover:brightness-[1.04] dark:hover:brightness-125" style={stagger(1)}>
                 <span>
                   <span className="eyebrow block text-white/55">Classifica</span>
-                  <span className="font-display tnum block text-5xl leading-none font-black text-gold">{standing.position}°</span>
+                  <span className="font-display tnum block text-5xl leading-none font-black text-highlight">{standing.position}°</span>
                 </span>
                 <span className="text-sm text-white/70">
                   <span className="font-display tnum block text-2xl leading-none font-extrabold text-white">
@@ -153,6 +178,7 @@ async function DunkestLineup({ t, league, view, teams }: { t: TeamView; league: 
                   </span>
                   vittorie–sconfitte
                 </span>
+                <PositionSparkline points={positions} teams={view.standings.length} color="var(--jumbo)" className="ml-auto text-white/70" />
               </Link>
             )}
           </div>
@@ -205,9 +231,29 @@ function SlotMeter({ label, have, need }: { label: string; have: number; need: n
   );
 }
 
+/** Cambi di rosa di una squadra: quelli registrati e le uscite ricostruite dalle sue formazioni (giornate con punti). */
+async function teamMoves(id: string, view: DunkestLeagueView) {
+  const games = view.matchdays.flatMap((d) =>
+    d.state === "upcoming" ? [] : d.matches.filter((m) => m.homeTeamId === id || m.awayTeamId === id).map((m) => ({ matchday: d.matchday, id: m.id })),
+  );
+  const [logged, lineups, rosters] = await Promise.all([loadRosterMoves(id), loadLineups(games.map((g) => g.id)), loadDunkestRosters()]);
+  const fielded = games.map((g) => ({ matchday: g.matchday, players: lineups.get(g.id)?.get(id) ?? [] }));
+  return teamRosterMoves(logged, fielded, rosters.get(id) ?? []);
+}
+
+type TeamTab = "rosa" | "dunkest" | "vetrina" | "pick";
+const TEAM_TABS: TeamTab[] = ["rosa", "dunkest", "vetrina", "pick"];
+
+/**
+ * Pagina squadra: testata con i conti del cap, poi quattro schede (`?vista=`, di default la rosa): rosa (titolari con affare e
+ * flop, infermeria, riserve), su Dunkest (formazione, andamento, rivalità), vetrina dei trofei della stagione, pick (con
+ * talenti e tagli).
+ */
 export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const { id } = await props.params;
-  const [league, dunkest, view] = await Promise.all([loadLeague(), loadDunkest(), loadLeagueDunkest()]);
+  const sp = await props.searchParams;
+  const tab: TeamTab = TEAM_TABS.find((x) => x === sp.vista) ?? "rosa";
+  const [league, dunkest, view, profile] = await Promise.all([loadLeague(), loadDunkest(), loadLeagueDunkest(), loadProfile()]);
   const t = league.teams.find((x) => x.team.id === id);
   if (!t) notFound();
   const f = t.finance;
@@ -224,6 +270,20 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const injuredCount = roster.filter((p) => dunkest.injuries.has(p.playerId)).length;
   const teams: TeamIndex = new Map(league.teams.map((x) => [x.team.id, { name: x.team.name, owner: x.team.owner_name, color: colors.get(x.team.id) ?? "var(--muted)" }]));
   const standing = view.standings.find((s) => s.teamId === id);
+  // Fase 6: andamento, affare e flop, rivalità (sola lettura, dati già caricati)
+  const you = profile?.team_id === id;
+  const trend = teamPositions(standingsByMatchday(view), id);
+  const board = dunkest.available ? valueBoard(valueContracts(league.teams), dunkest.stats) : null;
+  const value = board ? teamValue(board, id) : null;
+  const rivals = view.available && view.standings.length > 0 ? headToHead(view, id) : [];
+  // Cambi di rosa su Dunkest (scheda Su Dunkest): registrati dal job più le uscite ricostruite dalle formazioni della squadra
+  const moves = tab === "dunkest" && view.available ? await teamMoves(id, view) : null;
+  // Vetrina: premi di tutte le giornate chiuse (formazioni dell'intera stagione, lette solo in questa scheda)
+  const closed = view.matchdays.filter((d) => d.state === "played");
+  const season =
+    tab === "vetrina" && view.available
+      ? seasonTrophies(closed, await loadLineups(closed.flatMap((d) => d.matches.map((m) => m.id))), league.teams.map((x) => x.team.id))
+      : null;
 
   return (
     <>
@@ -233,7 +293,9 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
       </Link>
 
       <section className="arena sweep -mx-4 sm:mx-0 sm:rounded-3xl" aria-labelledby="team-title">
-        <div aria-hidden className="absolute inset-0 -z-[1]" style={{ background: `radial-gradient(50rem 26rem at 0% 0%, color-mix(in oklab, ${color} 70%, transparent), transparent 65%)` }} />
+        {/* luce nel colore della squadra: piena al buio, velata sulla carta del tema chiaro (il testo lì è scuro) */}
+        <div aria-hidden className="absolute inset-0 -z-[1] dark:hidden" style={{ background: `radial-gradient(50rem 26rem at 0% 0%, color-mix(in oklab, ${color} 20%, transparent), transparent 65%)` }} />
+        <div aria-hidden className="absolute inset-0 -z-[1] hidden dark:block" style={{ background: `radial-gradient(50rem 26rem at 0% 0%, color-mix(in oklab, ${color} 70%, transparent), transparent 65%)` }} />
         <div className="relative z-[2] grid gap-8 px-5 py-8 sm:px-9 sm:py-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="flex items-center gap-5 sm:gap-7">
             <TeamCrest name={t.team.name} color={color} size="xl" morphId={t.team.id} className="hidden sm:block" />
@@ -292,7 +354,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           </Link>
         )}
         {injuredCount > 0 && (
-          <a href="#infermeria" className="rounded-full transition-opacity hover:opacity-80">
+          <a href={`/squadre/${id}#infermeria`} className="rounded-full transition-opacity hover:opacity-80">
             <Badge tone="bad" icon="medkit">
               {injuredCount} {injuredCount === 1 ? "infortunato" : "infortunati"}
             </Badge>
@@ -300,151 +362,218 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
         )}
       </div>
 
-      <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
-        <div>
-          <Infirmary players={roster} dunkest={dunkest} />
+      <div className="mt-6">
+        <ViewSwitch
+          label="Sezioni della squadra"
+          options={[
+            { href: `/squadre/${id}`, label: "Rosa", hint: "titolari, riserve, infortuni", icon: "jersey", active: tab === "rosa" },
+            { href: `/squadre/${id}?vista=dunkest`, label: "Su Dunkest", hint: "formazione, cambi, rivalità", icon: "ball", active: tab === "dunkest" },
+            { href: `/squadre/${id}?vista=vetrina`, label: "Vetrina", hint: "i trofei della stagione", icon: "trophy", active: tab === "vetrina" },
+            { href: `/squadre/${id}?vista=pick`, label: "Pick", hint: "pick, talenti e tagli", icon: "ticket", active: tab === "pick" },
+          ]}
+        />
+      </div>
 
-          <DunkestLineup t={t} league={league} view={view} teams={teams} />
-
-          <Section title="Titolari" icon="jersey" aside={`${t.starters.length}/${positions.reduce((n, p) => n + league.settings.starters[p], 0)}`}>
-            <div className="mb-3 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
-              {positions.map((p) => (
-                <SlotMeter key={p} label={POS_LABEL[p]} have={t.starters.filter((x) => x.pos === p).length} need={league.settings.starters[p]} />
-              ))}
-            </div>
-            {t.starters.length === 0 ? (
-              <Empty title="Nessun titolare" icon="jersey" />
-            ) : (
-              <div className="space-y-4">
-                {positions.map((p, gi) => {
-                  const group = t.starters.filter((x) => x.pos === p);
-                  if (group.length === 0) return null;
-                  return (
-                    <div key={p}>
-                      <h3 className="eyebrow mb-1.5 text-muted">{POS_LABEL[p]}</h3>
-                      <Roster players={group} dunkest={dunkest} offset={gi * 5} />
-                    </div>
-                  );
-                })}
-                {unknownPos.length > 0 && (
-                  <div>
-                    <h3 className="eyebrow mb-1.5 text-muted">Ruolo da indicare</h3>
-                    <Roster players={unknownPos} dunkest={dunkest} offset={13} />
-                  </div>
-                )}
-              </div>
-            )}
-          </Section>
-
-          <Section title="Riserve" icon="clipboard" aside={`${t.reserves.length} (min ${league.settings.reserveMin}, max ${league.settings.reserveMax})`}>
-            {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} dunkest={dunkest} />}
-          </Section>
-        </div>
-
-        <aside>
-          <Section title="Pick" icon="ticket" aside={`${ownPicks.length} possedute`}>
-            {years.length === 0 ? (
-              <Empty title="Nessuna pick" icon="ticket" />
-            ) : (
-              <div className="space-y-3">
-                {years.map((y) => (
-                  <div key={y} className="rounded-2xl border border-line bg-surface p-3">
-                    <div className="font-display mb-2 text-xl leading-none font-black">Draft {y}</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ownPicks
-                        .filter((p) => p.year === y)
-                        .sort((a, b) => a.round - b.round)
-                        .map((p) => {
-                          const own = p.original_team_id === id;
-                          return (
-                            <span
-                              key={p.id}
-                              title={own ? "Propria" : `Da ${name(p.original_team_id)}`}
-                              className={`relative inline-flex items-center gap-1.5 rounded-lg border py-1 pr-2.5 pl-2 text-sm font-semibold ${
-                                p.to_confirm ? "border-warning/50 border-dashed bg-warning/10" : own ? "border-line bg-surface-subtle" : "border-brand-blue/40 bg-brand-blue/10"
-                              }`}
-                            >
-                              <span className="font-display tnum text-lg leading-none font-black">{p.round}°</span>
-                              {!own && (
-                                <>
-                                  <TeamCrest name={name(p.original_team_id)} color={colors.get(p.original_team_id) ?? "#555"} size="xs" />
-                                  <span className="max-w-24 truncate text-xs">{name(p.original_team_id)}</span>
-                                </>
-                              )}
-                              {p.to_confirm && <span className="text-xs font-bold text-warning">?</span>}
-                            </span>
-                          );
-                        })}
-                    </div>
-                  </div>
+      {tab === "rosa" && (
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+          <div>
+            <Section title="Titolari" icon="jersey" aside={`${t.starters.length}/${positions.reduce((n, p) => n + league.settings.starters[p], 0)}`}>
+              <div className="mb-3 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
+                {positions.map((p) => (
+                  <SlotMeter key={p} label={POS_LABEL[p]} have={t.starters.filter((x) => x.pos === p).length} need={league.settings.starters[p]} />
                 ))}
               </div>
+              {t.starters.length === 0 ? (
+                <Empty title="Nessun titolare" icon="jersey" />
+              ) : (
+                <div className="space-y-4">
+                  {positions.map((p, gi) => {
+                    const group = t.starters.filter((x) => x.pos === p);
+                    if (group.length === 0) return null;
+                    return (
+                      <div key={p}>
+                        <h3 className="eyebrow mb-1.5 text-muted">{POS_LABEL[p]}</h3>
+                        <Roster players={group} dunkest={dunkest} offset={gi * 5} />
+                      </div>
+                    );
+                  })}
+                  {unknownPos.length > 0 && (
+                    <div>
+                      <h3 className="eyebrow mb-1.5 text-muted">Ruolo da indicare</h3>
+                      <Roster players={unknownPos} dunkest={dunkest} offset={13} />
+                    </div>
+                  )}
+                </div>
+              )}
+              {board && value && (value.deal || value.flop) && (
+                <div className="mt-4">
+                  <TeamValue deal={value.deal} flop={value.flop} pool={board.pool} you={you} />
+                  <Link href="/giocatori?vista=affari" className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-brand-blue hover:underline">
+                    Stipendio contro rendimento in tutta la lega
+                    <Icon name="arrow-right" size={14} strokeWidth={2.2} />
+                  </Link>
+                </div>
+              )}
+            </Section>
+
+          </div>
+          <div>
+            <Infirmary players={roster} dunkest={dunkest} />
+            <Section title="Riserve" icon="clipboard" aside={`${t.reserves.length} (min ${league.settings.reserveMin}, max ${league.settings.reserveMax})`}>
+              {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} dunkest={dunkest} />}
+            </Section>
+
+          </div>
+        </div>
+      )}
+
+      {tab === "dunkest" && (
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
+          <div>
+            <DunkestLineup t={t} league={league} view={view} teams={teams} positions={trend} />
+            {moves && (
+              <Section title="Cambi di rosa" icon="swap" id="cambi" aside="su Dunkest">
+                <RosterMovesList moves={moves} />
+              </Section>
             )}
-            {ceded.length > 0 && (
-              <div className="mt-3 rounded-2xl border border-dashed border-line p-3">
-                <div className="eyebrow mb-1.5 text-muted">Cedute</div>
-                <ul className="space-y-1 text-sm">
-                  {ceded.map((p) => (
-                    <li key={p.id} className="flex items-center gap-2">
-                      <span className="tnum font-semibold">
-                        {p.year} {p.round}°
+          </div>
+          <div>
+            {rivals.length > 0 && (
+              <Section title="Rivalità" icon="swap" id="rivalita" aside="scontri diretti">
+                <RivalryList teamId={id} rows={rivals} badges={rivalryBadges(rivals)} teams={teams} you={you} />
+              </Section>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {tab === "vetrina" && (
+        <div className="mt-8">
+          <Section title="Vetrina" icon="trophy" aside="premi della giornata vinti in stagione">
+            {season ? (
+              <TrophyCase teamId={id} season={season} teams={teams} you={you} />
+            ) : (
+              <Empty title="Dati non disponibili" icon="trophy">
+                Calendario e formazioni di Dunkest non si leggono in questo momento.
+              </Empty>
+            )}
+          </Section>
+        </div>
+      )}
+
+      {tab === "pick" && (
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+          <div>
+            <Section title="Pick" icon="ticket" aside={`${ownPicks.length} possedute`}>
+              {years.length === 0 ? (
+                <Empty title="Nessuna pick" icon="ticket" />
+              ) : (
+                <div className="space-y-3">
+                  {years.map((y) => (
+                    <div key={y} className="rounded-2xl border border-line bg-surface p-3">
+                      <div className="font-display mb-2 text-xl leading-none font-black">Draft {y}</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ownPicks
+                          .filter((p) => p.year === y)
+                          .sort((a, b) => a.round - b.round)
+                          .map((p) => {
+                            const own = p.original_team_id === id;
+                            return (
+                              <span
+                                key={p.id}
+                                title={own ? "Propria" : `Da ${name(p.original_team_id)}`}
+                                className={`relative inline-flex items-center gap-1.5 rounded-lg border py-1 pr-2.5 pl-2 text-sm font-semibold ${
+                                  p.to_confirm ? "border-warning/50 border-dashed bg-warning/10" : own ? "border-line bg-surface-subtle" : "border-brand-blue/40 bg-brand-blue/10"
+                                }`}
+                              >
+                                <span className="font-display tnum text-lg leading-none font-black">{p.round}°</span>
+                                {!own && (
+                                  <>
+                                    <TeamCrest name={name(p.original_team_id)} color={colors.get(p.original_team_id) ?? "#555"} size="xs" />
+                                    <span className="max-w-24 truncate text-xs">{name(p.original_team_id)}</span>
+                                  </>
+                                )}
+                                {p.to_confirm && <span className="text-xs font-bold text-warning">?</span>}
+                              </span>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {ceded.length > 0 && (
+                <div className="mt-3 rounded-2xl border border-dashed border-line p-3">
+                  <div className="eyebrow mb-1.5 text-muted">Cedute</div>
+                  <ul className="space-y-1 text-sm">
+                    {ceded.map((p) => (
+                      <li key={p.id} className="flex items-center gap-2">
+                        <span className="tnum font-semibold">
+                          {p.year} {p.round}°
+                        </span>
+                        <Icon name="arrow-right" size={14} className="text-muted" />
+                        <span className="truncate">{name(p.current_team_id)}</span>
+                        {p.to_confirm && <span className="text-xs text-warning">(da confermare)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Section>
+
+          </div>
+          <div>
+            <Section title="Talenti" icon="crown" aside={t.talents.length}>
+              {t.talents.length === 0 ? (
+                <Empty title="Nessun talento" icon="crown" />
+              ) : (
+                <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+                  {t.talents.map((x) => (
+                    <li key={x.id} className="flex items-center gap-3 px-3 py-2.5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{x.display_name}</span>
+                        {x.draft_year && (
+                          <span className="block text-xs text-muted">
+                            draft {x.draft_year}
+                            {x.notes ? ` · ${x.notes}` : ""}
+                          </span>
+                        )}
                       </span>
-                      <Icon name="arrow-right" size={14} className="text-muted" />
-                      <span className="truncate">{name(p.current_team_id)}</span>
-                      {p.to_confirm && <span className="text-xs text-warning">(da confermare)</span>}
+                      {x.entry_credits !== null ? (
+                        <span className="font-display tnum text-2xl font-black">{fmt(Number(x.entry_credits))}</span>
+                      ) : (
+                        <span title="Crediti non indicati" className="font-display text-2xl font-black text-muted/60">
+                          <span aria-hidden>–</span>
+                          <span className="sr-only">Crediti non indicati</span>
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-          </Section>
+              )}
+            </Section>
 
-          <Section title="Talenti" icon="crown" aside={t.talents.length}>
-            {t.talents.length === 0 ? (
-              <Empty title="Nessun talento" icon="crown" />
-            ) : (
-              <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-                {t.talents.map((x) => (
-                  <li key={x.id} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{x.display_name}</span>
-                      {x.draft_year && (
-                        <span className="block text-xs text-muted">
-                          draft {x.draft_year}
-                          {x.notes ? ` · ${x.notes}` : ""}
-                        </span>
-                      )}
-                    </span>
-                    {x.entry_credits !== null ? (
-                      <span className="font-display tnum text-2xl font-black">{fmt(Number(x.entry_credits))}</span>
-                    ) : (
-                      <span title="Crediti non indicati" className="font-display text-2xl font-black text-muted/60">
-                        <span aria-hidden>–</span>
-                        <span className="sr-only">Crediti non indicati</span>
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
+          </div>
+          <div>
+            <Section title="Tagliati" icon="x" aside="paga 1/3 dello stipendio">
+              {t.cuts.length === 0 ? (
+                <Empty title="Nessun taglio" icon="check" />
+              ) : (
+                <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+                  {t.cuts.map((c) => (
+                    <li key={c.id} className="flex items-center gap-3 px-3 py-2.5">
+                      <span className="min-w-0 flex-1 truncate text-muted line-through decoration-danger/50">{c.name}</span>
+                      <span className="font-display tnum text-2xl font-black text-danger">{fmt(c.paid)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
 
-          <Section title="Tagliati" icon="x" aside="paga 1/3 dello stipendio">
-            {t.cuts.length === 0 ? (
-              <Empty title="Nessun taglio" icon="check" />
-            ) : (
-              <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-                {t.cuts.map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="min-w-0 flex-1 truncate text-muted line-through decoration-danger/50">{c.name}</span>
-                    <span className="font-display tnum text-2xl font-black text-danger">{fmt(c.paid)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
-        </aside>
-      </div>
+          </div>
+        </div>
+      )}
 
       {dunkest.available && roster.map((p) => <PlayerSheet key={p.playerId} player={{ ...p, owner: { name: t.team.name, color } }} dunkest={dunkest} />)}
     </>
