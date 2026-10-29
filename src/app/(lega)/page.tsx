@@ -4,13 +4,13 @@ import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
 import { DunkestLogo } from "@/components/dunkest";
-import { LeagueSource, StandingsTable, fpt, type TeamIndex } from "@/components/dunkest-league";
+import { LeagueSource, StandingsTable, fpt, teamIndex } from "@/components/dunkest-league";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtEuro } from "@/lib/format";
 import { matchdayAwards } from "@/lib/awards";
-import { teamMatch } from "@/lib/dunkest-league";
+import { teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
 import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
@@ -41,7 +41,21 @@ function PulseTile({ icon, label, value, tone, i }: { icon: IconName; label: str
 
 export default async function Home(props: PageProps<"/">) {
   const options = parseTeamListOptions(await props.searchParams);
-  const [league, profile, dunkest, view] = await Promise.all([loadLeague(), loadProfile(), loadDunkest(), loadLeagueDunkest()]);
+  // Fase 6.1: MVP dell'ultima giornata chiusa (l'ultima con punti può essere in corso), se ne ha le formazioni. Le formazioni
+  // si leggono appena arriva il calendario, in parallelo con il resto (non dopo).
+  const mvpOf = async (v: DunkestLeagueView) => {
+    const day = v.matchdays.findLast((d) => d.state === "played");
+    if (!day) return null;
+    const award = matchdayAwards(day.matches, await loadLineups(day.matches.map((m) => m.id))).find((a) => a.kind === "mvp");
+    return award ? { award, matchday: day.matchday } : null;
+  };
+  const [league, profile, dunkest, view, mvp] = await Promise.all([
+    loadLeague(),
+    loadProfile(),
+    loadDunkest(),
+    loadLeagueDunkest(),
+    loadLeagueDunkest().then(mvpOf),
+  ]);
   // Infortunati di ogni rosa secondo Dunkest (issue #68).
   const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
   const { settings } = league;
@@ -56,14 +70,11 @@ export default async function Home(props: PageProps<"/">) {
   const startersTotal = settings.starters.G + settings.starters.A + settings.starters.C;
   const count = (filter: TeamFilter) => listTeams(league.teams, { sort: "nome", filter }).length;
   // Lega su Dunkest (issue #72): classifica e ultima giornata, se il job le ha già scritte.
-  const teamIndex: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+  const index = teamIndex(league.teams, colors);
   const hasStandings = view.available && view.standings.length > 0;
   const latestDay = view.matchdays.find((d) => d.state === "latest");
   const myStanding = myTeam ? view.standings.find((s) => s.teamId === myTeam.team.id) : undefined;
   const myLatest = myTeam ? teamMatch(view, myTeam.team.id, "latest") : null;
-  // Fase 6.1: MVP dell'ultima giornata chiusa (l'ultima con punti può essere in corso), se ne ha le formazioni.
-  const lastPlayed = [...view.matchdays].reverse().find((d) => d.state === "played");
-  const mvp = lastPlayed ? matchdayAwards(lastPlayed.matches, await loadLineups(lastPlayed.matches.map((m) => m.id))).find((a) => a.kind === "mvp") : undefined;
 
   const sorts: { value: TeamSort; label: string }[] = [
     { value: "nome", label: "Nome" },
@@ -254,9 +265,9 @@ export default async function Home(props: PageProps<"/">) {
             </Link>
           </div>
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <StandingsTable league={view} teams={teamIndex} myTeamId={myTeam?.team.id} compact />
+            <StandingsTable league={view} teams={index} myTeamId={myTeam?.team.id} compact />
             {latestDay && (
-              <MatchdayCard day={latestDay} mvp={mvp && lastPlayed ? { award: mvp, matchday: lastPlayed.matchday } : null} teams={teamIndex} myTeamId={myTeam?.team.id ?? null} />
+              <MatchdayCard day={latestDay} mvp={mvp} teams={index} myTeamId={myTeam?.team.id ?? null} />
             )}
           </div>
           <div className="mt-3">

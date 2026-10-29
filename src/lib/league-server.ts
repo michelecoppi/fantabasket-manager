@@ -13,19 +13,38 @@ const playerCols = "players(first_name,last_name,pos,nba_team)";
 
 const PAGE = 1000; // PostgREST (Supabase) taglia a max_rows = 1000 per richiesta, anche con .limit(2000)
 
-async function fetchAllPlayers(db: Awaited<ReturnType<typeof createClient>>) {
-  const rows: Record<string, unknown>[] = [];
+type Result = { error: { message: string } | null };
+
+/** Lancia il primo errore tra le risposte di Supabase. */
+function must(...results: Result[]) {
+  for (const r of results) if (r.error) throw new Error(r.error.message);
+}
+
+/**
+ * Tutte le righe di una query, una pagina da 1000 alla volta (PostgREST non ne restituisce di più). `page` riceve l'intervallo
+ * da passare a `.range()`; la query deve avere un ordine stabile tra una pagina e l'altra.
+ */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Result & { data: T[] | null }>): Promise<T[]> {
+  const rows: T[] = [];
   for (let from = 0; ; from += PAGE) {
-    const r = await db
-      .from("players")
-      .select("id,first_name,last_name,pos,nba_team,dunkest_credits")
-      .order("last_name")
-      .order("id") // ordine stabile tra una pagina e l'altra
-      .range(from, from + PAGE - 1);
-    if (r.error) throw new Error(r.error.message);
-    rows.push(...r.data);
-    if (r.data.length < PAGE) return rows;
+    const r = await page(from, from + PAGE - 1);
+    must(r);
+    const data = r.data ?? [];
+    rows.push(...data);
+    if (data.length < PAGE) return rows;
   }
+}
+
+/** Raggruppa per chiave mantenendo l'ordine di arrivo. */
+function groupBy<T, K>(rows: T[], key: (row: T) => K): Map<K, T[]> {
+  const out = new Map<K, T[]>();
+  for (const row of rows) {
+    const k = key(row);
+    const list = out.get(k);
+    if (list) list.push(row);
+    else out.set(k, [row]);
+  }
+  return out;
 }
 
 /** Stagione corrente: una sola query per richiesta, condivisa da tutti i loader. */
@@ -42,13 +61,12 @@ const loadSeason = cache(async (): Promise<{ id: number; year: number }> => {
  */
 const loadLeagueData = cache(async () => {
   const db = await createClient();
-  const season = await loadSeason();
-  const sid = season.id;
-
   // La revisione di rosa (migrazione 0012) va letta PRIMA dei contratti: se una firma si infila nel mezzo, la revisione è più
   // vecchia dei dati e la RPC risponde CONFLICT, invece di accettare una validazione fatta su una rosa già cambiata.
-  const rev = await db.from("teams").select("id,roster_rev");
-  if (rev.error) throw new Error(rev.error.message);
+  // Con la stagione non ha vincoli d'ordine: le due letture partono insieme (un giro verso il database in meno).
+  const [season, rev] = await Promise.all([loadSeason(), db.from("teams").select("id,roster_rev")]);
+  must(rev);
+  const sid = season.id;
 
   const [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie] = await Promise.all([
     db.from("teams").select("id,name,owner_name").order("name"),
@@ -64,9 +82,7 @@ const loadLeagueData = cache(async () => {
     db.from("team_season").select("team_id,version,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
     db.from("rookie_draft").select("pick_no,team_id,original_team_id,note").eq("season_id", sid),
   ]);
-  for (const r of [teams, settings, contracts, cuts, talents, picks, teamSeason, rookie]) {
-    if (r.error) throw new Error(r.error.message);
-  }
+  must(teams, settings, contracts, cuts, talents, picks, teamSeason, rookie);
 
   const raw: RawLeague = {
     seasonYear: season.year,
@@ -82,7 +98,7 @@ const loadLeagueData = cache(async () => {
   const toMap = (rows: { id: number; version: number }[] | null) => Object.fromEntries((rows ?? []).map((r) => [r.id, r.version]));
   const versions: Versions = { contracts: toMap(contracts.data), picks: toMap(picks.data), cuts: toMap(cuts.data),
     teamSeason: Object.fromEntries((teamSeason.data ?? []).map((r) => [r.team_id, r.version])),
-    rosterRev: Object.fromEntries(rev.data.map((r) => [r.id, r.roster_rev as number])),
+    rosterRev: Object.fromEntries((rev.data ?? []).map((r) => [r.id, r.roster_rev as number])),
   };
   return { league: buildLeague(raw), versions };
 });
@@ -93,12 +109,13 @@ export const loadVersions = async (): Promise<Versions> => (await loadLeagueData
 /** Tutto ciò che serve a `planSeasonClose`: contratti (con versione) e tagli della stagione corrente, pick e luxury tax di adesso. */
 export const loadCloseInput = cache(async (): Promise<CloseInput> => {
   const db = await createClient();
-  const [season, league] = await Promise.all([loadSeason(), loadLeague()]);
-  const [contracts, cuts] = await Promise.all([
+  const season = await loadSeason();
+  const [league, contracts, cuts] = await Promise.all([
+    loadLeague(),
     db.from("contracts").select(`id,version,team_id,years_left,team_option,is_rookie,restriction,${playerCols}`).eq("season_id", season.id),
     db.from("cuts").select(`id,version,team_id,status,years_left,${playerCols}`).eq("season_id", season.id).in("status", ["pending", "cut"]),
   ]);
-  for (const r of [contracts, cuts]) if (r.error) throw new Error(r.error.message);
+  must(contracts, cuts);
 
   const years = (v: number | null) => (v === null ? null : Number(v));
   const rows = <T>(r: { data: unknown }) => (r.data ?? []) as T[];
@@ -145,13 +162,20 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const sid = (await loadSeason()).id;
 
   const [players, contracts, cuts, restricted] = await Promise.all([
-    fetchAllPlayers(db),
+    fetchAll<Record<string, unknown>>((from, to) =>
+      db
+        .from("players")
+        .select("id,first_name,last_name,pos,nba_team,dunkest_credits")
+        .order("last_name")
+        .order("id") // ordine stabile tra una pagina e l'altra
+        .range(from, to),
+    ),
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
     db.from("cuts").select("player_id,team_id").eq("season_id", sid).in("status", ["pending", "cut"]),
     // In ordine di data: conta solo l'ultima scadenza di ogni giocatore (una successiva unrestricted cancella il diritto, R-24).
     db.from("last_contracts").select("player_id,team_id,restricted,salary,last_contract_on").order("last_contract_on").order("id"),
   ]);
-  for (const r of [contracts, cuts, restricted]) if (r.error) throw new Error(r.error.message);
+  must(contracts, cuts, restricted);
 
   const owner = new Map((contracts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
   const cutBy = new Map((cuts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
@@ -195,25 +219,22 @@ export const loadDunkest = cache(async (): Promise<DunkestView> => {
   try {
     const db = await createClient();
     const sid = (await loadSeason()).id;
-    const [sync, injuries] = await Promise.all([
+    type StatWithPlayer = Omit<StatRow, "pos"> & { players: { pos: StatRow["pos"] } | null };
+    const [sync, injuries, statRows] = await Promise.all([
       db.from("dunkest_sync").select("last_attempt_at,last_success_at,last_error,source_updated_at,report").eq("id", 1).maybeSingle(),
       db.from("dunkest_injuries").select("player_id,injured_on,injury,description"),
+      fetchAll<StatWithPlayer>(
+        (from, to) =>
+          db
+            .from("dunkest_stats")
+            .select("player_id,gp,pdk,min,pts,reb,ast,players(pos)")
+            .eq("season_id", sid)
+            .order("player_id")
+            .range(from, to) as unknown as PromiseLike<Result & { data: StatWithPlayer[] | null }>,
+      ),
     ]);
-    if (sync.error || injuries.error) throw new Error((sync.error ?? injuries.error)!.message);
-    const stats: StatRow[] = [];
-    for (let from = 0; ; from += PAGE) {
-      const r = await db
-        .from("dunkest_stats")
-        .select("player_id,gp,pdk,min,pts,reb,ast,players(pos)")
-        .eq("season_id", sid)
-        .order("player_id")
-        .range(from, from + PAGE - 1);
-      if (r.error) throw new Error(r.error.message);
-      for (const row of r.data as unknown as (Omit<StatRow, "pos"> & { players: { pos: StatRow["pos"] } | null })[]) {
-        stats.push({ ...row, pos: row.players?.pos ?? null });
-      }
-      if (r.data.length < PAGE) break;
-    }
+    must(sync, injuries);
+    const stats: StatRow[] = statRows.map(({ players, ...row }) => ({ ...row, pos: players?.pos ?? null }));
     const s = sync.data;
     return buildDunkest(
       s && {
@@ -250,7 +271,7 @@ export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
       db.from("dunkest_standings").select("team_id,position,total_pts,wins,draws,losses").eq("season_id", sid),
       db.from("dunkest_matches").select("id,matchday,home_team_id,away_team_id,home_pts,away_pts,winner_team_id").eq("season_id", sid).order("matchday").order("id"),
     ]);
-    for (const r of [sync, standings, matches]) if (r.error) throw new Error(r.error.message);
+    must(sync, standings, matches);
     const s = sync.data;
     const num = (v: unknown) => (v === null ? null : Number(v));
     return buildLeagueView(
@@ -284,66 +305,77 @@ export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
 
 /** Rose Dunkest della stagione corrente (13 giocatori per squadra, tribuna compresa): squadra → giocatori. Vuoto se non si leggono. */
 export const loadDunkestRosters = cache(async (): Promise<Map<string, DunkestRosterPlayer[]>> => {
-  const out = new Map<string, DunkestRosterPlayer[]>();
   try {
     const db = await createClient();
     const sid = (await loadSeason()).id;
     const r = await db.from("dunkest_rosters").select("team_id,fantasy_player_id,player_id,name,pos").eq("season_id", sid).order("name");
-    if (r.error) throw new Error(r.error.message);
-    for (const row of r.data) {
-      out.set(row.team_id, [...(out.get(row.team_id) ?? []), { fantasyId: row.fantasy_player_id, playerId: row.player_id, name: row.name, pos: row.pos as DunkestRosterPlayer["pos"] }]);
-    }
+    must(r);
+    const byTeam = groupBy(r.data ?? [], (row) => row.team_id);
+    return new Map(
+      [...byTeam].map(([team, rows]) => [
+        team,
+        rows.map((row) => ({ fantasyId: row.fantasy_player_id, playerId: row.player_id, name: row.name, pos: row.pos as DunkestRosterPlayer["pos"] })),
+      ]),
+    );
   } catch (e) {
     console.error(`[dunkest] rose non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return new Map();
   }
-  return out;
 });
 
 /**
  * Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. Paginata (PostgREST
  * taglia a 1000 righe): una stagione intera, per la vetrina dei trofei, supera le 1000 righe dalla tredicesima giornata.
  */
-export async function loadLineups(matchIds: number[]): Promise<Map<number, Map<string, LineupPlayer[]>>> {
-  const out = new Map<number, Map<string, LineupPlayer[]>>();
-  if (matchIds.length === 0) return out;
-  const db = await createClient();
-  const rows = [];
-  for (let from = 0; ; from += 1000) {
-    const r = await db
-      .from("dunkest_lineups")
-      .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
-      .in("match_id", matchIds)
-      .order("match_id")
-      .order("team_id")
-      .order("court_position")
-      .range(from, from + 999);
-    if (r.error) {
-      console.error(`[dunkest] formazioni non disponibili: ${r.error.message}`);
-      return out;
-    }
-    rows.push(...r.data);
-    if (r.data.length < 1000) break;
-  }
-  for (const row of rows) {
-    const byTeam = out.get(Number(row.match_id)) ?? new Map<string, LineupPlayer[]>();
-    out.set(Number(row.match_id), byTeam);
-    byTeam.set(row.team_id, [
-      ...(byTeam.get(row.team_id) ?? []),
-      {
-        fantasyId: row.fantasy_player_id,
-        playerId: row.player_id,
-        name: row.name,
-        pos: row.pos as LineupPlayer["pos"],
-        role: row.role as LineupPlayer["role"],
-        courtPosition: row.court_position,
-        isCaptain: row.is_captain,
-        isSixthMan: row.is_sixth_man,
-        pts: row.pts === null ? null : Number(row.pts),
-      },
-    ]);
-  }
-  return out;
+export function loadLineups(matchIds: number[]): Promise<Map<number, Map<string, LineupPlayer[]>>> {
+  // Chiave canonica: la stessa richiesta fatta da due componenti della pagina legge il database una volta sola.
+  return loadLineupsByKey([...new Set(matchIds)].sort((a, b) => a - b).join(","));
 }
+
+const loadLineupsByKey = cache(async (key: string): Promise<Map<number, Map<string, LineupPlayer[]>>> => {
+  if (key === "") return new Map();
+  const matchIds = key.split(",").map(Number);
+  try {
+    const db = await createClient();
+    const rows = await fetchAll((from, to) =>
+      db
+        .from("dunkest_lineups")
+        .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
+        .in("match_id", matchIds)
+        .order("match_id")
+        .order("team_id")
+        .order("court_position")
+        .range(from, to),
+    );
+    const byMatch = groupBy(rows, (row) => Number(row.match_id));
+    return new Map(
+      [...byMatch].map(([match, matchRows]) => [
+        match,
+        new Map(
+          [...groupBy(matchRows, (row) => row.team_id)].map(([team, teamRows]) => [
+            team,
+            teamRows.map(
+              (row): LineupPlayer => ({
+                fantasyId: row.fantasy_player_id,
+                playerId: row.player_id,
+                name: row.name,
+                pos: row.pos as LineupPlayer["pos"],
+                role: row.role as LineupPlayer["role"],
+                courtPosition: row.court_position,
+                isCaptain: row.is_captain,
+                isSixthMan: row.is_sixth_man,
+                pts: row.pts === null ? null : Number(row.pts),
+              }),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  } catch (e) {
+    console.error(`[dunkest] formazioni non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return new Map();
+  }
+});
 
 /** Cambi di rosa su Dunkest registrati dal job per una squadra, stagione corrente (Fase 6). Vuoto se non si leggono. */
 export async function loadRosterMoves(teamId: string): Promise<Omit<RosterMove, "lastFielded">[]> {
