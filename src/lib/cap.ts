@@ -32,6 +32,8 @@ export interface LeagueSettings {
   maxPicksPerRound: number;
   /** R-56: squadre al massimo in uno scambio (decisione di lega, non nel regolamento: docs/OPEN-QUESTIONS.md) */
   tradeMaxTeams: number;
+  /** Ore entro cui le squadre rispondono a una proposta di scambio (decisione dell'utente 2026-10-29, non nel regolamento) */
+  tradeProposalHours: number;
   /** R-34: le pick diventano di proprietà solo questi anni prima del draft */
   pickHorizonYears: number;
   /** R-31: giri del draft */
@@ -464,6 +466,7 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   lastContractValidMonths: 12,
   maxPicksPerRound: 2,
   tradeMaxTeams: 4,
+  tradeProposalHours: 24,
   pickHorizonYears: 3,
   draftRounds: 5,
   rankBonus: [5, 4, 3, 2, 0, -1, -2, -3],

@@ -9,7 +9,9 @@
 #  1. due firme con la stessa revisione di rosa (l'ultimo slot): la seconda aspetta il lock e risponde CONFLICT;
 #  2. firma contro chiusura di stagione, nei due ordini: la chiusura aspetta le scritture in corso; una firma che arriva a
 #     chiusura in corso non finisce nella stagione chiusa;
-#  3. scambi in versi opposti e taglio contro scambio: nessun deadlock (40P01), il perdente risponde CONFLICT.
+#  3. scambi in versi opposti e taglio contro scambio: nessun deadlock (40P01), il perdente risponde CONFLICT;
+#  4. proposte di scambio (Fase 7.2): due approvazioni con gli stessi giocatori e approvazione contro taglio, stesso esito;
+#     la proposta perdente risulta superata.
 set -uo pipefail
 
 export PGOPTIONS="${PGOPTIONS:-} -c lock_timeout=20s"
@@ -29,7 +31,8 @@ SEASON=$(psqlq -c "select id from seasons where is_current")
 cleanup() {
   psqlq -c "
     delete from audit_log where user_id = '$ADMIN';
-    delete from trades where payload->>'team_a' in ('$TA', '$TB') and approved_by = 'conc-test';
+    delete from trade_proposals where id between 910001 and 910099;
+    delete from trades where approved_by = 'conc-test';
     delete from contracts where player_id between 910001 and 910099;
     delete from cuts where player_id between 910001 and 910099;
     delete from players where id between 910001 and 910099;
@@ -140,6 +143,45 @@ wait
 grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "3b: deadlock tra taglio e scambio"
 grep -q 'traded:' "$TMP/s1" && grep -q 'CONFLICT' "$TMP/s2" && ok "taglio contro scambio: nessun deadlock, il taglio dà CONFLICT" \
   || fail "3b: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
+
+# ---------- 4. Proposte di scambio accettate, approvate in parallelo ----------
+# $1 = id, $2 = movimenti. Proposte già accettate, inserite direttamente (le RPC delle squadre sono provate in rls.sql).
+proposal() {
+  psqlq -c "insert into trade_proposals (id, season_id, proposer_team_id, teams, moves, roster_revs, status, expires_at)
+    values ($1, $SEASON, '$TA', array['$TA', '$TB']::uuid[], '$2'::jsonb, '{}'::jsonb, 'accepted', now() + interval '1 day');" >/dev/null
+}
+pversion() { psqlq -c "select version from trade_proposals where id = $1"; }
+pstatus() { psqlq -c "select status from trade_proposals where id = $1"; }
+approve() { echo "select 'approved:' || public.admin_approve_trade_proposal($1, $(pversion "$1"), 'conc-test', null, $REVS);"; }
+
+reset
+RA=$(rev "$TA"); RB=$(rev "$TB"); VA=$(version 910011); VB=$(version 910012)
+REVS="jsonb_build_object('$TA', $RA, '$TB', $RB)"
+MOVES="[{\"kind\":\"contract\",\"id\":910011,\"version\":$VA,\"from\":\"$TA\",\"to\":\"$TB\"},{\"kind\":\"contract\",\"id\":910012,\"version\":$VB,\"from\":\"$TB\",\"to\":\"$TA\"}]"
+proposal 910001 "$MOVES"
+proposal 910002 "$MOVES"
+session "$TMP/s1" "$(approve 910001)" "select pg_sleep(2);" &
+sleep 0.5
+session "$TMP/s2" "$(approve 910002)" &
+wait
+grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "4a: deadlock tra due approvazioni"
+grep -q 'approved:' "$TMP/s1" && grep -q 'CONFLICT' "$TMP/s2" && [ "$(pstatus 910002)" = superseded ] \
+  && ok "due approvazioni con gli stessi giocatori: passa la prima, l'altra è superata" \
+  || fail "4a: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2") / stato $(pstatus 910002))"
+
+# ---------- 4b. Approvazione contro taglio ----------
+reset
+RA=$(rev "$TA"); RB=$(rev "$TB"); VA=$(version 910011); VB=$(version 910012)
+REVS="jsonb_build_object('$TA', $RA, '$TB', $RB)"
+MOVES="[{\"kind\":\"contract\",\"id\":910011,\"version\":$VA,\"from\":\"$TA\",\"to\":\"$TB\"},{\"kind\":\"contract\",\"id\":910012,\"version\":$VB,\"from\":\"$TB\",\"to\":\"$TA\"}]"
+proposal 910003 "$MOVES"
+session "$TMP/s1" "$(approve 910003)" "select pg_sleep(2);" &
+sleep 0.5
+session "$TMP/s2" "select 'cut:' || public.admin_cut_player(910012, $VB, 0);" &
+wait
+grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "4b: deadlock tra approvazione e taglio"
+grep -q 'approved:' "$TMP/s1" && grep -q 'CONFLICT' "$TMP/s2" && ok "approvazione contro taglio: nessun deadlock, il taglio dà CONFLICT" \
+  || fail "4b: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
 
 if [ "$FAILS" -gt 0 ]; then echo "CONCORRENZA: $FAILS controlli falliti" >&2; exit 1; fi
 echo "CONCORRENZA: tutti i test passati"

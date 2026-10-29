@@ -24,5 +24,10 @@ export async function GET(request: Request) {
   else console.error(`[dunkest] aggiornamento non riuscito: ${stats.error}`);
   if (league.ok) console.log(`[dunkest] lega: classifica ${league.standings}, scontri ${league.matches}, formazioni ${league.lineups}${league.report.full ? " (calendario completo)" : ""}`);
   else console.error(`[dunkest] lega non aggiornata (${league.code}): ${league.error}`);
+  // Proposte di scambio oltre la scadenza (Fase 7.2): le RPC le trattano già come scadute, qui si marcano nel registro.
+  // Non cambia l'esito del cron.
+  const expired = await db.rpc("trade_proposals_expire", { p_secret: secret });
+  if (expired.error) console.error(`[scambi] proposte scadute non marcate: ${expired.error.message}`);
+  else if (expired.data) console.log(`[scambi] ${expired.data} proposte scadute`);
   return Response.json({ stats, league }, { status: stats.ok && league.ok ? 200 : 502 });
 }

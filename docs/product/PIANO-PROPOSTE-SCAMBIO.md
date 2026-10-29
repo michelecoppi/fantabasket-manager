@@ -111,8 +111,15 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 
 ## Domande da chiudere
 
-1. **Scadenza dopo l'accettazione** — le 24 ore valgono solo per le risposte delle squadre (proposta piano) o anche per l'approvazione dell'admin?
-2. **Chiusura del mercato** — ritira le proposte aperte (proposta piano) o le lascia scadere da sole?
-3. **Scambi admin a mercato chiuso** — `/admin/scambio` resta sempre utilizzabile (proposta piano)?
-4. **Più account per squadra** — se una squadra ha due profili, basta che risponda uno dei due (proposta piano)?
+1. ~~**Scadenza dopo l'accettazione**~~ — deciso (2026-10-29): le 24 ore valgono solo per le risposte delle squadre.
+2. ~~**Chiusura del mercato**~~ — deciso (2026-10-29): ritira le proposte non ancora approvate.
+3. ~~**Scambi admin a mercato chiuso**~~ — `/admin/scambio` resta sempre utilizzabile (fatto nella 7.1).
+4. ~~**Più account per squadra**~~ — deciso (2026-10-29): basta la risposta di uno (si registra chi ha risposto).
 5. **Bot** — sul canale vanno solo gli scambi eseguiti o anche le proposte?
+
+## Note dalla PR 2 (2026-10-29)
+
+- Una proposta `pending` oltre `expires_at` vale già come scaduta per le RPC; `trade_proposals_expire` (cron giornaliero, `/api/dunkest`) la marca `expired` con l'ora della scadenza.
+- Controproposta: `trade_propose(..., p_parent)` chiude la proposta di partenza nella stessa transazione (rifiutata con nota «Controproposta» se la fa una controparte che non ha risposto; ritirata se la rifà il proponente, anche dopo l'accettazione di tutti).
+- In più rispetto al piano: `admin_return_trade_proposal` («Rimanda alle squadre», → `superseded`) e il superamento automatico anche dopo uno scambio registrato a mano con `admin_execute_trade`.
+- Per la UI (PR 3): un'accettazione parziale (scambi a tre o più) cambia la `version` della proposta; gli errori delle RPC delle squadre hanno gli stessi prefissi di quelle admin, quindi `rpcError()` va riusata (spostarla fuori da `admin/actions.ts`).
