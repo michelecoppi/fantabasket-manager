@@ -109,3 +109,11 @@ Novità di sola lettura sui dati Dunkest (piano in [product/PIANO-FASE-6.md](pro
 - **Da confermare** (6.2, `src/lib/value.ts`): soglie di «Affari e flop» = almeno 3 partite giocate (`VALUE_MIN_GAMES`) e 10 righe per lista (`VALUE_LIST_SIZE`). Il 2026-10-29 entrano 125 giocatori a contratto (titolari e riserve).
 - **ASSUNZIONE** (cambi di rosa): un giocatore schierato in una giornata che oggi non è più nella rosa Dunkest della sua squadra è stato sostituito dopo quella giornata, quindi non è un avviso («Sostituito dopo»). Se un proprietario schierasse una riserva e poi la togliesse dalla rosa Dunkest, l'avviso di quella giornata sparirebbe: il registro dei cambi (`dunkest_roster_moves`) resta come traccia.
 - I premi di una giornata senza formazioni salvate (la 1) sono solo quelli di squadra e di scontro; la bacheca stagionale aspetta lo storico completo delle formazioni (6.0).
+
+## Proposte di scambio (Fase 7)
+Piano in [product/PIANO-PROPOSTE-SCAMBIO.md](product/PIANO-PROPOSTE-SCAMBIO.md). Non sono regole del regolamento ma funzionamento dell'app.
+- **Decisione dell'utente (2026-10-29)**: il mercato degli scambi lo apre e chiude un admin dall'interfaccia; il regolamento non fissa finestre (R-55 dice solo «dopo l'asta estiva»). Se la lega fissa date, si aggiungono allora. Una proposta dura al massimo un giorno (`trade_proposal_hours` = 24). Può approvare qualunque admin, anche se la sua squadra è nello scambio.
+- **ASSUNZIONE**: le 24 ore valgono per le risposte delle squadre; una proposta accettata da tutte resta in coda all'admin senza scadenza.
+- **ASSUNZIONE**: chiudere il mercato ritira le proposte non ancora approvate; gli admin possono sempre eseguire uno scambio da `/admin/scambio` (R-55: il moderatore ufficializza).
+- **ASSUNZIONE**: se una squadra ha più profili, risponde per la squadra il primo che accetta o rifiuta.
+- **Da decidere** (bot Telegram, dopo): sul canale vanno solo gli scambi eseguiti o anche le proposte?

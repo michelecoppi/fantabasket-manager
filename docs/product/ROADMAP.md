@@ -61,6 +61,8 @@ Questi incrementi possono essere parallelizzati dopo le correzioni, ma ognuno de
 - **Pagelle degli scambi («chi ha vinto lo scambio»):** nello storico, per ogni scambio, PDK ricevuto contro PDK ceduto. Aspetta che `trades` abbia righe (0 il 2026-10-29). Limite da dichiarare: `dunkest_stats` ha la media stagionale, non il rendimento dalla data dello scambio; per quello servirebbe lo storico partita per partita.
 - **Sondaggi della lega:** votazioni sulle ASSUNZIONI di [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) da confermare (scambi a più squadre, slot negli scambi, minimo d'asta...). Serve una tabella in cui ogni utente scrive solo il proprio voto (RLS `user_id = auth.uid()`): è un'eccezione alla regola «viewer in sola lettura» e va decisa prima di iniziare.
 
+Proposte di scambio tra utenti, approvazione admin e cercatore di scambi (Fase 7): piano in [PIANO-PROPOSTE-SCAMBIO.md](PIANO-PROPOSTE-SCAMBIO.md).
+
 Fase 6 (premi della giornata, affari e flop, rivalità, andamento in classifica): piano in [PIANO-FASE-6.md](PIANO-FASE-6.md).
 
 ## Misura del successo
