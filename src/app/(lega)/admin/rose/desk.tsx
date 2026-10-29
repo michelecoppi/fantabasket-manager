@@ -268,13 +268,16 @@ function ResolveCutPanel({ team, cut, settings, onDone }: { team: RoseTeam; cut:
   const [slot, setSlot] = useState<"starter" | "reserve">(cut.originalSlot ?? "starter");
   const [salary, setSalary] = useState(cut.originalSalary === null ? "" : String(cut.originalSalary));
   const [years, setYears] = useState<number | null>(cut.years);
+  // Il taglio ricorda la team option del contratto (R-22): rientrando la squadra la conserva, salvo che la tolga qui.
+  const [teamOption, setTeamOption] = useState(cut.teamOption);
   const [pending, start] = useTransition();
+  const optionOk = teamOptionAllowed(years, settings);
   const amount = cut.originalSalary ?? (salary === "" ? NaN : Number(salary));
   const roster = team.players.map((x) => ({ id: x.id, position: x.pos, slot: x.slot, salary: x.salary }));
   const ev = Number.isFinite(amount)
     ? evaluateSigning(
         { roster, cuts: team.cuts.filter((c) => c.id !== cut.id).map((c) => ({ salary: c.paid })), bonus: team.bonus },
-        { position: cut.pos, slot, years, teamOption: false, salary: amount, isRookie: cut.originalIsRookie },
+        { position: cut.pos, slot, years, teamOption: teamOption && optionOk, salary: amount, isRookie: cut.originalIsRookie },
         settings,
       )
     : null;
@@ -329,6 +332,7 @@ function ResolveCutPanel({ team, cut, settings, onDone }: { team: RoseTeam; cut:
               options={[{ value: null, label: durationLabel(null) }, ...contractDurations(settings).map((y) => ({ value: y as number | null, label: durationLabel(y) }))]}
             />
           </Field>
+          <Check checked={teamOption && optionOk} disabled={!optionOk} onChange={setTeamOption}>Team option (+1)</Check>
           {ev?.errors.map((e) => <Callout key={e} tone="bad">{e}</Callout>)}
           {ev && ev.errors.length === 0 && ev.warnings.length > 0 && (
             <Callout tone="warn" title="Da controllare (non bloccano)">
@@ -341,7 +345,7 @@ function ResolveCutPanel({ team, cut, settings, onDone }: { team: RoseTeam; cut:
               pending={pending}
               onClick={() =>
                 start(async () => {
-                  const r = await reinstateCut({ cutId: cut.id, version: cut.version, slot, salary: Number.isFinite(amount) ? amount : null, years, teamOption: false });
+                  const r = await reinstateCut({ cutId: cut.id, version: cut.version, slot, salary: Number.isFinite(amount) ? amount : null, years, teamOption: teamOption && optionOk });
                   onDone(r.ok ? { ok: true, text: r.message } : { ok: false, text: r.error });
                 })
               }
