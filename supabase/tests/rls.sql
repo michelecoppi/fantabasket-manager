@@ -351,6 +351,29 @@ begin
   perform rls_t.become('postgres');
 end $$;
 
+-- ---------- Mercato degli scambi (Fase 7.1): solo un admin lo apre e lo chiude, con una riga di audit ----------
+do $$
+declare n_audit bigint;
+begin
+  update seasons set trade_market_open = false where is_current;
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer apre il mercato', rls_t.try('select public.admin_set_trade_market(true)'), array['error: FORBIDDEN%']);
+  perform rls_t.become('postgres');
+  n_audit := (select count(*) from audit_log where action = 'market');
+
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin apre il mercato', rls_t.try('select public.admin_set_trade_market(true)'), array['rows=1']);
+  perform rls_t.chk('admin riapre il mercato già aperto', rls_t.try('select public.admin_set_trade_market(true)'), array['rows=1']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('il mercato non risulta aperto', (select trade_market_open from seasons where is_current));
+  perform rls_t.ok('apertura del mercato senza una (sola) riga di audit', (select count(*) from audit_log where action = 'market') = n_audit + 1);
+
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin chiude il mercato', rls_t.try('select public.admin_set_trade_market(false)'), array['rows=1']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('il mercato non risulta chiuso', not (select trade_market_open from seasons where is_current));
+end $$;
+
 -- ---------- R-24 (P2-04): la firma consuma il diritto di pareggio e il contratto è unrestricted ----------
 do $$
 declare

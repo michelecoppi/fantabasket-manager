@@ -1,15 +1,17 @@
 import { PageTitle } from "@/components/ui";
-import { loadLeague, loadVersions } from "@/lib/league-server";
+import { loadLeague, loadTradeMarket, loadVersions } from "@/lib/league-server";
 import { simTeams } from "@/lib/sim-teams";
 import { TradeDesk } from "./desk";
+import { MarketSwitch } from "./market";
 
 export default async function AdminTradePage() {
-  const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
+  const [league, versions, market] = await Promise.all([loadLeague(), loadVersions(), loadTradeMarket()]);
   return (
     <>
       <PageTitle icon="swap" eyebrow="Area admin" sub="Scegli le squadre (anche più di due) e ciò che ognuna cede e a chi: il cap (R-57) è controllato prima di salvare, poi rose, pick e registro cambiano insieme o per niente.">
         Registra uno scambio
       </PageTitle>
+      <MarketSwitch open={market} />
       <TradeDesk teams={simTeams(league, versions)} settings={league.settings} />
     </>
   );
