@@ -14,7 +14,8 @@ create index trades_to_announce on trades (id) where announced_at is null;
 
 -- Prende gli scambi eseguiti da annunciare, non più vecchi di `p_max_age_hours` (un canale configurato tardi non riceve
 -- l'arretrato), e li restituisce già leggibili: nomi delle squadre (con quanti scambi hanno fatto in stagione fino a questo),
--- giocatori con ruolo e stipendio, pick con anno, giro e squadra d'origine.
+-- giocatori con ruolo, stipendio, durata, rookie, punteggio Dunkest e infortunio (servono alle battute), pick con anno, giro e
+-- squadra d'origine.
 create function trade_announce_claim(p_secret text, p_max_age_hours int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -48,8 +49,16 @@ begin
               select jsonb_build_object(
                 'name', case when p.first_name <> '' then p.first_name || ' ' || p.last_name else p.last_name end,
                 'pos', p.pos,
-                'salary', k.salary)
-              from contracts k join players p on p.id = k.player_id
+                'salary', k.salary,
+                'years_left', k.years_left,
+                'rookie', k.is_rookie,
+                'pdk', s.pdk,
+                'gp', s.gp,
+                'injury', i.injury)
+              from contracts k
+              join players p on p.id = k.player_id
+              left join dunkest_stats s on s.player_id = k.player_id and s.season_id = c.season_id
+              left join dunkest_injuries i on i.player_id = k.player_id
               where k.id = (m.value ->> 'id')::int), '{}'::jsonb)
             else coalesce((
               select jsonb_build_object('year', d.year, 'round', d.round, 'original_team', ot.name)

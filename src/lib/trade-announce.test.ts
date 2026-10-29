@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { announcementText, escapeHtml, parseAnnouncements, tradeJokes, type AnnouncedTrade } from "./trade-announce";
+import {
+  announcementText,
+  CLOSINGS,
+  escapeHtml,
+  HEADLINES,
+  JOKE_VARS,
+  JOKES,
+  parseAnnouncements,
+  tradeJokes,
+  type AnnouncedTrade,
+  type JokeKind,
+} from "./trade-announce";
 
 // Come la restituisce trade_announce_claim (migrazione 20261029210000).
 const row = (over: Record<string, unknown> = {}) => ({
@@ -104,6 +115,49 @@ describe("annuncio Telegram degli scambi (Fase 7.5)", () => {
     ];
     expect(kinds({ teams: [{ id: "a", name: "A", season_trades: 1 }, { id: "b", name: "B", season_trades: 2 }], moves: uneven })).toEqual(["firstTrade"]);
     expect(kinds({ moves: uneven })).toEqual(["generic"]);
+  });
+
+  it("battute: infortunato rifilato, rapina sul PDK, stella, rookie, contratto lungo, fantasma", () => {
+    const t = one({
+      moves: [
+        { kind: "contract", id: 1, from: "a", to: "b", name: "Big Star", salary: 40, pdk: 20, gp: 9, injury: "Ginocchio" },
+        { kind: "contract", id: 2, from: "b", to: "a", name: "Giovane", salary: 4, pdk: 38, gp: 0, rookie: true, years_left: 3 },
+      ],
+    });
+    const jokes = tradeJokes(t);
+    expect(jokes.map((j) => j.kind)).toEqual(["injured", "heist", "dump", "star", "rookie", "longContract", "ghost"]);
+    expect(jokes[0].vars).toEqual({ X: "Bol Bollerz", Y: "Spaccinos", P: "Big Star" });
+    expect(jokes[1].vars).toEqual({ W: "Bol Bollerz", L: "Spaccinos", d: "18" });
+    expect(jokes.find((j) => j.kind === "longContract")?.vars).toEqual({ Y: "Bol Bollerz", P: "Giovane", n: "3" });
+    expect(announcementText(t)).toContain("• Big Star <i>(40 cr · 🚑)</i>");
+    // senza il PDK di tutti i giocatori niente rapina
+    expect(tradeJokes(one({ moves: [{ ...row().moves[0], pdk: 40 }, row().moves[1]] })).map((j) => j.kind)).not.toContain("heist");
+  });
+
+  it("scambio a tre: numeri della battuta", () => {
+    const t = one({ teams: [...row().teams, { id: "c", name: "OKCC", season_trades: 1 }] });
+    expect(tradeJokes(t).find((j) => j.kind === "multi")?.vars).toEqual({ n: 3, m: 2 });
+  });
+
+  it("ogni frase usa solo i segnaposto del suo gruppo, senza doppioni", () => {
+    for (const kind of Object.keys(JOKES) as JokeKind[]) {
+      const pool: readonly string[] = JOKES[kind];
+      expect(new Set(pool).size).toBe(pool.length);
+      for (const text of pool) {
+        for (const [, v] of text.matchAll(/\{(\w+)\}/g)) expect(JOKE_VARS[kind], `${kind}: ${text}`).toContain(v);
+      }
+    }
+    expect(new Set(HEADLINES).size).toBe(HEADLINES.length);
+    expect(new Set(CLOSINGS).size).toBe(CLOSINGS.length);
+  });
+
+  it("titolo e chiusura variano tra gli scambi", () => {
+    const first = (id: number) => announcementText({ ...one(), id }).split("\n")[0];
+    expect((HEADLINES as readonly string[]).map((h) => `<b>${escapeHtml(h)}</b>`)).toContain(first(1));
+    expect(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(first)).size).toBeGreaterThan(2);
+    const text = announcementText(one(), "https://lega.example");
+    const closing = text.split("\n").at(-2);
+    expect((CLOSINGS as readonly string[]).map((c) => `<i>${escapeHtml(c)}</i>`)).toContain(closing);
   });
 
   it("al massimo due battute, sempre le stesse per lo stesso scambio", () => {
