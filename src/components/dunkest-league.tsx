@@ -7,6 +7,7 @@ import { PosChip, stagger } from "@/components/ui";
 import { syncState } from "@/lib/dunkest";
 import { teamForm, type CheckedPlayer, type DunkestLeagueView, type LeagueMatch, type LineupCheck, type LineupStatus } from "@/lib/dunkest-league";
 import { fmtDateTime } from "@/lib/format";
+import type { TeamView } from "@/lib/league";
 
 /*
  * Lega su Dunkest (issue #72) nel design system Arena Night: classifica come tabella da broadcast (posizione grande, stemma,
@@ -20,6 +21,11 @@ export interface TeamInfo {
   color: string;
 }
 export type TeamIndex = Map<string, TeamInfo>;
+
+/** Nome, proprietario e colore di ogni squadra della lega (colori da `teamColors`). */
+export function teamIndex(teams: TeamView[], colors: Map<string, string>): TeamIndex {
+  return new Map(teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+}
 
 /** Punti fantasy come li scrive Dunkest (due decimali, virgola). */
 export const fpt = (n: number) => n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });

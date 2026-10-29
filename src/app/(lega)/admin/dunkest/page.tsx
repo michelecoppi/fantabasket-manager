@@ -1,5 +1,5 @@
 import { DunkestSource } from "@/components/dunkest";
-import { issuesText, LeagueSource, type TeamIndex } from "@/components/dunkest-league";
+import { issuesText, LeagueSource, teamIndex, type TeamIndex } from "@/components/dunkest-league";
 import { TeamCrest } from "@/components/crest";
 import { Icon } from "@/components/icons";
 import { Badge, Empty, PageTitle, PosChip, Scoreboard, Section, stagger } from "@/components/ui";
@@ -303,7 +303,7 @@ export default async function AdminDunkestPage() {
     db.from("dunkest_teams").select("team_id,dunkest_team_id,seasons!inner(is_current)").eq("seasons.is_current", true),
   ]);
   const colors = teamColors(league.teams.map((t) => t.team.id));
-  const teams: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+  const teams = teamIndex(league.teams, colors);
   const dunkestTeamOf = new Map((mapRes.data ?? []).map((r) => [r.team_id as string, r.dunkest_team_id as number]));
   const token = tokenState(view.sync);
   const runs = (runsRes.data ?? []) as RunRow[];

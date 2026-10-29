@@ -4,7 +4,7 @@ import { ChipLinks, ViewSwitch } from "@/components/chips";
 import { SubmitButton } from "@/components/controls";
 import { TeamCrest } from "@/components/crest";
 import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
-import type { TeamIndex } from "@/components/dunkest-league";
+import { teamIndex } from "@/components/dunkest-league";
 import { Icon } from "@/components/icons";
 import { Badge, Empty, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
 import { ValueList } from "@/components/value-board";
@@ -28,7 +28,7 @@ const cols = (withPdk: boolean) =>
  */
 function DealsView({ league, dunkest, teamFilter }: { league: LeagueView; dunkest: DunkestView; teamFilter: string | null }) {
   const colors = teamColors(league.teams.map((t) => t.team.id));
-  const teams: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+  const teams = teamIndex(league.teams, colors);
   if (!dunkest.available) {
     return (
       <Empty title="Dati non disponibili" icon="chart">

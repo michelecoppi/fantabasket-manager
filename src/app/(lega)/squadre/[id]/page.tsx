@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CapLine } from "@/components/cap-line";
 import { TeamCrest } from "@/components/crest";
 import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
-import { issuesText, LeagueSource, Lineup, MatchScore, type TeamIndex } from "@/components/dunkest-league";
+import { issuesText, LeagueSource, Lineup, MatchScore, teamIndex, type TeamIndex } from "@/components/dunkest-league";
 import { Callout } from "@/components/controls";
 import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
@@ -15,7 +15,7 @@ import { TeamValue } from "@/components/value-board";
 import { TrophyCase } from "@/components/trophy-case";
 import { ViewSwitch } from "@/components/chips";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
-import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView } from "@/lib/dunkest-league";
+import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView, type DunkestRosterPlayer, type LineupPlayer } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
 import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves } from "@/lib/league-server";
@@ -122,12 +122,14 @@ function Infirmary({ players, dunkest }: { players: RosterPlayer[]; dunkest: Dun
  * «Formazione su Dunkest»: quintetto, panchina e tribuna della squadra nell'ultima giornata con punti (issue #72), con gli
  * avvisi quando chi è schierato non torna con le rose dell'app. Sotto, il prossimo scontro.
  */
-async function DunkestLineup({
+function DunkestLineup({
   t,
   league,
   view,
   teams,
   positions,
+  lineup,
+  dunkestRoster,
 }: {
   t: TeamView;
   league: LeagueView;
@@ -135,12 +137,14 @@ async function DunkestLineup({
   teams: TeamIndex;
   /** posizione dopo ogni giornata chiusa (Fase 6.4), per la mini linea accanto alla classifica */
   positions: { matchday: number; position: number }[];
+  /** formazione schierata nell'ultima giornata con punti */
+  lineup: LineupPlayer[];
+  /** rosa della squadra su Dunkest (tribuna compresa) */
+  dunkestRoster: DunkestRosterPlayer[] | undefined;
 }) {
   const id = t.team.id;
   const latest = teamMatch(view, id, "latest");
   const next = teamMatch(view, id, "next");
-  const lineup = latest ? ((await loadLineups([latest.match.id])).get(latest.match.id)?.get(id) ?? []) : [];
-  const dunkestRoster = (await loadDunkestRosters()).get(id);
   const check = checkLineup(id, lineup, t.starters.map((p) => p.playerId), rosterRefs(league.teams), dunkestRoster);
   const stands = tribune(lineup, dunkestRoster, t.starters, check);
   const issues = issuesText(check, teams);
@@ -231,14 +235,32 @@ function SlotMeter({ label, have, need }: { label: string; have: number; need: n
   );
 }
 
-/** Cambi di rosa di una squadra: quelli registrati e le uscite ricostruite dalle sue formazioni (giornate con punti). */
-async function teamMoves(id: string, view: DunkestLeagueView) {
+/**
+ * Dati della scheda Su Dunkest, letti tutti insieme: le formazioni di ogni partita con punti della squadra (l'ultima per la
+ * formazione, tutte per ricostruire le uscite), la rosa su Dunkest e i cambi registrati dal job.
+ */
+async function dunkestTab(id: string, view: DunkestLeagueView) {
   const games = view.matchdays.flatMap((d) =>
     d.state === "upcoming" ? [] : d.matches.filter((m) => m.homeTeamId === id || m.awayTeamId === id).map((m) => ({ matchday: d.matchday, id: m.id })),
   );
+  const latest = teamMatch(view, id, "latest");
   const [logged, lineups, rosters] = await Promise.all([loadRosterMoves(id), loadLineups(games.map((g) => g.id)), loadDunkestRosters()]);
   const fielded = games.map((g) => ({ matchday: g.matchday, players: lineups.get(g.id)?.get(id) ?? [] }));
-  return teamRosterMoves(logged, fielded, rosters.get(id) ?? []);
+  const dunkestRoster = rosters.get(id);
+  return {
+    lineup: latest ? (lineups.get(latest.match.id)?.get(id) ?? []) : [],
+    dunkestRoster,
+    // cambi di rosa: quelli registrati e le uscite ricostruite dalle formazioni
+    moves: view.available ? teamRosterMoves(logged, fielded, dunkestRoster ?? []) : null,
+  };
+}
+
+/** Vetrina: premi di tutte le giornate chiuse (formazioni dell'intera stagione, lette solo in questa scheda). */
+async function vetrinaTab(view: DunkestLeagueView, league: LeagueView) {
+  if (!view.available) return null;
+  const closed = view.matchdays.filter((d) => d.state === "played");
+  const lineups = await loadLineups(closed.flatMap((d) => d.matches.map((m) => m.id)));
+  return seasonTrophies(closed, lineups, league.teams.map((x) => x.team.id));
 }
 
 type TeamTab = "rosa" | "dunkest" | "vetrina" | "pick";
@@ -253,7 +275,15 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const { id } = await props.params;
   const sp = await props.searchParams;
   const tab: TeamTab = TEAM_TABS.find((x) => x === sp.vista) ?? "rosa";
-  const [league, dunkest, view, profile] = await Promise.all([loadLeague(), loadDunkest(), loadLeagueDunkest(), loadProfile()]);
+  // I dati delle schede Su Dunkest e Vetrina dipendono dal calendario: partono appena arriva, in parallelo con il resto.
+  const [league, dunkest, view, profile, dunkestData, season] = await Promise.all([
+    loadLeague(),
+    loadDunkest(),
+    loadLeagueDunkest(),
+    loadProfile(),
+    tab === "dunkest" ? loadLeagueDunkest().then((v) => dunkestTab(id, v)) : null,
+    tab === "vetrina" ? Promise.all([loadLeagueDunkest(), loadLeague()]).then(([v, l]) => vetrinaTab(v, l)) : null,
+  ]);
   const t = league.teams.find((x) => x.team.id === id);
   if (!t) notFound();
   const f = t.finance;
@@ -268,7 +298,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const unknownPos = t.starters.filter((x) => !x.pos);
   const roster = [...t.starters, ...t.reserves];
   const injuredCount = roster.filter((p) => dunkest.injuries.has(p.playerId)).length;
-  const teams: TeamIndex = new Map(league.teams.map((x) => [x.team.id, { name: x.team.name, owner: x.team.owner_name, color: colors.get(x.team.id) ?? "var(--muted)" }]));
+  const teams = teamIndex(league.teams, colors);
   const standing = view.standings.find((s) => s.teamId === id);
   // Fase 6: andamento, affare e flop, rivalità (sola lettura, dati già caricati)
   const you = profile?.team_id === id;
@@ -276,14 +306,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const board = dunkest.available ? valueBoard(valueContracts(league.teams), dunkest.stats) : null;
   const value = board ? teamValue(board, id) : null;
   const rivals = view.available && view.standings.length > 0 ? headToHead(view, id) : [];
-  // Cambi di rosa su Dunkest (scheda Su Dunkest): registrati dal job più le uscite ricostruite dalle formazioni della squadra
-  const moves = tab === "dunkest" && view.available ? await teamMoves(id, view) : null;
-  // Vetrina: premi di tutte le giornate chiuse (formazioni dell'intera stagione, lette solo in questa scheda)
-  const closed = view.matchdays.filter((d) => d.state === "played");
-  const season =
-    tab === "vetrina" && view.available
-      ? seasonTrophies(closed, await loadLineups(closed.flatMap((d) => d.matches.map((m) => m.id))), league.teams.map((x) => x.team.id))
-      : null;
+  const moves = dunkestData?.moves ?? null;
 
   return (
     <>
@@ -430,7 +453,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
       {tab === "dunkest" && (
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div>
-            <DunkestLineup t={t} league={league} view={view} teams={teams} positions={trend} />
+            <DunkestLineup t={t} league={league} view={view} teams={teams} positions={trend} lineup={dunkestData?.lineup ?? []} dunkestRoster={dunkestData?.dunkestRoster} />
             {moves && (
               <Section title="Cambi di rosa" icon="swap" id="cambi" aside="su Dunkest">
                 <RosterMovesList moves={moves} />

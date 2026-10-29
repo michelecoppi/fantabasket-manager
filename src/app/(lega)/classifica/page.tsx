@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AwardsGrid } from "@/components/awards";
 import { ChipLinks, ViewSwitch } from "@/components/chips";
-import { Lineup, LeagueSource, MatchScore, StandingsTable, type TeamIndex } from "@/components/dunkest-league";
+import { Lineup, LeagueSource, MatchScore, StandingsTable, teamIndex } from "@/components/dunkest-league";
 import { Icon } from "@/components/icons";
 import { MatchdayCard } from "@/components/matchday-card";
 import { MatchdayStrip } from "@/components/matchday-strip";
@@ -9,7 +9,7 @@ import { PrecedentsLine } from "@/components/rivalries";
 import { StandingsChart } from "@/components/standings-chart";
 import { Badge, Empty, PageTitle, Scoreboard, Section, stagger } from "@/components/ui";
 import { hasPlayerAwards, matchdayAwards } from "@/lib/awards";
-import { checkLineup, rosterRefs, tribune, type LineupPlayer, type MatchdayView } from "@/lib/dunkest-league";
+import { checkLineup, rosterRefs, tribune, type DunkestLeagueView, type LineupPlayer, type MatchdayView } from "@/lib/dunkest-league";
 import type { TeamView } from "@/lib/league";
 import { loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
 import { precedents } from "@/lib/rivalries";
@@ -24,6 +24,20 @@ type Tab = "classifica" | "andamento" | "calendario" | "premi";
 const TABS: Tab[] = ["classifica", "andamento", "calendario", "premi"];
 
 /**
+ * Giornata scelta (`?giornata=N`, altrimenti l'ultima con punti; per i premi l'ultima chiusa, perché l'ultima con punti di solito
+ * è appena cominciata), ultima giornata chiusa e giornata di cui servono le formazioni: la scelta per calendario e premi,
+ * l'ultima chiusa per l'MVP della scheda Classifica.
+ */
+function pickDays(view: DunkestLeagueView, tab: Tab, asked: number) {
+  const fallback = view.latest ?? view.matchdays.find((d) => d.state === "upcoming")?.matchday ?? view.matchdays[0]?.matchday ?? null;
+  const lastPlayed = view.matchdays.findLast((d) => d.state === "played") ?? null;
+  const start = tab === "premi" ? (lastPlayed?.matchday ?? fallback) : fallback;
+  const selected = view.matchdays.find((d) => d.matchday === asked) ?? view.matchdays.find((d) => d.matchday === start) ?? null;
+  const lineupDay: MatchdayView | null = tab === "calendario" || tab === "premi" ? selected : tab === "classifica" ? lastPlayed : null;
+  return { selected, lastPlayed, lineupDay };
+}
+
+/**
  * Classifica, andamento, calendario e premi della lega su Dunkest (issue #72 e Fase 6), dal job giornaliero, in quattro
  * schede (`?vista=`, di default la classifica). La giornata scelta sta nell'URL (`?giornata=N`, di default l'ultima con punti)
  * e vale per calendario e premi; il grafico ha la sua vista (`?andamento=punti`) e la squadra in evidenza (`?evidenzia=<id>`,
@@ -32,21 +46,25 @@ const TABS: Tab[] = ["classifica", "andamento", "calendario", "premi"];
 export default async function StandingsPage(props: PageProps<"/classifica">) {
   const sp = await props.searchParams;
   const tab: Tab = TABS.find((t) => t === one(sp.vista)) ?? "classifica";
-  const [view, league, profile, dunkestRosters] = await Promise.all([loadLeagueDunkest(), loadLeague(), loadProfile(), loadDunkestRosters()]);
+  const asked = Number(one(sp.giornata));
+  // Le formazioni dipendono solo dal calendario: si leggono appena arriva, in parallelo con lega e profilo.
+  const lineupsOf = (v: DunkestLeagueView) => {
+    const { lineupDay } = pickDays(v, tab, asked);
+    return lineupDay ? loadLineups(lineupDay.matches.map((m) => m.id)) : new Map<number, Map<string, LineupPlayer[]>>();
+  };
+  const [view, league, profile, dunkestRosters, lineups] = await Promise.all([
+    loadLeagueDunkest(),
+    loadLeague(),
+    loadProfile(),
+    loadDunkestRosters(),
+    loadLeagueDunkest().then(lineupsOf),
+  ]);
   const colors = teamColors(league.teams.map((t) => t.team.id));
-  const teams: TeamIndex = new Map(league.teams.map((t) => [t.team.id, { name: t.team.name, owner: t.team.owner_name, color: colors.get(t.team.id) ?? "var(--muted)" }]));
+  const teams = teamIndex(league.teams, colors);
   const myTeamId = profile?.team_id ?? null;
 
-  const asked = Number(one(sp.giornata));
-  const fallback = view.latest ?? view.matchdays.find((d) => d.state === "upcoming")?.matchday ?? view.matchdays[0]?.matchday ?? null;
   const latestDay = view.matchdays.find((d) => d.state === "latest") ?? null;
-  const lastPlayed = [...view.matchdays].reverse().find((d) => d.state === "played") ?? null;
-  // i premi partono dall'ultima giornata chiusa (l'ultima con punti di solito è appena cominciata)
-  const start = tab === "premi" ? (lastPlayed?.matchday ?? fallback) : fallback;
-  const selected = view.matchdays.find((d) => d.matchday === asked) ?? view.matchdays.find((d) => d.matchday === start) ?? null;
-  // Formazioni: della giornata scelta per calendario e premi, dell'ultima chiusa per l'MVP della scheda Classifica.
-  const lineupDay: MatchdayView | null = tab === "calendario" || tab === "premi" ? selected : tab === "classifica" ? lastPlayed : null;
-  const lineups = lineupDay ? await loadLineups(lineupDay.matches.map((m) => m.id)) : new Map<number, Map<string, LineupPlayer[]>>();
+  const { selected, lastPlayed } = pickDays(view, tab, asked);
   const rosters = rosterRefs(league.teams);
   const byTeam = new Map(league.teams.map((t) => [t.team.id, t]));
 
