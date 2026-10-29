@@ -12,13 +12,16 @@ import { proposeTrade } from "./actions";
 
 export type { SimTeam };
 
-/** Proposta da cui si riparte (controproposta, o proposta rifatta dal proponente): i suoi movimenti ancora validi. */
-export interface CounterOf {
-  id: number;
+/** Bozza da cui parte la trade machine: uno scambio del cercatore («Usa questa») o una proposta da rifare. */
+export interface StartDraft {
   teams: string[];
   moves: TradeMoveInput[];
-  /** true se a rifarla è chi l'aveva proposta: la vecchia si ritira, invece di essere rifiutata */
-  own: boolean;
+  /** controproposta (o proposta rifatta dal proponente): i suoi movimenti ancora validi */
+  counter?: {
+    id: number;
+    /** true se a rifarla è chi l'aveva proposta: la vecchia si ritira, invece di essere rifiutata */
+    own: boolean;
+  };
 }
 
 export function TradeSimulator({
@@ -26,21 +29,21 @@ export function TradeSimulator({
   settings,
   myTeamId,
   market,
-  counterOf,
+  start,
 }: {
   teams: SimTeam[];
   settings: LeagueSettings;
   myTeamId?: string | null;
   /** mercato degli scambi (Fase 7.1): null = stato non disponibile */
   market: boolean | null;
-  counterOf?: CounterOf;
+  start?: StartDraft;
 }) {
   if (teams.length < 2) return <p className="text-sm text-muted">Servono almeno due squadre.</p>;
-  const initialDraft = counterOf ? draftFromMoves(counterOf.teams, counterOf.moves) : undefined;
+  const initialDraft = start ? draftFromMoves(start.teams, start.moves) : undefined;
   return (
     <>
       <TradeMachine teams={teams} settings={settings} myTeamId={myTeamId} initialDraft={initialDraft}>
-        {(ctx) => myTeamId && <Propose ctx={ctx} myTeamId={myTeamId} market={market} settings={settings} counterOf={counterOf} />}
+        {(ctx) => myTeamId && <Propose ctx={ctx} myTeamId={myTeamId} market={market} settings={settings} counter={start?.counter} />}
       </TradeMachine>
       <p className="mt-4 text-xs text-muted">
         Assunzioni: se non scegli altro, i giocatori arrivano nello stesso slot (titolare/riserva) che avevano; se una squadra è già sopra il cap, lo scambio è
@@ -65,13 +68,13 @@ function Propose({
   myTeamId,
   market,
   settings,
-  counterOf,
+  counter,
 }: {
   ctx: TradeContext;
   myTeamId: string;
   market: boolean | null;
   settings: LeagueSettings;
-  counterOf?: CounterOf;
+  counter?: StartDraft["counter"];
 }) {
   const { draft, moves, ev, draftId, name, reset } = ctx;
   const [message, setMessage] = useState("");
@@ -79,7 +82,7 @@ function Propose({
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome>(null);
   // dopo l'invio la proposta di partenza è chiusa: le nuove proposte da qui sono proposte normali
-  const [parent, setParent] = useState(counterOf?.id ?? null);
+  const [parent, setParent] = useState(counter?.id ?? null);
   const [pending, start] = useTransition();
 
   const others = draft.teams.filter((id) => id !== myTeamId).map(name);
@@ -120,7 +123,7 @@ function Propose({
       <Card className="space-y-4 p-4">
         {parent !== null && (
           <Callout tone="info" title={`Riparti dalla proposta n. ${parent}`}>
-            {counterOf?.own
+            {counter?.own
               ? "Inviando questa, la proposta di partenza si ritira."
               : "Inviando questa, rifiuti la proposta di partenza e le squadre ricevono la tua al suo posto."}{" "}
             <Link href="/scambio?vista=proposte" className="font-semibold underline">

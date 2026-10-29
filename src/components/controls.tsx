@@ -59,20 +59,22 @@ export function Field({ label, hint, htmlFor, children }: { label: string; hint?
   );
 }
 
-/** Scelta singola a pulsanti affiancati (adatta al pollice su telefono). */
+/** Scelta singola a pulsanti affiancati (adatta al pollice su telefono). `layout`: disposizione, se le opzioni non stanno in riga. */
 export function Segmented<T extends string | number | null>({
   value,
   options,
   onChange,
   label,
+  layout = "flex flex-wrap",
 }: {
   value: T;
   options: { value: T; label: string; disabled?: boolean }[];
   onChange: (v: T) => void;
   label: string;
+  layout?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1 rounded-xl bg-surface-subtle p-1">
+    <div role="radiogroup" aria-label={label} className={`${layout} gap-1 rounded-xl bg-surface-subtle p-1`}>
       {options.map((o) => {
         const on = o.value === value;
         return (
