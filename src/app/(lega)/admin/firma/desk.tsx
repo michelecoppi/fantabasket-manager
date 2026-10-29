@@ -195,7 +195,8 @@ export function SignDesk({ teams, free, settings }: { teams: SimTeam[]; free: Pl
               </div>
               <div className="mt-3 space-y-2">
                 {[...ev.errors, ...floorErrors].map((e) => <Callout key={e} tone="bad">{e}</Callout>)}
-                {ev.warnings.length > 0 && (
+                {/* Con un errore bloccante gli avvisi ripeterebbero gli stessi conteggi di rosa (es. «Titolari: 14/13») come «non bloccano». */}
+                {ev.errors.length === 0 && floorErrors.length === 0 && ev.warnings.length > 0 && (
                   <Callout tone="warn" title="Da controllare (non bloccano)">
                     <ul className="list-disc pl-5">{ev.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
                   </Callout>
