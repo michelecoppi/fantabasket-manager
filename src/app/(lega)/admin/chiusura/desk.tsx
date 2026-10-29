@@ -6,7 +6,8 @@ import { Badge, Card, Section } from "@/components/ui";
 import type { LeagueSettings } from "@/lib/cap";
 import { fmt } from "@/lib/format";
 import { optionContracts, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseInput } from "@/lib/season-close";
-import { closeSeason, type ActionResult } from "../actions";
+import type { ActionResult } from "@/lib/action-result";
+import { closeSeason } from "../actions";
 
 export function ClosingDesk({ input, settings }: { input: CloseInput; settings: LeagueSettings }) {
   const n = input.teams.length;

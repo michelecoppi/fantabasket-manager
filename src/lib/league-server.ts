@@ -8,6 +8,7 @@ import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague,
 import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
 import type { RosterMove } from "./roster-moves";
+import { toProposal, type Proposal, type ProposalRow } from "./trade-proposals";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
 
@@ -63,6 +64,27 @@ export const loadTradeMarket = cache(async (): Promise<boolean | null> => {
   const db = await createClient();
   const r = await db.from("seasons").select("trade_market_open").eq("is_current", true).maybeSingle<{ trade_market_open: boolean }>();
   return r.error || !r.data ? null : r.data.trade_market_open;
+});
+
+/**
+ * Proposte di scambio della stagione corrente (Fase 7), lette con RLS: un utente vede solo quelle della sua squadra, un admin
+ * tutte. Tollerante come il mercato: null = non disponibili, e le pagine (e i badge nel layout) restano su.
+ */
+export const loadProposals = cache(async (): Promise<Proposal[] | null> => {
+  const db = await createClient();
+  const [season, profile] = await Promise.all([loadSeason(), loadProfile()]);
+  // Senza squadra e senza ruolo admin la RLS non restituisce niente: si risparmia la query.
+  if (!profile || (!profile.team_id && profile.role !== "admin")) return [];
+  const r = await db
+    .from("trade_proposals")
+    .select(
+      "id,version,status,proposer_team_id,teams,moves,message,cap_exception_reason,created_at,expires_at,decided_at,decision_note,parent_id,trade_id,dunkest_done_at,trade_proposal_answers(team_id,answer,note,at)",
+    )
+    .eq("season_id", season.id)
+    .order("id", { ascending: false });
+  if (r.error) return null;
+  const now = Date.now();
+  return ((r.data ?? []) as ProposalRow[]).map((row) => toProposal(row, now));
 });
 
 /**

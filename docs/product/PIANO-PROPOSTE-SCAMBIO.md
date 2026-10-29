@@ -123,3 +123,10 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - Controproposta: `trade_propose(..., p_parent)` chiude la proposta di partenza nella stessa transazione (rifiutata con nota «Controproposta» se la fa una controparte che non ha risposto; ritirata se la rifà il proponente, anche dopo l'accettazione di tutti).
 - In più rispetto al piano: `admin_return_trade_proposal` («Rimanda alle squadre», → `superseded`) e il superamento automatico anche dopo uno scambio registrato a mano con `admin_execute_trade`.
 - Per la UI (PR 3): un'accettazione parziale (scambi a tre o più) cambia la `version` della proposta; gli errori delle RPC delle squadre hanno gli stessi prefissi di quelle admin, quindi `rpcError()` va riusata (spostarla fuori da `admin/actions.ts`).
+
+## Note dalla PR 3 (2026-10-29)
+
+- Una sola strada per valutare uno scambio salvato: `evaluateMoves` in `lib/trade-proposals.ts` (movimenti → bozza con `draftFromMoves` → `toParties` → `evaluateTrade`), usata da invio, accettazione, approvazione e anche da `executeTrade`; al posto di `tradePartiesFromMoves` del piano. `staleMoves` trova i movimenti con proprietario o versione cambiati.
+- Il badge degli admin sta su «Admin», non su «Scambio» (vedi registro decisioni di PLAN.md).
+- Accettare è bloccato solo da errori o movimenti cambiati; lo sforamento del cap passa all'admin, che vede la richiesta di eccezione precompilata nella motivazione.
+- Le proposte si leggono con `loadProposals()` (stagione corrente, RLS); se la lettura fallisce le pagine e i badge restano su.

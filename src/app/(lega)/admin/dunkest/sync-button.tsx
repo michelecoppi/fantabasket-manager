@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { Button, Callout } from "@/components/controls";
-import { syncDunkest, type ActionResult } from "../actions";
+import type { ActionResult } from "@/lib/action-result";
+import { syncDunkest } from "../actions";
 
 /** "Aggiorna ora": lo stesso aggiornamento del cron delle 9, utile la prima volta o se il job di stamattina è fallito. */
 export function DunkestSyncButton() {

@@ -3,7 +3,6 @@ import {
   rosterWarnings,
   teamFinance,
   type LeagueSettings,
-  type PickInfo,
   type Position,
   type TeamFinance,
   type TradeSide,
@@ -289,9 +288,3 @@ export function teamSide(t: TeamView): TradeSide {
   };
 }
 
-/** Pick attualmente possedute dalla squadra. */
-export function teamPicks(league: LeagueView, teamId: string): PickInfo[] {
-  return league.picks
-    .filter((p) => p.current_team_id === teamId)
-    .map((p) => ({ id: p.id, year: p.year, round: p.round, toConfirm: p.to_confirm }));
-}

@@ -34,8 +34,22 @@ function PendingIcon({ name, size }: { name: IconName; size: number }) {
   );
 }
 
+/** Numeri da mostrare sulle voci (per `href`): proposte di scambio che aspettano te o un admin (Fase 7.3). */
+export type NavBadges = Partial<Record<string, number>>;
+
+/** Pallino rosso col numero; il testo per i lettori di schermo lo dice per esteso. */
+function Count({ n, className = "" }: { n: number | undefined; className?: string }) {
+  if (!n) return null;
+  return (
+    <span className={`tnum grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full bg-brand-red px-1 font-sans text-[0.6875rem] leading-none font-bold tracking-normal text-white ${className}`}>
+      {n > 9 ? "9+" : n}
+      <span className="sr-only"> da gestire</span>
+    </span>
+  );
+}
+
 /** Navigazione principale nell'header (da lg in su; sotto c'è la TabBar): icona + etichetta, sottolineatura oro sulla voce attiva. */
-export function MainNav({ admin = false }: { admin?: boolean }) {
+export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badges?: NavBadges }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
   return (
@@ -55,6 +69,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
               <PendingIcon name={l.icon} size={18} />
             </span>
             {l.label}
+            <Count n={badges[l.href]} />
             <span
               aria-hidden
               className={`absolute inset-x-3 bottom-0 h-[3px] origin-center rounded-t-full bg-gold transition-transform duration-300 2xl:inset-x-4 ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"}`}
@@ -67,7 +82,7 @@ export function MainNav({ admin = false }: { admin?: boolean }) {
 }
 
 /** Barra in basso su telefono e tablet (sotto lg): le voci a portata di pollice, come un'app. */
-export function TabBar({ admin = false }: { admin?: boolean }) {
+export function TabBar({ admin = false, badges = {} }: { admin?: boolean; badges?: NavBadges }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
   return (
@@ -89,8 +104,9 @@ export function TabBar({ admin = false }: { admin?: boolean }) {
               }`}
             >
               <span aria-hidden className={`absolute top-0 h-[3px] w-8 rounded-b-full bg-gold transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`} />
-              <span className={`transition-transform duration-300 ${active ? "-translate-y-0.5 scale-110" : ""}`}>
+              <span className={`relative transition-transform duration-300 ${active ? "-translate-y-0.5 scale-110" : ""}`}>
                 <PendingIcon name={l.icon} size={22} />
+                <Count n={badges[l.href]} className="absolute -top-1.5 -right-2.5" />
               </span>
               {l.label}
             </Link>
