@@ -196,6 +196,7 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     lastContractValidMonths: get("last_contract_valid_months"),
     maxPicksPerRound: get("max_picks_per_round"),
     tradeMaxTeams: get("trade_max_teams"),
+    tradeProposalHours: get("trade_proposal_hours"),
     pickHorizonYears: get("pick_horizon_years"),
     draftRounds: get("draft_rounds"),
     rankBonus: rankBonus(),

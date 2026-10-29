@@ -11,6 +11,7 @@ const SETTING_ROWS = Object.entries({
   rank_bonus_1: 5, rank_bonus_2: 4, rank_bonus_3: 3, rank_bonus_4: 2, rank_bonus_5: 0, rank_bonus_6: -1, rank_bonus_7: -2, rank_bonus_8: -3,
   lottery_teams: 4,
   trade_max_teams: 4,
+  trade_proposal_hours: 24,
 }).map(([key, value]) => ({ key, value }));
 
 const pl = (last: string) => ({ first_name: "", last_name: last, pos: "G" as const, nba_team: null });

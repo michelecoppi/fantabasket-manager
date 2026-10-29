@@ -18,6 +18,8 @@
 --  * anon: non legge niente, non scrive, non esegue nessuna RPC.
 --  * viewer: legge tutto tranne audit_log, non scrive, non può promuoversi, le RPC rispondono FORBIDDEN.
 --  * admin: legge e scrive tutto, ma audit_log non si modifica né si cancella nemmeno da admin.
+--  * proposte di scambio (trade_proposal*): le leggono solo le squadre coinvolte e gli admin, nessuno le scrive direttamente
+--    (solo le RPC trade_* e admin_*). Le righe di prova coinvolgono la squadra del viewer, così il giro generico le vede.
 --
 -- Le tabelle e le RPC si leggono dal catalogo: una tabella nuova senza riga di prova, o con RLS spenta, e una RPC nuova senza
 -- `admin_guard()` fanno fallire il test.
@@ -152,11 +154,17 @@ insert into dunkest_rosters (season_id, team_id, fantasy_player_id, player_id, n
   select s.id, t.id, 3, 900001, 'RLS Uno', 'G' from seasons s, (select id from teams order by name limit 1) t where s.is_current;
 insert into dunkest_roster_moves (id, season_id, team_id, fantasy_player_id, player_id, name, pos, move, seen_matchday)
   select 900001, s.id, t.id, 2, null, 'RLS Uscito', 'A', 'out', 1 from seasons s, (select id from teams order by name limit 1) t where s.is_current;
+insert into trade_proposals (id, season_id, proposer_team_id, teams, moves, roster_revs, status, expires_at)
+  select 900001, s.id, b.id, array[b.id, a.id], '[]'::jsonb, '{}'::jsonb, 'rejected', now()
+  from seasons s, (select id from teams order by name limit 1) a, (select id from teams order by name offset 1 limit 1) b where s.is_current;
+insert into trade_proposal_answers (proposal_id, team_id, answer) select 900001, id, 'reject' from teams order by name limit 1;
+insert into trade_proposal_events (id, proposal_id, kind) values (900001, 900001, 'sent');
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
 -- e un admin si ferma subito dopo con INVALID/CONFLICT senza scrivere nulla.
-create table rls_t.tbl (name text primary key, col text not null, sample jsonb not null);
+-- `rpc_only`: nessuna policy oltre a SELECT, si scrive solo con le RPC (nemmeno l'admin scrive direttamente).
+create table rls_t.tbl (name text primary key, col text not null, sample jsonb not null, rpc_only boolean not null);
 create table rls_t.rpc (name text primary key, call text not null);
 grant select on rls_t.tbl, rls_t.rpc to anon, authenticated;
 
@@ -173,8 +181,13 @@ begin
     if v_sample is null then
       raise exception 'RLS: la tabella % è vuota, aggiungi una riga di prova in rls.sql', r.name;
     end if;
-    insert into rls_t.tbl values (r.name, r.col, v_sample);
+    insert into rls_t.tbl values (r.name, r.col, v_sample,
+      not exists (select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = r.name and p.cmd <> 'SELECT'));
   end loop;
+  -- Elenco esplicito: una tabella nuova senza la policy "admin write" per dimenticanza non passa come "solo RPC".
+  perform rls_t.ok('tabelle scritte solo dalle RPC diverse dall''atteso',
+    (select array_agg(name order by name) from rls_t.tbl where rpc_only)
+      = array['trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
 
   insert into rls_t.rpc
   select p.proname,
@@ -283,13 +296,16 @@ begin
   for t in select * from rls_t.tbl order by name loop
     n := rls_t.seen(t.name);
     perform rls_t.ok(format('l''admin non legge %s', t.name), n > 0);
-    -- INSERT di una riga già presente: la RLS lascia passare e ferma il vincolo (23505).
+    -- INSERT di una riga già presente: la RLS lascia passare e ferma il vincolo (23505). Le tabelle solo RPC rifiutano.
     perform rls_t.chk(format('admin INSERT su %s', t.name),
       rls_t.try(format('insert into public.%1$I select (jsonb_populate_record(null::public.%1$I, %2$L::jsonb)).*', t.name, t.sample)),
-      array['unique']);
+      array[case when t.rpc_only then 'denied' else 'unique' end]);
     perform rls_t.chk(format('admin UPDATE su %s', t.name),
       rls_t.try(format('update public.%1$I set %2$I = %2$I', t.name, t.col)),
-      array[case t.name when 'audit_log' then 'rows=0' else 'rows=' || n end]);
+      array[case when t.name = 'audit_log' then 'rows=0' when t.rpc_only then 'denied' else 'rows=' || n end]);
+    if t.rpc_only then
+      perform rls_t.chk(format('admin DELETE su %s', t.name), rls_t.try(format('delete from public.%I', t.name)), array['denied']);
+    end if;
   end loop;
   perform rls_t.chk('admin DELETE su audit_log', rls_t.try('delete from public.audit_log'), array['rows=0']);
 
@@ -726,6 +742,229 @@ begin
     exists (select 1 from audit_log where table_name = 'trades' and row_id = v::text and after->>'summary' like 'Scambio % ⇄ % ⇄ % · 1 giocatori, 1 pick'));
   update contracts set team_id = c.team_id where id = 900001;
   update draft_picks set current_team_id = pk.current_team_id where id = pk.id;
+end $$;
+
+-- ---------- Proposte di scambio (Fase 7.2): squadre coinvolte, mercato, versioni, approvazione ----------
+-- Il viewer è della prima squadra (t1), l'admin della seconda (t2), l'intruso della terza (t3, non coinvolta).
+do $$
+declare
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  t3 uuid := (select id from teams order by name offset 2 limit 1);
+  sid int := (select id from seasons where is_current);
+  c1 contracts;
+  c2 contracts;
+  revs jsonb;
+  revs3 jsonb;
+  mv jsonb;
+  p int;
+  p2 int;
+  v int;
+  n int;
+  tr int;
+  f text;
+  propose text;
+begin
+  perform rls_t.ok('gli helper delle proposte sono chiamabili dai client',
+    not has_function_privilege('authenticated', 'public.trade_apply(uuid[],jsonb,text,text,jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.trade_moves_check(uuid[],jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.trade_moves_current(jsonb,int)', 'execute')
+    and not has_function_privilege('authenticated', 'public.trade_proposal_close(int,int,text,uuid,text)', 'execute')
+    and not has_function_privilege('anon', 'public.my_team_id()', 'execute'));
+  foreach f in array array['trade_propose(uuid[],jsonb,jsonb,text,text,int)', 'trade_answer(int,int,text,text)', 'trade_withdraw(int,int)'] loop
+    perform rls_t.ok(format('anon esegue %s', f), not has_function_privilege('anon', 'public.' || f, 'execute'));
+  end loop;
+
+  insert into profiles (id, display_name, role, team_id) values (rls_t.intruder(), 'RLS intruso', 'viewer', t3);
+  insert into players (id, first_name, last_name, pos, nba_team) values (900021, 'RLS', 'Scambio A', 'G', 'TST'), (900022, 'RLS', 'Scambio B', 'G', 'TST');
+  insert into contracts (id, season_id, team_id, player_id, slot, years_left, salary) values
+    (900021, sid, t1, 900021, 'starter', 1, 5), (900022, sid, t2, 900022, 'starter', 1, 5);
+  select * into c1 from contracts where id = 900021;
+  select * into c2 from contracts where id = 900022;
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  select jsonb_object_agg(id::text, roster_rev) into revs3 from teams where id in (t2, t3);
+  mv := jsonb_build_array(
+    jsonb_build_object('kind', 'contract', 'id', c1.id, 'version', c1.version, 'from', t1, 'to', t2, 'label', 'RLS Scambio A'),
+    jsonb_build_object('kind', 'contract', 'id', c2.id, 'version', c2.version, 'from', t2, 'to', t1));
+  propose := 'select public.trade_propose(%L, %L, %L, null, null, null)';
+  update seasons set trade_market_open = false where id = sid;
+
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon propone', rls_t.try(format(propose, array[t1, t2], mv, revs)), array['denied']);
+  perform rls_t.chk('anon fa scadere le proposte', rls_t.try('select public.trade_proposals_expire(null)'), array['error: FORBIDDEN%']);
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('proposta a mercato chiuso', rls_t.try(format(propose, array[t1, t2], mv, revs)), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+  update seasons set trade_market_open = true where id = sid;
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('proposta senza la propria squadra',
+    rls_t.try(format(propose, array[t2, t3], jsonb_build_array(mv -> 1 || jsonb_build_object('to', t3)), revs3)), array['error: FORBIDDEN%']);
+  perform rls_t.chk('proposta con revisione di rosa vecchia',
+    rls_t.try(format(propose, array[t1, t2], mv, revs || jsonb_build_object(t1::text, (revs ->> t1::text)::int - 1))), array['error: CONFLICT%']);
+  perform rls_t.chk('proposta senza revisioni di rosa', rls_t.try(format(propose, array[t1, t2], mv, null)), array['error: INVALID%']);
+  perform rls_t.chk('proposta con versione vecchia',
+    rls_t.try(format(propose, array[t1, t2], jsonb_set(mv, '{0,version}', to_jsonb(c1.version + 1)), revs)), array['error: CONFLICT%']);
+  perform rls_t.chk('proposta con un giocatore ripetuto', rls_t.try(format(propose, array[t1, t2], mv || (mv -> 0), revs)), array['error: INVALID%']);
+  perform rls_t.chk('proposta verso la squadra talenti',
+    rls_t.try(format(propose, array[t1, t2], jsonb_set(mv, '{0,slot}', '"talent"'), revs)), array['error: INVALID%']);
+  perform rls_t.chk('il viewer fa scadere le proposte', rls_t.try('select public.trade_proposals_expire(null)'), array['error: FORBIDDEN%']);
+  p := public.trade_propose(array[t1, t2], mv, revs, '  Ciao  ', null, null);
+  p2 := public.trade_propose(array[t1, t2], mv, revs, 'Doppione', null, null);
+  perform rls_t.chk('il proponente risponde alla sua proposta',
+    rls_t.try(format('select public.trade_answer(%s, 1, ''accept'', null)', p)), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('proposta non registrata',
+    exists (select 1 from trade_proposals where id = p and status = 'pending' and proposer_team_id = t1 and proposer_user_id = rls_t.viewer()
+      and message = 'Ciao' and expires_at = now() + interval '24 hours' and season_id = sid)
+    and (select count(*) from trade_proposal_events where proposal_id = p and kind = 'sent' and team_id = t1) = 1);
+
+  -- Chi non è coinvolto non vede niente e non agisce; senza squadra non si propone.
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.ok('l''intruso vede le proposte altrui',
+    rls_t.seen('trade_proposals') = 0 and rls_t.seen('trade_proposal_answers') = 0 and rls_t.seen('trade_proposal_events') = 0);
+  perform rls_t.chk('l''intruso risponde', rls_t.try(format('select public.trade_answer(%s, 1, ''accept'', null)', p)), array['error: FORBIDDEN%']);
+  perform rls_t.chk('l''intruso ritira', rls_t.try(format('select public.trade_withdraw(%s, 1)', p)), array['error: FORBIDDEN%']);
+  perform rls_t.chk('l''intruso propone per altre squadre', rls_t.try(format(propose, array[t1, t2], mv, revs)), array['error: FORBIDDEN%']);
+  perform rls_t.become('postgres');
+  update profiles set team_id = null where id = rls_t.intruder();
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.chk('utente senza squadra propone', rls_t.try(format(propose, array[t1, t2], mv, revs)), array['error: FORBIDDEN%']);
+  perform rls_t.become('postgres');
+  update profiles set team_id = t3 where id = rls_t.intruder();
+
+  -- Risposta dell'altra squadra (l'admin è di t2): con due squadre basta una accettazione.
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := (select version from trade_proposals where id = p);
+  perform rls_t.chk('risposta con versione vecchia', rls_t.try(format('select public.trade_answer(%s, %s, ''accept'', null)', p, v + 1)), array['error: CONFLICT%']);
+  perform rls_t.chk('risposta non valida', rls_t.try(format('select public.trade_answer(%s, %s, ''forse'', null)', p, v)), array['error: INVALID%']);
+  perform rls_t.chk('ritiro di una proposta altrui', rls_t.try(format('select public.trade_withdraw(%s, %s)', p, v)), array['error: FORBIDDEN%']);
+  perform public.trade_answer(p, v, 'accept', 'Va bene');
+  perform rls_t.chk('seconda risposta della stessa squadra',
+    rls_t.try(format('select public.trade_answer(%s, %s, ''reject'', null)', p, v + 1)), array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('accettazione non registrata',
+    (select status from trade_proposals where id = p) = 'accepted'
+    and exists (select 1 from trade_proposal_answers where proposal_id = p and team_id = t2 and user_id = rls_t.admin() and answer = 'accept')
+    and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'accepted' and team_id = t2 and note = 'Va bene'));
+
+  -- Approvazione: esegue lo scambio, collega `trades`, supera le altre proposte con gli stessi giocatori.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('il viewer approva', rls_t.try(format('select public.admin_approve_trade_proposal(%s, %s, null, null, %L)', p, v + 1, revs)), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := (select version from trade_proposals where id = p);
+  perform rls_t.chk('approvazione con revisione di rosa vecchia',
+    rls_t.try(format('select public.admin_approve_trade_proposal(%s, %s, null, null, %L)', p, v, revs || jsonb_build_object(t1::text, (revs ->> t1::text)::int - 1))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('approvazione con versione vecchia',
+    rls_t.try(format('select public.admin_approve_trade_proposal(%s, %s, null, null, %L)', p, v + 1, revs)), array['error: CONFLICT%']);
+  perform rls_t.chk('approvazione di una proposta ancora in attesa',
+    rls_t.try(format('select public.admin_approve_trade_proposal(%s, %s, null, null, %L)', p2, (select version from trade_proposals where id = p2), revs)),
+    array['error: CONFLICT%']);
+  tr := public.admin_approve_trade_proposal(p, v, 'Moderatore', null, revs);
+  perform rls_t.chk('fatto su Dunkest di una proposta non approvata', rls_t.try(format('select public.admin_mark_dunkest_done(%s)', p2)), array['error: INVALID%']);
+  perform public.admin_mark_dunkest_done(p);
+  perform public.admin_mark_dunkest_done(p);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('scambio della proposta non eseguito',
+    (select team_id from contracts where id = 900021) = t2 and (select team_id from contracts where id = 900022) = t1
+    and exists (select 1 from trades where id = tr and approved_by = 'Moderatore' and payload -> 'moves' -> 0 ->> 'label' = 'RLS Scambio A'));
+  perform rls_t.ok('proposta approvata non collegata allo scambio',
+    exists (select 1 from trade_proposals where id = p and status = 'approved' and trade_id = tr and decided_by = rls_t.admin() and dunkest_done_at is not null)
+    and (select count(*) from trade_proposal_events where proposal_id = p and kind in ('approved', 'dunkest_done')) = 2
+    and exists (select 1 from audit_log where table_name = 'trade_proposals' and row_id = p::text and after ->> 'status' = 'approved'));
+  perform rls_t.ok('la proposta con gli stessi giocatori non è superata',
+    (select status from trade_proposals where id = p2) = 'superseded'
+    and exists (select 1 from trade_proposal_events where proposal_id = p2 and kind = 'superseded'));
+
+  -- Da qui lo scambio inverso, con versioni e revisioni nuove.
+  select * into c1 from contracts where id = 900021;
+  select * into c2 from contracts where id = 900022;
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  mv := jsonb_build_array(
+    jsonb_build_object('kind', 'contract', 'id', c1.id, 'version', c1.version, 'from', t2, 'to', t1),
+    jsonb_build_object('kind', 'contract', 'id', c2.id, 'version', c2.version, 'from', t1, 'to', t2));
+
+  -- Ritiro.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  v := public.trade_withdraw(p, (select version from trade_proposals where id = p));
+  perform rls_t.chk('ritiro ripetuto', rls_t.try(format('select public.trade_withdraw(%s, %s)', p, v)), array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('ritiro non registrato',
+    (select status from trade_proposals where id = p) = 'withdrawn' and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'withdrawn' and team_id = t1));
+
+  -- Scadenza: dopo `expires_at` non si risponde più; trade_proposals_expire la marca (admin senza segreto).
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('postgres');
+  update trade_proposals set expires_at = now() - interval '1 hour' where id = p;
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('risposta a una proposta scaduta',
+    rls_t.try(format('select public.trade_answer(%s, %s, ''accept'', null)', p, (select version from trade_proposals where id = p))), array['error: CONFLICT%']);
+  n := public.trade_proposals_expire(null);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('scadenza non registrata',
+    n = 1 and (select status from trade_proposals where id = p) = 'expired'
+    and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'expired' and at = now() - interval '1 hour'));
+
+  -- Controproposta: la proposta di partenza si chiude come rifiutata dalla squadra che controproponde.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.chk('controproposta a una proposta altrui', rls_t.try(format('select public.trade_propose(%L, %L, %L, null, null, %s)',
+    array[t3, t2], jsonb_build_array(jsonb_build_object('kind', 'contract', 'id', c1.id, 'version', c1.version, 'from', t2, 'to', t3)),
+    (select jsonb_object_agg(id::text, roster_rev) from public.teams where id in (t2, t3)), p)), array['error: INVALID%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  p2 := public.trade_propose(array[t2, t1], mv, revs, 'Contro', null, p);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('controproposta non registrata',
+    (select status from trade_proposals where id = p) = 'rejected'
+    and exists (select 1 from trade_proposal_answers where proposal_id = p and team_id = t2 and answer = 'reject')
+    and exists (select 1 from trade_proposals where id = p2 and status = 'pending' and parent_id = p and proposer_team_id = t2));
+
+  -- Respinta dall'admin (motivo obbligatorio) dopo l'accettazione.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform public.trade_answer(p2, (select version from trade_proposals where id = p2), 'accept', null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := (select version from trade_proposals where id = p2);
+  perform rls_t.chk('respinta senza motivo', rls_t.try(format('select public.admin_decline_trade_proposal(%s, %s, ''  '')', p2, v)), array['error: INVALID%']);
+  perform public.admin_decline_trade_proposal(p2, v, 'Da rivedere');
+  perform rls_t.become('postgres');
+  perform rls_t.ok('respinta non registrata',
+    exists (select 1 from trade_proposals where id = p2 and status = 'declined' and decision_note = 'Da rivedere')
+    and exists (select 1 from trade_proposal_events where proposal_id = p2 and kind = 'declined'));
+
+  -- Rimandata alle squadre.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_return_trade_proposal(p, (select version from trade_proposals where id = p), null);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('rimandata non registrata',
+    exists (select 1 from trade_proposals where id = p and status = 'superseded' and decision_note = 'Rimandata alle squadre'));
+
+  -- Uno scambio registrato a mano dall'admin supera le proposte aperte con gli stessi giocatori.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_execute_trade(array[t1, t2], mv, null, null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('lo scambio a mano non supera la proposta', (select status from trade_proposals where id = p) = 'superseded');
+
+  -- Chiudere il mercato ritira le proposte aperte.
+  select * into c1 from contracts where id = 900021;
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], jsonb_build_array(jsonb_build_object('kind', 'contract', 'id', c1.id, 'version', c1.version, 'from', t1, 'to', t2)), revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_set_trade_market(false);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('la chiusura del mercato non ritira le proposte',
+    exists (select 1 from trade_proposals where id = p and status = 'withdrawn' and decision_note = 'Mercato chiuso')
+    and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'withdrawn' and note = 'Mercato chiuso')
+    and exists (select 1 from audit_log where action = 'market' and after ->> 'summary' like '% · 1 proposte ritirate'));
 end $$;
 
 do $$ begin
