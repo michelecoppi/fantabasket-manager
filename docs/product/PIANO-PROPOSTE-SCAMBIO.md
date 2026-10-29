@@ -130,3 +130,11 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - Il badge degli admin sta su «Admin», non su «Scambio» (vedi registro decisioni di PLAN.md).
 - Accettare è bloccato solo da errori o movimenti cambiati; lo sforamento del cap passa all'admin, che vede la richiesta di eccezione precompilata nella motivazione.
 - Le proposte si leggono con `loadProposals()` (stagione corrente, RLS); se la lettura fallisce le pagine e i badge restano su.
+
+## Note dalla PR 4 (2026-10-29)
+
+- Il cercatore lavora sui `SimTeam` del simulatore (con le versioni) e valuta con `toParties` + `evaluateTrade`, la stessa strada di simulatore e proposte.
+- Combinazioni: giocatore preciso = lui da solo o con un altro della sua squadra, contro 1–3 tuoi (2 se ne arrivano due); ruolo = uno di quel ruolo contro 1–2 tuoi; cap/riserve = 1–2 tuoi (almeno un titolare / una riserva) contro niente o uno. Con le pick: una tua pick con al massimo un tuo giocatore.
+- Slot di arrivo: se uno scambio ha blocchi o sfora il cap con gli slot di sempre, si riprova con gli arrivi come riserva (prima da una parte, poi dall'altra, poi entrambe); «Usa questa» riporta lo slot scelto.
+- In più rispetto al piano: per lo spazio nel cap e nelle riserve si indicano i crediti che servono (vedi registro decisioni di PLAN.md).
+

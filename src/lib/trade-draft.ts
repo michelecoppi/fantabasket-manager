@@ -199,3 +199,34 @@ export function staleMoves(teams: readonly SimTeam[], moves: readonly TradeMoveI
     return !item || (item.version !== undefined && item.version !== m.version);
   });
 }
+
+/**
+ * Scambio a due squadre in un parametro d'URL (`?squadre=a,b&mosse=c12,c40r,p5`, «Usa questa» del cercatore): `c` contratto,
+ * `p` pick, `r`/`s` slot di arrivo (riserva/titolare) se scelto. Chi cede e chi riceve si ricavano dalle rose di adesso.
+ */
+export function encodeMoves(moves: readonly TradeMoveInput[]): string {
+  return moves.map((m) => `${m.kind === "contract" ? "c" : "p"}${m.id}${m.slot === "reserve" ? "r" : m.slot === "starter" ? "s" : ""}`).join(",");
+}
+
+/** Movimenti dal parametro d'URL, con le versioni di adesso; null se le squadre non sono due o un pezzo non è di nessuna delle due. */
+export function decodeMoves(teams: readonly SimTeam[], teamIds: readonly string[], code: string): TradeMoveInput[] | null {
+  if (teamIds.length !== 2 || teamIds[0] === teamIds[1]) return null;
+  const pair = teamIds.map((id) => teams.find((t) => t.id === id));
+  if (pair.some((t) => !t)) return null;
+  const tokens = code.split(",").filter(Boolean);
+  if (tokens.length === 0) return null;
+  const out: TradeMoveInput[] = [];
+  for (const tok of tokens) {
+    const m = /^([cp])(\d+)([rs]?)$/.exec(tok);
+    if (!m) return null;
+    const id = Number(m[2]);
+    const kind = m[1] === "c" ? "contract" : "pick";
+    const fromIdx = pair.findIndex((t) => (kind === "contract" ? t!.players.some((p) => p.id === id) : t!.picks.some((p) => p.id === id)));
+    if (fromIdx < 0 || (kind === "pick" && m[3])) return null;
+    const from = pair[fromIdx]!;
+    const item = kind === "contract" ? from.players.find((p) => p.id === id) : from.picks.find((p) => p.id === id);
+    const slot = m[3] === "r" ? "reserve" : m[3] === "s" ? "starter" : undefined;
+    out.push({ kind, id, version: item?.version ?? 0, from: from.id, to: pair[1 - fromIdx]!.id, ...(slot ? { slot } : {}) });
+  }
+  return new Set(out.map((m) => `${m.kind}${m.id}`)).size === out.length ? out : null;
+}
