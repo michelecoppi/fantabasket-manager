@@ -58,6 +58,10 @@ Questi incrementi possono essere parallelizzati dopo le correzioni, ma ognuno de
 - **P3-01 calendario/notifiche:** raccogliere date reali, fuso, destinatari e canale gratuito sostenibile. Iniziare eventualmente da un calendario editoriale, non da notifiche automatiche.
 - **P3-02 statistiche sportive/trend:** serve una fonte attendibile e un caso d'uso distinto da Dunkest. Punteggi e formazioni restano fuori scope; dal 2026-10-27 fanno eccezione infortuni, punteggio medio e partite giocate da Dunkest (Fase 5 di PLAN.md, issue #68).
 - **Squadra talenti/rookie:** resta bloccata dalle domande già aperte sulle prelazioni; non dedurre regole dal foglio.
+- **Pagelle degli scambi («chi ha vinto lo scambio»):** nello storico, per ogni scambio, PDK ricevuto contro PDK ceduto. Aspetta che `trades` abbia righe (0 il 2026-10-29). Limite da dichiarare: `dunkest_stats` ha la media stagionale, non il rendimento dalla data dello scambio; per quello servirebbe lo storico partita per partita.
+- **Sondaggi della lega:** votazioni sulle ASSUNZIONI di [OPEN-QUESTIONS.md](../OPEN-QUESTIONS.md) da confermare (scambi a più squadre, slot negli scambi, minimo d'asta...). Serve una tabella in cui ogni utente scrive solo il proprio voto (RLS `user_id = auth.uid()`): è un'eccezione alla regola «viewer in sola lettura» e va decisa prima di iniziare.
+
+Fase 6 (premi della giornata, affari e flop, rivalità, andamento in classifica): piano in [PIANO-FASE-6.md](PIANO-FASE-6.md).
 
 ## Misura del successo
 
