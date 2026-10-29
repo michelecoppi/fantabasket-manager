@@ -21,16 +21,16 @@ insert into teams (name, owner_name) values
   ('Bol Bollerz', 'Gabby'),
   ('Dame Time', 'Damiano'),
   ('Atlanto Non Vinco', 'Scuti'),
-  ('Spaccinos', 'Serde'),
+  ('Chicago Spaccinos', 'Serde'),
   ('OKCC', 'CC'),
-  ('San Antonio', 'Antonio');
+  ('San Antonio Spurs', 'Antonio');
 
 -- Squadre su Dunkest (issue #72, migrazione 20261027112155): collegamento esplicito per la stagione 2026.
 insert into dunkest_teams (season_id, team_id, dunkest_team_id)
 select s.id, t.id, v.dunkest_team_id
 from seasons s
 join (values
-  ('Spaccinos', 3233625), ('Atlanto Non Vinco', 3233650), ('Assago Farmers', 3233688), ('San Antonio', 3233754),
+  ('Chicago Spaccinos', 3233625), ('Atlanto Non Vinco', 3233650), ('Assago Farmers', 3233688), ('San Antonio Spurs', 3233754),
   ('Dame Time', 3233925), ('CUS Cosenza', 3234157), ('Bol Bollerz', 3234455), ('OKCC', 3234648)
 ) as v(team_name, dunkest_team_id) on true
 join teams t on t.name = v.team_name

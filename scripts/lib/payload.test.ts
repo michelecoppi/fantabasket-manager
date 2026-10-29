@@ -60,7 +60,7 @@ describe("payloadErrors", () => {
   });
 
   it("squadra che non è nelle statistiche", () => {
-    const d = data({ stats: [{ team: "Spaccinos", monte: 0, spazio: 0, spazioRiserve: 0, bonus: 0, sforato: false, quotaPagata: false }] });
+    const d = data({ stats: [{ team: "Chicago Spaccinos", monte: 0, spazio: 0, spazioRiserve: 0, bonus: 0, sforato: false, quotaPagata: false }] });
     expect(payloadErrors(buildImportPayload(d, 2026)).join("|")).toContain("squadra non presente");
   });
 

@@ -41,7 +41,7 @@ export const PLAYER_ALIASES: Record<string, string> = {
  */
 export const PICK_OVERRIDES: Record<string, TeamName> = {
   // Foglio2: la pick #8 di Spaccinos è marcata "Da bol"
-  "2026-1-Bol Bollerz": "Spaccinos",
+  "2026-1-Bol Bollerz": "Chicago Spaccinos",
 };
 
 /**
