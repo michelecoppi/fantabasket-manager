@@ -56,6 +56,16 @@ const loadSeason = cache(async (): Promise<{ id: number; year: number }> => {
 });
 
 /**
+ * Mercato degli scambi aperto o chiuso (Fase 7.1, `seasons.trade_market_open`, lo cambia un admin). Lettura a parte e
+ * tollerante: null = stato non disponibile, così le pagine degli scambi si caricano anche se la colonna non si legge.
+ */
+export const loadTradeMarket = cache(async (): Promise<boolean | null> => {
+  const db = await createClient();
+  const r = await db.from("seasons").select("trade_market_open").eq("is_current", true).maybeSingle<{ trade_market_open: boolean }>();
+  return r.error || !r.data ? null : r.data.trade_market_open;
+});
+
+/**
  * Lega della stagione corrente come l'utente loggato (le policy RLS decidono cosa vede), più le versioni delle righe
  * modificabili dagli admin (migrazioni 0006-0007) per la concorrenza ottimistica delle RPC: stesse righe, una sola lettura.
  */

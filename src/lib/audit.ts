@@ -12,6 +12,7 @@ export const AUDIT_ACTIONS: Record<string, string> = {
   picks_open: "Nuovo draft",
   season: "Quote e tasse",
   close_season: "Chiusura stagione",
+  market: "Mercato",
 };
 
 export const auditLabel = (action: string) => AUDIT_ACTIONS[action] ?? action;
@@ -40,4 +41,5 @@ export const TABLE_LABELS: Record<string, string> = {
   draft_picks: "Pick",
   team_season: "Quote squadra",
   trades: "Scambio",
+  seasons: "Stagione",
 };

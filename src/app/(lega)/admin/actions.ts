@@ -462,6 +462,19 @@ export async function setTeamSeason(input: { teamId: string; version: number | n
   return done(`${team.team.name} aggiornata.`);
 }
 
+// ---------- Mercato degli scambi (Fase 7.1) ----------
+/** Apre o chiude il mercato della stagione corrente (decisione dell'utente: lo sceglie un admin, nessuna finestra fissa). */
+export async function setTradeMarket(input: { open: boolean }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (typeof input.open !== "boolean") return fail("Dati non validi.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_set_trade_market", { p_open: input.open });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(input.open ? "Mercato degli scambi aperto." : "Mercato degli scambi chiuso.");
+}
+
 // ---------- Dati Dunkest (issue #68) ----------
 /** "Aggiorna ora": lo stesso aggiornamento del cron delle 9, con la sessione admin al posto del segreto del job. */
 export async function syncDunkest(): Promise<ActionResult> {
