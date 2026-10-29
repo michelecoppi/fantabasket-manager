@@ -116,4 +116,5 @@ Piano in [product/PIANO-PROPOSTE-SCAMBIO.md](product/PIANO-PROPOSTE-SCAMBIO.md).
 - **ASSUNZIONE**: le 24 ore valgono per le risposte delle squadre; una proposta accettata da tutte resta in coda all'admin senza scadenza.
 - **ASSUNZIONE**: chiudere il mercato ritira le proposte non ancora approvate; gli admin possono sempre eseguire uno scambio da `/admin/scambio` (R-55: il moderatore ufficializza).
 - **ASSUNZIONE**: se una squadra ha più profili, risponde per la squadra il primo che accetta o rifiuta.
-- **Da decidere** (bot Telegram, dopo): sul canale vanno solo gli scambi eseguiti o anche le proposte?
+- **Decisione dell'utente (2026-10-29)**: sul canale Telegram vanno solo gli scambi eseguiti, con frasi divertenti che prendono in giro chi scambia; le proposte restano private.
+- **ASSUNZIONE**: l'annuncio parte subito dopo l'esecuzione (il cron giornaliero riprova quelli falliti); gli scambi più vecchi di 72 ore e quelli registrati prima del bot non si annunciano.

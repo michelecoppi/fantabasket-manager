@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import {
   auctionFloor,
   auctionFloorErrors,
@@ -19,6 +20,7 @@ import { runDunkestSync } from "@/lib/dunkest-sync";
 import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadProfile, loadProposals, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
+import { announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
@@ -34,6 +36,8 @@ async function requireAdmin(): Promise<string | null> {
 }
 
 const refresh = () => revalidatePath("/", "layout");
+/** Dopo uno scambio eseguito: annuncio sul canale Telegram della lega (Fase 7.5), a risposta già inviata. */
+const announce = () => after(async () => announceTradesQuietly(await createClient()));
 
 // ---------- Firma ----------
 export interface SignInput {
@@ -201,6 +205,7 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   });
   if (error) return rpcError(error.message);
   refresh();
+  announce();
   return done(`Scambio registrato tra ${joinNames(names)}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
 }
 
@@ -447,6 +452,7 @@ export async function approveProposal(input: { id: number; version: number; appr
   });
   if (error) return rpcError(error.message);
   refresh();
+  announce();
   return done(`Scambio eseguito tra ${joinNames(names)}. Ora va fatto anche su Dunkest.`, ev.warnings);
 }
 

@@ -36,6 +36,20 @@ gpg --decrypt backup.sql.gz.gpg | gunzip > backup.sql
 ```
 Il file contiene schema e dati di `public`. Applicalo su un progetto Supabase **nuovo o vuoto** (con le migrazioni già applicate, `psql "$SUPABASE_DB_URL" -f backup.sql` darebbe errori di oggetti esistenti): per un ripristino parziale copia solo le tabelle che servono. Non ripristinare mai sopra il progetto reale senza averne prima fatto un dump.
 
+## 3c. Bot Telegram sul canale della lega (Fase 7.5)
+Il bot pubblica sul canale ogni scambio eseguito (da `/admin/scambio` o approvando una proposta), con una battuta su chi ha scambiato. Le proposte non vanno sul canale. Gratis (Bot API). Finché mancano le due variabili non succede niente: il sito funziona uguale e gli scambi restano in coda.
+1. Su Telegram scrivi a **@BotFather** → `/newbot` → scegli nome e username: ti dà il **token** (trattalo come una password).
+2. Crea il canale della lega (o usa quello che c'è) e aggiungi il bot come **amministratore** con il permesso «Pubblica messaggi».
+3. In locale metti `TELEGRAM_BOT_TOKEN=<token>` in `.env.local`, pubblica un messaggio qualsiasi nel canale e lancia:
+   ```bash
+   npx tsx --env-file=.env.local scripts/telegram-test.ts
+   ```
+   Stampa le chat che il bot ha visto: l'id del canale è un numero che comincia con `-100`. Per un canale pubblico va bene anche `@nomecanale`.
+4. Metti `TELEGRAM_CHAT_ID=<id>` in `.env.local` e rilancia lo stesso comando: arriva sul canale un annuncio di esempio (con `--dry-run` lo stampa e basta).
+5. Su Vercel aggiungi `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` (Production) e rifai il deploy.
+
+L'annuncio parte subito dopo l'esecuzione dello scambio. Se Telegram non risponde, lo riprova il cron delle 9 (serve `CRON_SECRET`, vedi Fase 5 in PLAN.md). Gli scambi più vecchi di 72 ore non si annunciano più, così un canale configurato tardi non riceve l'arretrato; quelli registrati prima del bot non si annunciano mai.
+
 ## 4. Aggiornamenti
 Ogni push su `main` ripubblica il sito da solo. Le variabili si cambiano da Vercel → Project → Settings → Environment Variables (poi serve un nuovo deploy).
 
