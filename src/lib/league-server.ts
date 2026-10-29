@@ -7,6 +7,7 @@ import type { PlayerListItem } from "./players";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
+import type { RosterMove } from "./roster-moves";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
 
@@ -298,21 +299,32 @@ export const loadDunkestRosters = cache(async (): Promise<Map<string, DunkestRos
   return out;
 });
 
-/** Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. */
+/**
+ * Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. Paginata (PostgREST
+ * taglia a 1000 righe): una stagione intera, per la vetrina dei trofei, supera le 1000 righe dalla tredicesima giornata.
+ */
 export async function loadLineups(matchIds: number[]): Promise<Map<number, Map<string, LineupPlayer[]>>> {
   const out = new Map<number, Map<string, LineupPlayer[]>>();
   if (matchIds.length === 0) return out;
   const db = await createClient();
-  const r = await db
-    .from("dunkest_lineups")
-    .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
-    .in("match_id", matchIds)
-    .order("court_position");
-  if (r.error) {
-    console.error(`[dunkest] formazioni non disponibili: ${r.error.message}`);
-    return out;
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const r = await db
+      .from("dunkest_lineups")
+      .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
+      .in("match_id", matchIds)
+      .order("match_id")
+      .order("team_id")
+      .order("court_position")
+      .range(from, from + 999);
+    if (r.error) {
+      console.error(`[dunkest] formazioni non disponibili: ${r.error.message}`);
+      return out;
+    }
+    rows.push(...r.data);
+    if (r.data.length < 1000) break;
   }
-  for (const row of r.data) {
+  for (const row of rows) {
     const byTeam = out.get(Number(row.match_id)) ?? new Map<string, LineupPlayer[]>();
     out.set(Number(row.match_id), byTeam);
     byTeam.set(row.team_id, [
@@ -331,4 +343,31 @@ export async function loadLineups(matchIds: number[]): Promise<Map<number, Map<s
     ]);
   }
   return out;
+}
+
+/** Cambi di rosa su Dunkest registrati dal job per una squadra, stagione corrente (Fase 6). Vuoto se non si leggono. */
+export async function loadRosterMoves(teamId: string): Promise<Omit<RosterMove, "lastFielded">[]> {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db
+      .from("dunkest_roster_moves")
+      .select("fantasy_player_id,player_id,name,pos,move,seen_matchday,seen_at")
+      .eq("season_id", sid)
+      .eq("team_id", teamId)
+      .order("seen_at", { ascending: false });
+    if (r.error) throw new Error(r.error.message);
+    return r.data.map((m) => ({
+      fantasyId: m.fantasy_player_id,
+      playerId: m.player_id,
+      name: m.name,
+      pos: m.pos as RosterMove["pos"],
+      move: m.move as RosterMove["move"],
+      seenMatchday: m.seen_matchday,
+      seenAt: m.seen_at,
+    }));
+  } catch (e) {
+    console.error(`[dunkest] cambi di rosa non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
 }

@@ -6,6 +6,7 @@ import { SourceFormatError } from "./dunkest";
 import {
   buildLeaguePayload,
   leagueUrls,
+  lineupBackfill,
   matchdaysToRead,
   MAX_MATCHDAYS,
   parseMatchday,
@@ -105,7 +106,7 @@ interface LeagueSourceRpc {
   calendar_at: string | null;
   teams: { team_id: string; dunkest_team_id: number; name: string }[];
   players: { id: number; first_name: string; last_name: string; nba_team: string | null; fantasy_id: number | null }[];
-  matchdays: { dunkest_matchday_id: number; matchday: number; scored: boolean }[];
+  matchdays: { dunkest_matchday_id: number; matchday: number; scored: boolean; has_lineups?: boolean }[];
 }
 
 /**
@@ -127,7 +128,7 @@ export async function runDunkestLeagueSync(db: Db, secret: string | null, token:
   try {
     const standings = parseStandings(await getJson(leagueUrls.standings(src.tournament_id), token, "classifica"));
 
-    const known: KnownMatchday[] = src.matchdays.map((m) => ({ dunkestMatchdayId: m.dunkest_matchday_id, matchday: m.matchday, scored: m.scored }));
+    const known: KnownMatchday[] = src.matchdays.map((m) => ({ dunkestMatchdayId: m.dunkest_matchday_id, matchday: m.matchday, scored: m.scored, hasLineups: m.has_lineups }));
     const plan = matchdaysToRead(known, src.calendar_at, new Date());
     let matchdays: FetchedMatchday[];
     if (plan.full) {
@@ -142,10 +143,20 @@ export async function runDunkestLeagueSync(db: Db, secret: string | null, token:
       }));
     }
 
-    // Formazioni: solo gli scontri già iniziati delle giornate intorno all'ultima giocata.
+    // Formazioni: gli scontri già iniziati delle giornate intorno all'ultima giocata, più le giornate giocate rimaste senza
+    // formazioni (Fase 6.0: si rilegge la giornata e poi i suoi scontri; riscrivere gli stessi risultati non cambia niente).
     const sorted = [...matchdays].sort((a, b) => a.matchday - b.matchday);
     const window = windowAround(sorted.map((m) => ({ ...m, scored: m.matches.some((x) => x.home.pts !== null || x.away.pts !== null) })));
-    const started = window.flatMap((m) => m.matches.filter((x) => x.home.pts !== null || x.away.pts !== null));
+    const backfill = lineupBackfill(known, window.map((m) => m.matchday));
+    const missing = backfill.filter((b) => !matchdays.some((m) => m.matchday === b.matchday));
+    const extra: FetchedMatchday[] = await inBatches(missing, async (m) => ({
+      dunkestMatchdayId: m.dunkestMatchdayId,
+      matchday: m.matchday,
+      matches: parseMatchday(await getJson(leagueUrls.matchday(src.tournament_id, m.dunkestMatchdayId), token, `giornata ${m.matchday}`)),
+    }));
+    matchdays = [...matchdays, ...extra];
+    const toDetail = [...window, ...backfill.flatMap((b) => matchdays.filter((m) => m.matchday === b.matchday))];
+    const started = toDetail.flatMap((m) => m.matches.filter((x) => x.home.pts !== null || x.away.pts !== null));
     const details: SourceMatchDetail[] = await inBatches(started, async (m) => parseMatchDetail(await getJson(leagueUrls.match(m.id), token, `scontro ${m.id}`)));
 
     const teams: LeagueTeamLink[] = src.teams.map((t) => ({ teamId: t.team_id, dunkestTeamId: t.dunkest_team_id, name: t.name }));
@@ -168,6 +179,7 @@ export async function runDunkestLeagueSync(db: Db, secret: string | null, token:
       full: plan.full,
       rosters,
     });
+    if (backfill.length > 0) payload.report.backfilled = backfill.map((m) => m.matchday).sort((a, b) => a - b);
     const applied = await db.rpc("dunkest_league_apply", { p_secret: secret, p_payload: payload });
     if (applied.error) throw new Error(`scrittura: ${applied.error.message}`);
     const counts = applied.data as { standings: number; matches: number; lineups: number; rosters: number | null };

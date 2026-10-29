@@ -39,7 +39,7 @@ export function LeagueSource({ league, dark = false, className = "" }: { league:
       : syncState(s && { lastSuccessAt: s.lastSuccessAt, lastAttemptAt: s.lastAttemptAt, lastError: s.lastError, sourceUpdatedAt: null, report: null });
   const last = s?.lastSuccessAt;
   const tone = dark ? "border-white/15 bg-white/5 text-white/70" : "border-line bg-surface text-muted";
-  const warn = dark ? "text-gold" : "text-warning";
+  const warn = dark ? "text-arena-warn" : "text-warning";
   return (
     <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-1 text-xs ${tone} ${className}`}>
       <DunkestLogo size={18} />
@@ -179,16 +179,20 @@ const STATUS: Record<Exclude<LineupStatus, "ok">, { label: string; tone: string 
   other_team: { label: "Di un'altra squadra", tone: "border-danger/35 bg-danger/10 text-danger" },
   free: { label: "Non in rosa", tone: "border-danger/35 bg-danger/10 text-danger" },
   unlinked: { label: "Non collegato", tone: "border-line bg-surface-subtle text-muted" },
+  replaced: { label: "Sostituito dopo", tone: "border-line bg-surface-subtle text-muted" },
 };
 
-/** Avviso su un giocatore schierato che non torna con le rose dell'app. */
+/** Avviso su un giocatore schierato che non torna con le rose dell'app, o nota neutra se è stato sostituito dopo. */
 export function StatusChip({ player, teams }: { player: CheckedPlayer; teams: TeamIndex }) {
   if (player.status === "ok") return null;
   const s = STATUS[player.status];
   const label = player.status === "other_team" && player.otherTeamId ? `Di ${team(teams, player.otherTeamId).name}` : s.label;
   return (
-    <span className={`inline-flex max-w-full shrink-0 items-center gap-1 truncate rounded-full border px-1.5 py-px text-[0.625rem] leading-4 font-bold tracking-wide uppercase ${s.tone}`}>
-      <Icon name="alert" size={11} strokeWidth={2.4} />
+    <span
+      title={player.status === "replaced" ? "Era in rosa quando è stato schierato; ora non è più nella rosa Dunkest della squadra" : undefined}
+      className={`inline-flex max-w-full shrink-0 items-center gap-1 truncate rounded-full border px-1.5 py-px text-[0.625rem] leading-4 font-bold tracking-wide uppercase ${s.tone}`}
+    >
+      <Icon name={player.status === "replaced" ? "swap" : "alert"} size={11} strokeWidth={2.4} />
       <span className="truncate">{label}</span>
     </span>
   );
@@ -214,7 +218,7 @@ function LineupRows({ players, teams, muted = false }: { players: CheckedPlayer[
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
       {players.map((p) => (
-        <li key={p.fantasyId} className={`flex min-h-12 items-center gap-2.5 px-3 py-2 ${p.status !== "ok" ? "bg-warning/5" : ""}`}>
+        <li key={p.fantasyId} className={`flex min-h-12 items-center gap-2.5 px-3 py-2 ${p.status !== "ok" && p.status !== "replaced" ? "bg-warning/5" : ""}`}>
           <PosChip pos={p.pos} />
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-center gap-1.5">
@@ -260,6 +264,7 @@ export function Lineup({
   teams,
   columns = true,
   standsFromDunkest = false,
+  past = false,
 }: {
   check: LineupCheck;
   stands: { id: number; name: string; pos: string | null }[];
@@ -267,6 +272,8 @@ export function Lineup({
   columns?: boolean;
   /** tribuna letta dalla rosa Dunkest (altrimenti: titolari dell'app non schierati) */
   standsFromDunkest?: boolean;
+  /** giornata chiusa: la tribuna viene dalla rosa di oggi, non da quella di allora */
+  past?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -278,7 +285,10 @@ export function Lineup({
           <LineupRows players={check.bench} teams={teams} muted />
         </Block>
       </div>
-      <Block title="Tribuna" hint={standsFromDunkest ? "in rosa su Dunkest, non schierati" : "titolari dell'app non schierati"}>
+      <Block
+        title="Tribuna"
+        hint={past ? "dalla rosa di oggi, non da quella di allora" : standsFromDunkest ? "in rosa su Dunkest, non schierati" : "titolari dell'app non schierati"}
+      >
         {stands.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line px-3 py-2.5 text-sm text-muted">Nessuno: tutta la rosa è in formazione.</p>
         ) : (

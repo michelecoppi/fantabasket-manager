@@ -150,6 +150,8 @@ insert into dunkest_lineups (match_id, team_id, fantasy_player_id, player_id, na
   select 990001, id, 3, 900001, 'RLS Uno', 'G', 'starter', 1, 72.19 from teams order by name limit 1;
 insert into dunkest_rosters (season_id, team_id, fantasy_player_id, player_id, name, pos)
   select s.id, t.id, 3, 900001, 'RLS Uno', 'G' from seasons s, (select id from teams order by name limit 1) t where s.is_current;
+insert into dunkest_roster_moves (id, season_id, team_id, fantasy_player_id, player_id, name, pos, move, seen_matchday)
+  select 900001, s.id, t.id, 2, null, 'RLS Uscito', 'A', 'out', 1 from seasons s, (select id from teams order by name limit 1) t where s.is_current;
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
@@ -538,7 +540,8 @@ begin
   v := public.dunkest_league_source('rls-segreto-del-job-0123');
   perform rls_t.ok('dunkest_league_source col segreto',
     (v->>'season_id')::int = sid and (v->>'tournament_id')::int = 252941 and jsonb_array_length(v->'teams') > 0
-    and jsonb_array_length(v->'players') > 0 and jsonb_array_length(v->'matchdays') = 1 and (v->'matchdays'->0->>'scored')::boolean);
+    and jsonb_array_length(v->'players') > 0 and jsonb_array_length(v->'matchdays') = 1 and (v->'matchdays'->0->>'scored')::boolean
+    and jsonb_typeof(v->'matchdays'->0->'has_lineups') = 'boolean');
   perform rls_t.chk('classifica vuota',
     rls_t.try(format('select public.dunkest_league_apply(''rls-segreto-del-job-0123'', %L)', ok_payload || '{"standings": []}'::jsonb)), array['error: INVALID%']);
   perform rls_t.chk('calendario completo vuoto',
@@ -578,6 +581,15 @@ begin
   perform rls_t.ok('rose non sostituite',
     (v->>'rosters')::int = 2 and (select count(*) from dunkest_rosters where season_id = sid) = 2
     and (select count(*) from dunkest_rosters where season_id = sid and team_id = t2 and player_id is null and pos = 'C') = 1);
+  -- Cambi di rosa: la squadra t2 ha già una rosa (3, 4); con 3 e 5 esce 4 ed entra 5, con l'ultima giornata con punti.
+  v := public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload || jsonb_build_object('rosters', jsonb_build_array(
+    jsonb_build_object('team_id', t2, 'fantasy_player_id', 3, 'player_id', 900001, 'name', 'RLS Uno', 'pos', 'G'),
+    jsonb_build_object('team_id', t2, 'fantasy_player_id', 5, 'player_id', null, 'name', 'RLS Nuovo', 'pos', 'A'))));
+  perform rls_t.ok('cambi di rosa non registrati',
+    (select count(*) from dunkest_roster_moves where season_id = sid and team_id = t2) = 2
+    and exists (select 1 from dunkest_roster_moves where season_id = sid and team_id = t2 and move = 'out' and fantasy_player_id = 4 and name = 'Ignoto')
+    and exists (select 1 from dunkest_roster_moves where season_id = sid and team_id = t2 and move = 'in' and fantasy_player_id = 5 and pos = 'A')
+    and not exists (select 1 from dunkest_roster_moves where season_id = sid and team_id = t2 and seen_matchday is null));
   perform public.dunkest_league_apply('rls-segreto-del-job-0123', ok_payload);
   perform rls_t.ok('apply senza rose le ha cancellate', (select count(*) from dunkest_rosters where season_id = sid) = 2);
 
