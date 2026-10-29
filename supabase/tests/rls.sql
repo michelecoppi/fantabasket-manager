@@ -141,6 +141,7 @@ insert into dunkest_stats (season_id, player_id, gp, pdk) select id, 900001, 3, 
 insert into dunkest_injuries (player_id, injured_on, injury, description) values (900002, date '2026-10-19', 'Caviglia', 'GTD: da valutare');
 insert into dunkest_sync_runs (id, trigger, ok, stats_count, injuries_count, links_count) values (900001, 'cron', true, 1, 1, 0);
 -- dunkest_sync ha già la sua riga unica (migrazione 20261027025827).
+-- league_history ha già le sue righe (lo storico, migrazione 20261029192344).
 insert into dunkest_teams (season_id, team_id, dunkest_team_id)
   select s.id, t.id, 990001 from seasons s, (select id from teams order by name limit 1) t where s.is_current on conflict do nothing;
 insert into dunkest_standings (season_id, team_id, position, total_pts, wins, losses)

@@ -42,9 +42,9 @@ Cap effettivo, spazio riserve, righe delle riserve e monte ingaggi con i tagli (
 | GABBY | Bol Bollerz |
 | DAMIANO | Dame Time |
 | SCUTI | Atlanto Non Vinco |
-| SERDE | Spaccinos |
+| SERDE | Chicago Spaccinos |
 | CC | OKCC |
-| ENTONY (Antonio) | San Antonio |
+| ENTONY (Antonio) | San Antonio Spurs |
 
 Gli alias di squadra usati nel foglio sono in `ALIASES` di `scripts/lib/names.ts`. Controllo sui dati: le scelte 2026 in "Squadra talenti" di ogni proprietario coincidono con l'ordine di `Foglio2` per tutte e 8 le squadre.
 

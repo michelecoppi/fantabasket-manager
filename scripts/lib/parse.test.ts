@@ -38,8 +38,8 @@ describe("matchPlayer con snapshot Dunkest", () => {
   });
 
   it("più candidati: decide il ruolo della riga solo se ne resta uno", () => {
-    expect(matchPlayer("Wiggins", "Spaccinos", 8, [], "G", pool).catalog?.firstName).toBe("Aaron");
-    expect(matchPlayer("Wiggins", "Spaccinos", 8, [], "C", pool).match).toBe("ambiguous");
+    expect(matchPlayer("Wiggins", "Chicago Spaccinos", 8, [], "G", pool).catalog?.firstName).toBe("Aaron");
+    expect(matchPlayer("Wiggins", "Chicago Spaccinos", 8, [], "C", pool).match).toBe("ambiguous");
   });
 
   it("prefisso del nome: restringe i candidati", () => {

@@ -13,12 +13,14 @@ import { PositionSparkline } from "@/components/standings-chart";
 import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
 import { TeamValue } from "@/components/value-board";
 import { TrophyCase } from "@/components/trophy-case";
+import { RingRow, TeamHistory } from "@/components/history";
 import { ViewSwitch } from "@/components/chips";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
 import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView, type DunkestRosterPlayer, type LineupPlayer } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
 import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
-import { loadDunkest, loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves } from "@/lib/league-server";
+import { loadDunkest, loadDunkestRosters, loadHistory, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves } from "@/lib/league-server";
+import { seasonLabel } from "@/lib/league-history";
 import { teamRosterMoves } from "@/lib/roster-moves";
 import { seasonTrophies } from "@/lib/awards";
 import { headToHead, rivalryBadges } from "@/lib/rivalries";
@@ -276,11 +278,12 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const sp = await props.searchParams;
   const tab: TeamTab = TEAM_TABS.find((x) => x === sp.vista) ?? "rosa";
   // I dati delle schede Su Dunkest e Vetrina dipendono dal calendario: partono appena arriva, in parallelo con il resto.
-  const [league, dunkest, view, profile, dunkestData, season] = await Promise.all([
+  const [league, dunkest, view, profile, history, dunkestData, season] = await Promise.all([
     loadLeague(),
     loadDunkest(),
     loadLeagueDunkest(),
     loadProfile(),
+    loadHistory(),
     tab === "dunkest" ? loadLeagueDunkest().then((v) => dunkestTab(id, v)) : null,
     tab === "vetrina" ? Promise.all([loadLeagueDunkest(), loadLeague()]).then(([v, l]) => vetrinaTab(v, l)) : null,
   ]);
@@ -307,6 +310,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const value = board ? teamValue(board, id) : null;
   const rivals = view.available && view.standings.length > 0 ? headToHead(view, id) : [];
   const moves = dunkestData?.moves ?? null;
+  const career = history?.careers.find((c) => c.teamId === id) ?? null;
 
   return (
     <>
@@ -330,8 +334,15 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
               </h1>
               <p className="rise mt-2 text-sm text-white/65" style={stagger(2)}>
                 {t.team.owner_name}
+                {career && ` · in lega dal ${seasonLabel(career.since)}`}
                 {t.finalRank && ` · ${t.finalRank}° nella scorsa stagione`}
               </p>
+              {career && career.rings.length > 0 && (
+                <Link href={`/squadre/${id}?vista=vetrina#storia`} className="rise mt-3 inline-flex items-end gap-3 rounded-xl transition-opacity hover:opacity-85" style={stagger(3)}>
+                  <RingRow name={t.team.name} color={color} years={career.rings} size="sm" />
+                  <span className="pb-0.5 text-xs font-bold tracking-wide text-white/70 uppercase">{career.rings.length === 1 ? "Campioni" : `${career.rings.length} anelli`}</span>
+                </Link>
+              )}
             </div>
           </div>
           <div className="rise w-full lg:w-[30rem]" style={stagger(3)}>
@@ -391,7 +402,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           options={[
             { href: `/squadre/${id}`, label: "Rosa", hint: "titolari, riserve, infortuni", icon: "jersey", active: tab === "rosa" },
             { href: `/squadre/${id}?vista=dunkest`, label: "Su Dunkest", hint: "formazione, cambi, rivalità", icon: "ball", active: tab === "dunkest" },
-            { href: `/squadre/${id}?vista=vetrina`, label: "Vetrina", hint: "i trofei della stagione", icon: "trophy", active: tab === "vetrina" },
+            { href: `/squadre/${id}?vista=vetrina`, label: "Vetrina", hint: "anelli e trofei", icon: "trophy", active: tab === "vetrina" },
             { href: `/squadre/${id}?vista=pick`, label: "Pick", hint: "pick, talenti e tagli", icon: "ticket", active: tab === "pick" },
           ]}
         />
@@ -473,6 +484,11 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
 
       {tab === "vetrina" && (
         <div className="mt-8">
+          {career && (
+            <Section title="Storia della squadra" icon="medal" id="storia" aside="anelli e stagioni passate">
+              <TeamHistory career={career} name={t.team.name} color={color} currentYear={league.seasonYear} />
+            </Section>
+          )}
           <Section title="Vetrina" icon="trophy" aside="premi della giornata vinti in stagione">
             {season ? (
               <TrophyCase teamId={id} season={season} teams={teams} you={you} />

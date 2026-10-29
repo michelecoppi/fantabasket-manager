@@ -54,7 +54,8 @@ describe("altri parser", () => {
   it("alias squadra; ChS non è ancora noto", () => {
     expect(resolveTeam("AsF")).toBe("Assago Farmers");
     expect(resolveTeam("cckers")).toBe("OKCC");
-    expect(resolveTeam("ST. ANT")).toBe("San Antonio");
+    expect(resolveTeam("ST. ANT")).toBe("San Antonio Spurs");
+    expect(resolveTeam("Spaccinos")).toBe("Chicago Spaccinos");
     expect(resolveTeam("Thunders")).toBe("OKCC");
     expect(resolveTeam("ChS")).toBeNull();
   });

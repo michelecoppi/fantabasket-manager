@@ -150,6 +150,7 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
                 { href: tabHref("andamento"), label: "Andamento", hint: "giornata per giornata", icon: "chart", active: tab === "andamento" },
                 { href: tabHref("calendario"), label: "Calendario", hint: "scontri e formazioni", icon: "clock", active: tab === "calendario" },
                 { href: tabHref("premi"), label: "Premi", hint: "i trofei della giornata", icon: "crown", active: tab === "premi" },
+                { href: "/storia", label: "Albo d'oro", hint: "le stagioni passate", icon: "medal", active: false },
               ]}
             />
           </div>

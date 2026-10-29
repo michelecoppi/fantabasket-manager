@@ -10,9 +10,9 @@ const TEAM_NAMES = [
   "Bol Bollerz",
   "Dame Time",
   "Atlanto Non Vinco",
-  "Spaccinos",
+  "Chicago Spaccinos",
   "OKCC",
-  "San Antonio",
+  "San Antonio Spurs",
 ] as const;
 export type TeamName = (typeof TEAM_NAMES)[number];
 
@@ -33,18 +33,19 @@ const ALIASES: Record<string, TeamName> = {
   dame: "Dame Time",
   scuti: "Atlanto Non Vinco",
   atlanto: "Atlanto Non Vinco",
-  serde: "Spaccinos",
-  spacc: "Spaccinos",
-  spaccinos: "Spaccinos",
+  serde: "Chicago Spaccinos",
+  spacc: "Chicago Spaccinos",
+  spaccinos: "Chicago Spaccinos",
+  chicago: "Chicago Spaccinos",
   cc: "OKCC",
   okcc: "OKCC",
   thunders: "OKCC",
   cckers: "OKCC",
-  entony: "San Antonio",
-  antonio: "San Antonio",
-  spurs: "San Antonio",
-  stant: "San Antonio",
-  sanantonio: "San Antonio",
+  entony: "San Antonio Spurs",
+  antonio: "San Antonio Spurs",
+  spurs: "San Antonio Spurs",
+  stant: "San Antonio Spurs",
+  sanantonio: "San Antonio Spurs",
 };
 
 /** Restituisce la squadra per un alias del foglio, o null se sconosciuto (es. "ChS"). */
