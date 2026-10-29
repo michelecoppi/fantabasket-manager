@@ -16,7 +16,18 @@ const STATE_LABEL: Record<MatchdayState, string> = { played: "giocata", latest: 
  * Calendario come striscia di giornate (stato nell'URL, `?giornata=N`): giocate piene, l'ultima con punti con l'anello oro,
  * da giocare tratteggiate. All'apertura la giornata scelta scorre al centro.
  */
-export function MatchdayStrip({ days, selected, hrefBase }: { days: { matchday: number; state: MatchdayState }[]; selected: number; hrefBase: string }) {
+export function MatchdayStrip({
+  days,
+  selected,
+  hrefBase,
+  query = "",
+}: {
+  days: { matchday: number; state: MatchdayState }[];
+  selected: number;
+  hrefBase: string;
+  /** altri parametri da tenere nel link (es. `vista=premi`) */
+  query?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const mask = edgeMask(useScrollEdges(ref));
 
@@ -35,7 +46,7 @@ export function MatchdayStrip({ days, selected, hrefBase }: { days: { matchday: 
         {days.map((d) => {
           const active = d.matchday === selected;
           const tone = active
-            ? "border-nav bg-nav text-white dark:border-gold dark:bg-gold dark:text-nav"
+            ? "border-brand-blue bg-brand-blue text-white dark:border-gold dark:bg-gold dark:text-nav"
             : d.state === "latest"
               ? "border-gold bg-gold/15 text-foreground ring-2 ring-gold/40"
               : d.state === "played"
@@ -44,7 +55,7 @@ export function MatchdayStrip({ days, selected, hrefBase }: { days: { matchday: 
           return (
             <Link
               key={d.matchday}
-              href={`${hrefBase}?giornata=${d.matchday}`}
+              href={`${hrefBase}?${query ? `${query}&` : ""}giornata=${d.matchday}`}
               scroll={false}
               aria-current={active ? "true" : undefined}
               aria-label={`Giornata ${d.matchday}, ${STATE_LABEL[d.state]}`}

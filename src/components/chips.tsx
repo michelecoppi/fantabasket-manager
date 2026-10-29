@@ -35,7 +35,7 @@ export function ChipLinks({ label, options }: { label: string; options: { href: 
             scroll={false}
             aria-current={o.active ? "true" : undefined}
             className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color] ${
-              o.active ? "border-nav bg-nav text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface text-foreground/80 hover:border-foreground/40"
+              o.active ? "border-brand-blue bg-brand-blue text-white dark:border-gold dark:bg-gold dark:text-nav" : "border-line bg-surface text-foreground/80 hover:border-foreground/40"
             }`}
           >
             <ChipInner count={o.count} active={o.active}>
@@ -48,23 +48,27 @@ export function ChipLinks({ label, options }: { label: string; options: { href: 
   );
 }
 
-function ViewInner({ icon, label, hint, active }: { icon: IconName; label: string; hint?: string; active: boolean }) {
+function ViewInner({ icon, label, hint, active, stack }: { icon: IconName; label: string; hint?: string; active: boolean; stack: boolean }) {
   const { pending } = useLinkStatus();
   return (
     <>
-      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${active ? "bg-gold text-nav dark:bg-nav dark:text-gold" : "bg-surface-subtle"}`}>
+      <span className={`grid shrink-0 place-items-center rounded-lg ${stack ? "h-8 w-8 md:h-9 md:w-9" : "h-9 w-9"} ${active ? "bg-gold text-nav dark:bg-nav dark:text-gold" : "bg-surface-subtle"}`}>
         <Icon name={pending ? "ball" : icon} size={19} className={pending ? "ball-bounce" : undefined} />
       </span>
-      <span className="min-w-0 text-left">
-        <span className="font-display block text-xl leading-none font-extrabold">{label}</span>
-        {hint && <span className={`mt-0.5 hidden truncate text-xs sm:block ${active ? "text-white/65 dark:text-nav/70" : "text-muted"}`}>{hint}</span>}
+      <span className={`min-w-0 ${stack ? "text-center md:text-left" : "text-left"}`}>
+        <span className={`font-display block truncate leading-none font-extrabold ${stack ? "text-base md:text-xl" : "text-xl"}`}>{label}</span>
+        {hint && <span className={`mt-0.5 hidden truncate text-xs ${stack ? "lg:block" : "sm:block"} ${active ? "text-white/65 dark:text-nav/70" : "text-muted"}`}>{hint}</span>}
       </span>
     </>
   );
 }
 
-/** Due o più viste della stessa pagina come linguette grandi (stato nella query string, come i filtri). */
+/**
+ * Due o più viste della stessa pagina come linguette grandi (stato nella query string, come i filtri). Con tre o più viste,
+ * su telefono l'icona sta sopra l'etichetta, così le linguette entrano a 375 px senza tagliare il testo.
+ */
 export function ViewSwitch({ label, options }: { label: string; options: { href: string; label: string; hint?: string; icon: IconName; active: boolean }[] }) {
+  const stack = options.length > 2;
   return (
     <nav aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-2xl border border-line bg-surface p-1">
       {options.map((o) => (
@@ -73,11 +77,11 @@ export function ViewSwitch({ label, options }: { label: string; options: { href:
           href={o.href}
           scroll={false}
           aria-current={o.active ? "page" : undefined}
-          className={`flex min-h-14 min-w-0 items-center gap-3 rounded-xl px-2.5 py-2 transition-[background-color,color] sm:px-4 ${
-            o.active ? "bg-nav text-white shadow-md dark:bg-gold dark:text-nav" : "text-muted hover:bg-surface-subtle hover:text-foreground"
-          }`}
+          className={`flex min-h-14 min-w-0 rounded-xl py-2 transition-[background-color,color] ${
+            stack ? "flex-col items-center justify-center gap-1 px-1 md:flex-row md:justify-start md:gap-3 md:px-4" : "items-center gap-3 px-2.5 sm:px-4"
+          } ${o.active ? "bg-brand-blue text-white shadow-md dark:bg-gold dark:text-nav" : "text-muted hover:bg-surface-subtle hover:text-foreground"}`}
         >
-          <ViewInner icon={o.icon} label={o.label} hint={o.hint} active={o.active} />
+          <ViewInner icon={o.icon} label={o.label} hint={o.hint} active={o.active} stack={stack} />
         </Link>
       ))}
     </nav>

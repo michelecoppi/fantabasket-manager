@@ -232,6 +232,52 @@ const paths = {
     <path d="M12 10.941c2.333 -3.308 .167 -7.823 -1 -8.941c0 3.395 -2.235 5.299 -3.667 6.706c-1.43 1.408 -2.333 3.294 -2.333 5.588c0 3.704 3.134 6.706 7 6.706c3.866 0 7 -3.002 7 -6.706c0 -1.712 -1.232 -4.403 -2.333 -5.588c-2.084 3.353 -3.257 3.353 -4.667 2.235" />
   ),
   shield: <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />,
+  // Premi della giornata (Fase 6): capitano d'oro (star), sesto uomo (medal), colpo dalla panchina (bolt),
+  // capitano di latta e flop (trending-down), affari (trending-up), cucchiaio di legno (mood-sad), fotofinish (stopwatch),
+  // vittima preferita (target)
+  star: <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />,
+  medal: (
+    <>
+      <path d="M12 4v3m-4 -3v6m8 -6v6" />
+      <path d="M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5z" />
+    </>
+  ),
+  bolt: <path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" />,
+  "trending-up": (
+    <>
+      <path d="M3 17l6 -6l4 4l8 -8" />
+      <path d="M14 7l7 0l0 7" />
+    </>
+  ),
+  "trending-down": (
+    <>
+      <path d="M3 7l6 6l4 -4l8 8" />
+      <path d="M21 10l0 7l-7 0" />
+    </>
+  ),
+  "mood-sad": (
+    <>
+      <path d="M12 21a9 9 0 1 1 0 -18a9 9 0 0 1 0 18z" />
+      <path d="M9 10l.01 0" />
+      <path d="M15 10l.01 0" />
+      <path d="M9.5 15.25a3.5 3.5 0 0 1 5 0" />
+    </>
+  ),
+  stopwatch: (
+    <>
+      <path d="M5 13a7 7 0 1 0 14 0a7 7 0 0 0 -14 0z" />
+      <path d="M14.5 10.5l-2.5 2.5" />
+      <path d="M17 8l1 -1" />
+      <path d="M14 3h-4" />
+    </>
+  ),
+  target: (
+    <>
+      <path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M7 12a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+    </>
+  ),
   plus: (
     <>
       <path d="M12 5l0 14" />
