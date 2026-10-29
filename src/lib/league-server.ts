@@ -4,6 +4,7 @@ import type { LastContract } from "./cap";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
 import { buildLeagueView, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { PlayerListItem } from "./players";
+import { buildHistory, closedSeasonRows, type LeagueHistory } from "./league-history";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
@@ -332,6 +333,48 @@ export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
   } catch (e) {
     console.error(`[dunkest] lega non disponibile: ${e instanceof Error ? e.message : String(e)}`);
     return EMPTY_LEAGUE;
+  }
+});
+
+/**
+ * Albo d'oro: classifiche finali delle stagioni concluse (prima dell'app da `league_history`, poi quelle chiuse nell'app) e
+ * carriere delle squadre di oggi, col record della stagione in corso. Tollerante: null = storico non disponibile, la pagina
+ * lo dice e il resto del sito non ne risente. Poche decine di righe: niente paginazione.
+ */
+export const loadHistory = cache(async (): Promise<LeagueHistory | null> => {
+  try {
+    const db = await createClient();
+    const [season, league, live] = await Promise.all([loadSeason(), loadLeague(), loadLeagueDunkest()]);
+    const [archive, seasons, standings, ranks] = await Promise.all([
+      db.from("league_history").select("season_year,position,team_name,team_id,former_key,replaced_by,wins,losses,total_pts"),
+      db.from("seasons").select("id,year").eq("is_current", false),
+      db.from("dunkest_standings").select("season_id,team_id,position,total_pts,wins,draws,losses").neq("season_id", season.id),
+      db.from("team_season").select("season_id,team_id,final_rank").neq("season_id", season.id),
+    ]);
+    must(archive, seasons, standings, ranks);
+    const past = (archive.data ?? []).map((r) => ({
+      seasonYear: r.season_year,
+      position: r.position,
+      teamName: r.team_name,
+      teamId: r.team_id,
+      formerKey: r.former_key,
+      replacedBy: r.replaced_by,
+      wins: r.wins,
+      draws: 0, // gli screenshot di Dunkest delle stagioni passate non hanno pareggi
+      losses: r.losses,
+      totalPts: Number(r.total_pts),
+    }));
+    const app = closedSeasonRows(
+      seasons.data ?? [],
+      (standings.data ?? []).map((r) => ({ seasonId: r.season_id, teamId: r.team_id, position: r.position, totalPts: Number(r.total_pts), wins: r.wins, draws: r.draws, losses: r.losses })),
+      (ranks.data ?? []).map((r) => ({ seasonId: r.season_id, teamId: r.team_id, finalRank: r.final_rank })),
+      league.teamNames,
+      new Set(past.map((r) => r.seasonYear)),
+    );
+    return buildHistory([...past, ...app], league.teams.map((t) => ({ id: t.team.id, name: t.team.name })), season.year, live.standings);
+  } catch (e) {
+    console.error(`[storico] non disponibile: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
   }
 });
 
