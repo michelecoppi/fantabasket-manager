@@ -434,6 +434,22 @@ begin
   if (select restriction from contracts where id = cid) is not null then
     raise exception 'RLS: senza diritto aperto il contratto non deve diventare unrestricted';
   end if;
+
+  -- Durate da fissare: `unrestricted` marca il contratto `u`; senza la chiave la restriction resta com'è.
+  update contracts set years_left = null where id = cid;
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_set_durations(jsonb_build_array(jsonb_build_object('id', cid, 'version', (select version from contracts where id = cid),
+    'years', 1, 'team_option', true, 'unrestricted', true)));
+  perform rls_t.become('postgres');
+  if not exists (select 1 from contracts where id = cid and years_left = 1 and team_option and restriction = 'unrestricted') then
+    raise exception 'RLS: set_durations deve salvare durata, team option e unrestricted';
+  end if;
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_set_durations(jsonb_build_array(jsonb_build_object('id', cid, 'version', (select version from contracts where id = cid), 'years', 2)));
+  perform rls_t.become('postgres');
+  if (select restriction from contracts where id = cid) is distinct from 'unrestricted' then
+    raise exception 'RLS: set_durations senza la chiave unrestricted non deve toccare la restriction';
+  end if;
 end $$;
 
 -- ---------- import_replace_season: solo service_role ----------
