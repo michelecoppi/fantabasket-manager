@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button, Callout, Check, Field, inputClass, Segmented } from "@/components/controls";
 import { Badge, Card, PosChip, RestrictionBadge, Stat, StatChange } from "@/components/ui";
-import { contractDurations, cutShare, evaluateContractEdit, evaluateSigning, teamFinance, teamOptionAllowed, type LeagueSettings, type Position } from "@/lib/cap";
+import { contractDurations, contractTermsErrors, cutShare, evaluateContractEdit, evaluateSigning, teamFinance, teamOptionAllowed, type LeagueSettings, type Position } from "@/lib/cap";
 import { contractLabel } from "@/lib/league";
 import { fmt } from "@/lib/format";
 import { cutPlayer, finalizeCut, reinstateCut, removeContract, setDurations, updateContract } from "../actions";
@@ -181,13 +181,26 @@ function RemovePanel({ team, p, onDone }: { team: RoseTeam; p: RosePlayer; onDon
   );
 }
 
-/** Contratti senza durata (es. ingaggi d'asta, R-51): si fissano tutti insieme, in un'unica operazione. */
+type DurationChoice = { years: number | null; teamOption: boolean; unrestricted: boolean };
+
+/** Contratti senza durata (es. ingaggi d'asta, R-51): si fissano tutti insieme, con team option (+1) e `u`, in un'unica operazione. */
 function DurationsPanel({ team, settings, onDone }: { team: RoseTeam; settings: LeagueSettings; onDone: (o: Outcome) => void }) {
   const missing = team.players.filter((p) => p.years === null);
-  const [chosen, setChosen] = useState<Record<number, number | null>>({});
+  const [chosen, setChosen] = useState<Record<number, DurationChoice>>({});
   const [pending, start] = useTransition();
   if (missing.length === 0) return null;
-  const ready = missing.filter((p) => chosen[p.id] != null);
+  const choice = (p: RosePlayer): DurationChoice => chosen[p.id] ?? { years: null, teamOption: p.teamOption, unrestricted: p.unrestricted };
+  const change = (p: RosePlayer, patch: Partial<DurationChoice>) => {
+    const next = { ...choice(p), ...patch };
+    if (!teamOptionAllowed(next.years, settings)) next.teamOption = false;
+    setChosen({ ...chosen, [p.id]: next });
+  };
+  const rowErrors = (p: RosePlayer) => {
+    const c = choice(p);
+    return c.years === null ? [] : contractTermsErrors({ slot: p.slot, years: c.years, teamOption: c.teamOption, salary: p.salary, isRookie: p.rookie }, settings);
+  };
+  const ready = missing.filter((p) => choice(p).years !== null);
+  const blocked = ready.some((p) => rowErrors(p).length > 0);
   return (
     <section className="mt-6">
       <h2 className="font-display mb-2 flex items-center gap-2.5 text-2xl font-extrabold before:h-5 before:w-1.5 before:rounded-full before:bg-gold before:content-['']">
@@ -195,31 +208,46 @@ function DurationsPanel({ team, settings, onDone }: { team: RoseTeam; settings: 
       </h2>
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
         <ul className="divide-y divide-line">
-          {missing.map((p) => (
-            <li key={p.id} className="flex items-center gap-3 px-3 py-2">
-              <PosChip pos={p.pos} />
-              <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
-              <span className="w-11 text-right text-sm tabular-nums">{fmt(p.salary)}</span>
-              <select
-                className={`${inputClass} !w-32 !py-1.5`}
-                aria-label={`Durata di ${p.name}`}
-                value={chosen[p.id] ?? ""}
-                onChange={(e) => setChosen({ ...chosen, [p.id]: e.target.value === "" ? null : Number(e.target.value) })}
-              >
-                <option value="">—</option>
-                {contractDurations(settings).map((y) => <option key={y} value={y}>{durationLabel(y)}</option>)}
-              </select>
-            </li>
-          ))}
+          {missing.map((p) => {
+            const c = choice(p);
+            const errors = rowErrors(p);
+            return (
+              <li key={p.id} className="px-3 py-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <PosChip pos={p.pos} />
+                  <span className="min-w-0 flex-1 basis-32 truncate font-medium">{p.name}</span>
+                  <span className="w-11 text-right text-sm tabular-nums">{fmt(p.salary)}</span>
+                  <span className="flex items-center gap-3">
+                    <select
+                      className={`${inputClass} !w-32 !py-1.5`}
+                      aria-label={`Durata di ${p.name}`}
+                      value={c.years ?? ""}
+                      onChange={(e) => change(p, { years: e.target.value === "" ? null : Number(e.target.value) })}
+                    >
+                      <option value="">—</option>
+                      {contractDurations(settings).map((y) => <option key={y} value={y}>{durationLabel(y)}</option>)}
+                    </select>
+                    <Check checked={c.teamOption} disabled={!teamOptionAllowed(c.years, settings)} onChange={(v) => change(p, { teamOption: v })}>
+                      <span title="Team option (R-22)">+1</span>
+                    </Check>
+                    <Check checked={c.unrestricted} onChange={(v) => change(p, { unrestricted: v })}>
+                      <span title="Unrestricted (R-23/R-24)">u</span>
+                    </Check>
+                  </span>
+                </div>
+                {errors.length > 0 && <p className="mt-1 text-sm text-accent">{errors.join(" ")}</p>}
+              </li>
+            );
+          })}
         </ul>
         <div className="flex items-center justify-end gap-3 border-t border-line bg-foreground/[0.03] p-3">
           <span className="text-sm text-muted">{ready.length} su {missing.length} scelte</span>
           <Button
-            disabled={ready.length === 0}
+            disabled={ready.length === 0 || blocked}
             pending={pending}
             onClick={() =>
               start(async () => {
-                const r = await setDurations(ready.map((p) => ({ contractId: p.id, version: p.version, years: chosen[p.id] ?? null, teamOption: false })));
+                const r = await setDurations(ready.map((p) => ({ contractId: p.id, version: p.version, ...choice(p) })));
                 if (r.ok) setChosen({});
                 onDone(r.ok ? { ok: true, text: r.message } : { ok: false, text: r.error });
               })
@@ -229,7 +257,7 @@ function DurationsPanel({ team, settings, onDone }: { team: RoseTeam; settings: 
           </Button>
         </div>
       </div>
-      <p className="mt-1 text-xs text-muted">Per aggiungere la team option usa Modifica sul singolo giocatore.</p>
+      <p className="mt-1 text-xs text-muted"><strong>+1</strong> = team option (R-22, solo su contratti da 1 o 2 anni). <strong>u</strong> = unrestricted a fine contratto (R-23/R-24).</p>
     </section>
   );
 }

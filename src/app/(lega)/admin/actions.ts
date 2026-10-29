@@ -226,7 +226,9 @@ export async function removeContract(input: { contractId: number; version: numbe
 }
 
 // ---------- Durate in blocco ----------
-export async function setDurations(items: { contractId: number; version: number; years: number | null; teamOption: boolean }[]): Promise<ActionResult> {
+export async function setDurations(
+  items: { contractId: number; version: number; years: number | null; teamOption: boolean; unrestricted: boolean }[],
+): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
   if (!Array.isArray(items) || items.length === 0) return fail("Nessuna durata da salvare.");
@@ -242,7 +244,7 @@ export async function setDurations(items: { contractId: number; version: number;
 
   const db = await createClient();
   const { error } = await db.rpc("admin_set_durations", {
-    p_items: items.map((it) => ({ id: it.contractId, version: it.version, years: it.years, team_option: it.teamOption })),
+    p_items: items.map((it) => ({ id: it.contractId, version: it.version, years: it.years, team_option: it.teamOption, unrestricted: it.unrestricted === true })),
   });
   if (error) return rpcError(error.message);
   refresh();
