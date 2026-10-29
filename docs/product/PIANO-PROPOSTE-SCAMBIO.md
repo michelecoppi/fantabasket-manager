@@ -115,7 +115,7 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 2. ~~**Chiusura del mercato**~~ — deciso (2026-10-29): ritira le proposte non ancora approvate.
 3. ~~**Scambi admin a mercato chiuso**~~ — `/admin/scambio` resta sempre utilizzabile (fatto nella 7.1).
 4. ~~**Più account per squadra**~~ — deciso (2026-10-29): basta la risposta di uno (si registra chi ha risposto).
-5. **Bot** — sul canale vanno solo gli scambi eseguiti o anche le proposte?
+5. ~~**Bot**~~ — deciso (2026-10-29): solo gli scambi eseguiti, con frasi divertenti che prendono in giro chi scambia.
 
 ## Note dalla PR 2 (2026-10-29)
 
@@ -138,3 +138,10 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - Slot di arrivo: se uno scambio ha blocchi o sfora il cap con gli slot di sempre, si riprova con gli arrivi come riserva (prima da una parte, poi dall'altra, poi entrambe); «Usa questa» riporta lo slot scelto.
 - In più rispetto al piano: per lo spazio nel cap e nelle riserve si indicano i crediti che servono (vedi registro decisioni di PLAN.md).
 
+## Note dalla PR 5 (2026-10-29)
+
+- La coda del bot è `trades` (colonne `announced_at` e `announce_claimed_at`), non `trade_proposal_events`: così si annunciano anche gli scambi registrati a mano da `/admin/scambio`, e le proposte restano private. `notified_at` degli eventi resta libero.
+- `trade_announce_claim` prende in carico gli scambi (5 minuti, per non mandare due volte lo stesso scambio se action e cron si incrociano) e li restituisce già leggibili; `trade_announce_done` chiude o libera la presa. Segreto del job o sessione admin, come le `dunkest_sync_*`.
+- Invio subito dopo `executeTrade` e `approveProposal` con `after()` di Next (non rallenta la risposta e non la fa fallire); il cron delle 9 riprova. Testo e battute in `lib/trade-announce.ts` (puro, testato), invio in `lib/telegram.ts`.
+- Le battute usano anche durata, rookie, PDK, partite giocate e infortunio dei giocatori, che `trade_announce_claim` legge con lo scambio. Ogni gruppo dichiara i segnaposto che riceve (`JOKE_VARS`) e un test controlla che nessuna frase ne usi altri.
+- Lo stesso bot potrà annunciare MVP della giornata e avvisi di formazione: per ora no (scelta dell'utente: solo scambi).

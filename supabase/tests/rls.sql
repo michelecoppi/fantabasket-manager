@@ -967,6 +967,42 @@ begin
     and exists (select 1 from audit_log where action = 'market' and after ->> 'summary' like '% · 1 proposte ritirate'));
 end $$;
 
+-- ---------- Bot Telegram (Fase 7.5): coda degli scambi da annunciare ----------
+-- Solo il job (segreto) o un admin prendono gli scambi; una presa esclude le altre, l'esito la chiude o la libera. Gli scambi
+-- eseguiti dai test qui sopra (stessa transazione) sono la coda.
+do $$
+declare v jsonb; v2 jsonb; tr int;
+begin
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon prende gli scambi da annunciare', rls_t.try('select public.trade_announce_claim(null, 72)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon segna un annuncio', rls_t.try('select public.trade_announce_done(null, 1, true)'), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('il viewer prende gli scambi da annunciare', rls_t.try('select public.trade_announce_claim(null, 72)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('il viewer segna un annuncio', rls_t.try('select public.trade_announce_done(null, 1, true)'), array['error: FORBIDDEN%']);
+
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('età massima non valida', rls_t.try('select public.trade_announce_claim(null, 0)'), array['error: INVALID%']);
+  v := public.trade_announce_claim(null, 72);
+  v2 := public.trade_announce_claim(null, 72);
+  tr := (v -> 0 ->> 'id')::int;
+  perform rls_t.ok('scambi da annunciare non presi',
+    jsonb_array_length(v) >= 1 and v2 = '[]'::jsonb
+    and not exists (select 1 from jsonb_array_elements(v) x where (x ->> 'id')::int = 900001));
+  perform rls_t.ok('annuncio senza nomi e dati',
+    exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'moves') m
+            where m ->> 'name' like 'RLS%' and m ? 'salary')
+    and not exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'teams') t
+                    where t ->> 'name' is null or (t ->> 'season_trades')::int < 1));
+  perform public.trade_announce_done(null, tr, false);
+  perform rls_t.become('anon');
+  v2 := public.trade_announce_claim('rls-segreto-del-job-0123', 72);
+  perform rls_t.ok('presa liberata non ripresa dal job', jsonb_array_length(v2) = 1 and (v2 -> 0 ->> 'id')::int = tr);
+  perform rls_t.ok('annuncio non segnato', public.trade_announce_done('rls-segreto-del-job-0123', tr, true));
+  perform rls_t.ok('annuncio segnato due volte', not public.trade_announce_done('rls-segreto-del-job-0123', tr, true));
+  perform rls_t.become('postgres');
+  perform rls_t.ok('scambio annunciato senza ora', exists (select 1 from trades where id = tr and announced_at is not null and announce_claimed_at is null));
+end $$;
+
 do $$ begin
   raise notice 'RLS: tutti i test passati (% tabelle, % RPC)', (select count(*) from rls_t.tbl), (select count(*) from rls_t.rpc);
 end $$;

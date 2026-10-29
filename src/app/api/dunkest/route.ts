@@ -1,6 +1,7 @@
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
+import { announceTrades } from "@/lib/telegram";
 
 /**
  * Cron giornaliero di Vercel (vercel.json, `0 8 * * *` UTC = 9:00 italiane in ora solare): aggiorna punteggio, partite giocate e
@@ -29,5 +30,12 @@ export async function GET(request: Request) {
   const expired = await db.rpc("trade_proposals_expire", { p_secret: secret });
   if (expired.error) console.error(`[scambi] proposte scadute non marcate: ${expired.error.message}`);
   else if (expired.data) console.log(`[scambi] ${expired.data} proposte scadute`);
+  // Scambi eseguiti non ancora annunciati su Telegram (Fase 7.5): di solito li manda l'action subito, qui si riprovano quelli
+  // falliti. Non cambia l'esito del cron.
+  const announced = await announceTrades(db, secret);
+  if (!announced.skipped) {
+    if (announced.sent) console.log(`[telegram] ${announced.sent} scambi annunciati`);
+    if (announced.errors.length) console.error(`[telegram] ${announced.errors.join("; ")}`);
+  }
   return Response.json({ stats, league }, { status: stats.ok && league.ok ? 200 : 502 });
 }
