@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { Button, Callout } from "@/components/controls";
-import { alignToDunkest, type ActionResult } from "../actions";
+import type { ActionResult } from "@/lib/action-result";
+import { alignToDunkest } from "../actions";
 
 /** «Allinea» (una squadra) o «Allinea tutte»: titolari e riserve dell'app come la rosa Dunkest, dopo la conferma dell'admin. */
 export function AlignButton({ teamIds, label, primary = false }: { teamIds: string[]; label: string; primary?: boolean }) {

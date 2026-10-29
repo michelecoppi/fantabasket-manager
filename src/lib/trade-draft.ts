@@ -145,3 +145,57 @@ export function draftMoves(teams: readonly SimTeam[], d: TradeDraft): DraftMove[
 /** Firma stabile della bozza: cambia a ogni modifica (serve a invalidare conferme e messaggi). */
 export const draftKey = (d: TradeDraft) =>
   JSON.stringify([d.teams, [...d.players].sort((a, b) => a[0] - b[0]), [...d.picks].sort((a, b) => a[0] - b[0])]);
+
+/**
+ * Un movimento come lo salvano scambi e proposte (`trades.payload`, `trade_proposals.moves`, RPC `admin_execute_trade` e
+ * `trade_propose`): giocatore (id contratto) o pick, versione vista, chi cede, chi riceve, slot di arrivo facoltativo.
+ */
+export interface TradeMoveInput {
+  kind: "contract" | "pick";
+  id: number;
+  version: number;
+  from: string;
+  to: string;
+  slot?: ArrivalSlot;
+}
+
+/** Errore di forma dei movimenti arrivati da un client (le regole di lega sono altrove: `evaluateTrade`). */
+export function tradeInputError(teams: unknown, moves: unknown): string | null {
+  if (!Array.isArray(teams) || !Array.isArray(moves) || teams.some((t) => typeof t !== "string")) return "Dati non validi.";
+  const ok = (moves as Partial<TradeMoveInput>[]).every(
+    (m) =>
+      !!m &&
+      (m.kind === "contract" || m.kind === "pick") &&
+      Number.isFinite(m.id) &&
+      Number.isFinite(m.version) &&
+      teams.includes(m.from) &&
+      teams.includes(m.to) &&
+      m.from !== m.to &&
+      (m.slot === undefined || (m.kind === "contract" && (m.slot === "starter" || m.slot === "reserve"))),
+  );
+  return ok ? null : "Dati dello scambio non validi.";
+}
+
+/** Bozza che corrisponde a movimenti già salvati: serve a rivalutare una proposta e a ripartire da lei (controproposta). */
+export function draftFromMoves(teams: readonly string[], moves: readonly TradeMoveInput[]): TradeDraft {
+  const players = new Map<number, { from: string; to: string; slot?: ArrivalSlot }>();
+  const picks = new Map<number, { from: string; to: string }>();
+  for (const m of moves) {
+    if (m.kind === "contract") players.set(m.id, { from: m.from, to: m.to, ...(m.slot ? { slot: m.slot } : {}) });
+    else picks.set(m.id, { from: m.from, to: m.to });
+  }
+  return { teams: [...teams], players, picks };
+}
+
+/**
+ * Movimenti che non valgono più: il giocatore o la pick non è più di chi lo cede, o la sua versione è cambiata (rinnovo,
+ * spostamento, taglio). Senza versioni nelle squadre (`simTeams` senza `versions`) conta solo il proprietario.
+ */
+export function staleMoves(teams: readonly SimTeam[], moves: readonly TradeMoveInput[]): TradeMoveInput[] {
+  const byId = new Map(teams.map((t) => [t.id, t]));
+  return moves.filter((m) => {
+    const t = byId.get(m.from);
+    const item = m.kind === "contract" ? t?.players.find((p) => p.id === m.id) : t?.picks.find((p) => p.id === m.id);
+    return !item || (item.version !== undefined && item.version !== m.version);
+  });
+}

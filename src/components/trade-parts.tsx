@@ -60,15 +60,19 @@ export function TradeMachine({
   teams,
   settings,
   myTeamId,
+  initialDraft,
   children,
 }: {
   teams: SimTeam[];
   settings: LeagueSettings;
   myTeamId?: string | null;
+  /** bozza di partenza (controproposta); di default la tua squadra e la prima delle altre, senza movimenti */
+  initialDraft?: TradeDraft;
   children?: (ctx: TradeContext) => ReactNode;
 }) {
   const sorted = [...teams].sort((a, b) => a.name.localeCompare(b.name, "it"));
   const initial = () => {
+    if (initialDraft) return initialDraft;
     const first = sorted.find((t) => t.id === myTeamId) ?? sorted[0];
     const second = sorted.find((t) => t.id !== first?.id);
     return emptyDraft([first, second].flatMap((t) => (t ? [t.id] : [])));
@@ -439,7 +443,8 @@ function MoveControls({
 }
 
 type Verdict = { tone: "good" | "warn" | "bad"; icon: "check" | "alert" | "flame"; label: string };
-function verdict(ev: TradeEvaluation): Verdict {
+/** Esito in una parola, per badge e barre: blocchi, eccezione al cap, avvisi, in regola. */
+export function verdict(ev: TradeEvaluation): Verdict {
   if (ev.errors.length) return { tone: "bad", icon: "alert", label: ev.errors.length === 1 ? "1 blocco" : `${ev.errors.length} blocchi` };
   if (ev.capBreakers.length) return { tone: "bad", icon: "flame", label: "serve eccezione" };
   if (ev.warnings.length) return { tone: "warn", icon: "alert", label: "in regola, con avvisi" };
@@ -526,41 +531,60 @@ function TradeOutcome({
           Tocca giocatori o pick da cedere: qui vedi subito chi riceve cosa e l&apos;effetto su cap e riserve di ogni squadra.
         </Empty>
       ) : (
-        <div className="space-y-3" aria-live="polite">
-          <div className={`grid gap-3 ${RESULT_GRID[span(teams.length)]}`}>
-            {teams.map((t, i) => (
-              <TeamResult
-                key={t.id}
-                team={t}
-                impact={ev.impacts[i]}
-                incoming={moves.filter((m) => m.to === t.id)}
-                outgoing={moves.filter((m) => m.from === t.id)}
-                color={color}
-                name={name}
-              />
-            ))}
-          </div>
-          {ev.errors.length > 0 && (
-            <Callout tone="bad" title="Scambio non registrabile">
-              <ul className="list-disc pl-5">
-                {ev.errors.map((e) => (
-                  <li key={e}>{e}</li>
-                ))}
-              </ul>
-            </Callout>
-          )}
-          {ev.warnings.length > 0 && (
-            <Callout tone="warn" title="Da controllare (non bloccano)">
-              <ul className="list-disc pl-5">
-                {ev.warnings.map((w) => (
-                  <li key={w}>{w}</li>
-                ))}
-              </ul>
-            </Callout>
-          )}
-        </div>
+        <OutcomeGrid teams={teams} moves={moves} ev={ev} color={color} name={name} />
       )}
     </section>
+  );
+}
+
+/** Una scheda per squadra (cosa riceve, cap e riserve prima → dopo), poi blocchi e avvisi. */
+function OutcomeGrid({
+  teams,
+  moves,
+  ev,
+  color,
+  name,
+}: {
+  teams: SimTeam[];
+  moves: DraftMove[];
+  ev: TradeEvaluation;
+  color: (id: string) => string;
+  name: (id: string) => string;
+}) {
+  return (
+    <div className="space-y-3" aria-live="polite">
+      <div className={`grid gap-3 ${RESULT_GRID[span(teams.length)]}`}>
+        {teams.map((t, i) => (
+          <TeamResult
+            key={t.id}
+            team={t}
+            impact={ev.impacts[i]}
+            incoming={moves.filter((m) => m.to === t.id)}
+            outgoing={moves.filter((m) => m.from === t.id)}
+            color={color}
+            name={name}
+          />
+        ))}
+      </div>
+      {ev.errors.length > 0 && (
+        <Callout tone="bad" title="Scambio non registrabile">
+          <ul className="list-disc pl-5">
+            {ev.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </Callout>
+      )}
+      {ev.warnings.length > 0 && (
+        <Callout tone="warn" title="Da controllare (non bloccano)">
+          <ul className="list-disc pl-5">
+            {ev.warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </Callout>
+      )}
+    </div>
   );
 }
 

@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS as S, evaluateTrade } from "./cap";
-import { addTeam, draftKey, draftMoves, emptyDraft, nextTeam, removeTeam, setArrivalSlot, setDestination, togglePick, togglePlayer, toParties, type SimTeam } from "./trade-draft";
+import {
+  addTeam,
+  draftFromMoves,
+  draftKey,
+  draftMoves,
+  emptyDraft,
+  nextTeam,
+  removeTeam,
+  setArrivalSlot,
+  setDestination,
+  staleMoves,
+  togglePick,
+  togglePlayer,
+  toParties,
+  tradeInputError,
+  type SimTeam,
+  type TradeMoveInput,
+} from "./trade-draft";
 
 const team = (id: string, playerId: number, salary: number, pickId?: number): SimTeam => ({
   id,
@@ -73,5 +90,40 @@ describe("bozza di scambio (R-56)", () => {
   it("la firma cambia a ogni modifica", () => {
     const d = emptyDraft(["a", "b"]);
     expect(draftKey(togglePlayer(d, "a", 1))).not.toBe(draftKey(d));
+  });
+});
+
+describe("movimenti salvati (proposte, Fase 7)", () => {
+  const moves: TradeMoveInput[] = [
+    { kind: "contract", id: 1, version: 1, from: "a", to: "c", slot: "reserve" },
+    { kind: "contract", id: 3, version: 1, from: "c", to: "a" },
+    { kind: "pick", id: 10, version: 3, from: "a", to: "b" },
+  ];
+
+  it("ricostruisce la bozza: stessi movimenti e stesso esito del simulatore", () => {
+    const d = draftFromMoves(["a", "b", "c"], moves);
+    expect(draftMoves(teams, d).map(({ kind, id, version, from, to, slot }) => ({ kind, id, version, from, to, ...(slot ? { slot } : {}) }))).toEqual(moves);
+    expect(evaluateTrade(toParties(teams, d), S).impacts.map((i) => i.after.payroll)).toEqual([10, 20, 0]);
+  });
+
+  it("trova i movimenti che non valgono più: proprietario o versione cambiati", () => {
+    expect(staleMoves(teams, moves)).toEqual([]);
+    const moved = [team("a", 1, 30, 10), team("b", 2, 20), team("c", 4, 10)];
+    expect(staleMoves(moved, moves).map((m) => m.id)).toEqual([3]);
+    const renewed: SimTeam[] = teams.map((t) => (t.id === "a" ? { ...t, players: t.players.map((p) => ({ ...p, version: 2 })) } : t));
+    expect(staleMoves(renewed, moves).map((m) => m.id)).toEqual([1]);
+    // senza versioni (simulatore pubblico) conta solo il proprietario
+    const noVersions: SimTeam[] = teams.map((t) => ({ ...t, players: t.players.map((p) => ({ ...p, version: undefined })) }));
+    expect(staleMoves(noVersions, [{ ...moves[0], version: 99 }])).toEqual([]);
+  });
+
+  it("rifiuta movimenti malformati arrivati da un client", () => {
+    expect(tradeInputError(["a", "b"], [moves[2]])).toBeNull();
+    expect(tradeInputError(["a", "b"], [{ ...moves[2], to: "a" }])).not.toBeNull();
+    expect(tradeInputError(["a", "b"], [{ ...moves[2], to: "z" }])).not.toBeNull();
+    expect(tradeInputError(["a", "b"], [{ ...moves[2], slot: "starter" }])).not.toBeNull();
+    expect(tradeInputError(["a", "b"], [{ ...moves[2], version: Number.NaN }])).not.toBeNull();
+    expect(tradeInputError("a", [])).not.toBeNull();
+    expect(tradeInputError(["a", "b"], [null])).not.toBeNull();
   });
 });

@@ -6,7 +6,8 @@ import { InstallHint } from "@/components/install";
 import { LeagueTicker, LeagueTickerFallback } from "@/components/league-ticker";
 import { MainNav, TabBar } from "@/components/nav";
 import { RefreshButton } from "@/components/refresh-button";
-import { loadProfile } from "@/lib/league-server";
+import { loadProfile, loadProposals } from "@/lib/league-server";
+import { proposalBadges } from "@/lib/trade-proposals";
 
 async function UserBadge() {
   const profile = await loadProfile();
@@ -26,11 +27,18 @@ async function UserBadge() {
   );
 }
 
-/** Le voci di navigazione dipendono dal ruolo (Admin solo per gli admin): finché il profilo non arriva si mostrano quelle comuni. */
+/**
+ * Le voci di navigazione dipendono dal ruolo (Admin solo per gli admin): finché il profilo non arriva si mostrano quelle comuni.
+ * Badge (Fase 7.3): su «Scambio» le proposte che aspettano la risposta della tua squadra, su «Admin» quelle da approvare o da
+ * rifare su Dunkest. Se le proposte non si leggono, niente badge.
+ */
 async function Navs({ bar }: { bar: "top" | "bottom" }) {
   const profile = await loadProfile();
   const admin = profile?.role === "admin";
-  return bar === "top" ? <MainNav admin={admin} /> : <TabBar admin={admin} />;
+  const proposals = await loadProposals().catch(() => null);
+  const counts = proposalBadges(proposals ?? [], profile?.team_id, admin);
+  const badges = { "/scambio": counts.answer, "/admin": counts.admin };
+  return bar === "top" ? <MainNav admin={admin} badges={badges} /> : <TabBar admin={admin} badges={badges} />;
 }
 
 // Area per-utente: legge la sessione a ogni richiesta, quindi non può essere "instant" (validazione solo in dev).

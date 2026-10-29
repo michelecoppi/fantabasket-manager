@@ -8,24 +8,20 @@ import {
   cutShare,
   evaluateContractEdit,
   evaluateSigning,
-  evaluateTrade,
   pickLimitWarnings,
   pickYearAllowed,
   signingRestriction,
-  type TradeParty,
 } from "@/lib/cap";
-import { teamPicks, teamSide } from "@/lib/league";
+import { teamSide } from "@/lib/league";
 import { teamAlignment } from "@/lib/dunkest-align";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
-import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadProfile, loadVersions } from "@/lib/league-server";
+import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadProfile, loadProposals, loadVersions } from "@/lib/league-server";
 import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
-
-export type ActionResult = { ok: true; message: string; warnings: string[] } | { ok: false; error: string };
-
-const fail = (error: string): ActionResult => ({ ok: false, error });
-const done = (message: string, warnings: string[] = []): ActionResult => ({ ok: true, message, warnings });
+import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
+import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
+import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
 
 /** Ogni action ricontrolla il ruolo: la UI nasconde i bottoni, ma i permessi veri sono qui e nella RPC (is_admin). */
 async function requireAdmin(): Promise<string | null> {
@@ -37,15 +33,6 @@ async function requireAdmin(): Promise<string | null> {
   }
 }
 
-/** Traduce gli errori della RPC (prefissi FORBIDDEN / CONFLICT / INVALID, migrazione 0006) in testo per l'utente. */
-function rpcError(message: string): ActionResult {
-  const m = /^(FORBIDDEN|CONFLICT|INVALID): ([\s\S]*)$/.exec(message);
-  if (!m) return fail(`Operazione non riuscita: ${message}`);
-  if (m[1] === "CONFLICT") return fail(`${m[2]}. Aggiorna la pagina (pulsante in alto) e riprova: non è stato salvato nulla.`);
-  return fail(m[2]);
-}
-
-const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
 const refresh = () => revalidatePath("/", "layout");
 
 // ---------- Firma ----------
@@ -181,15 +168,6 @@ export async function cutPlayer(input: { contractId: number; version: number }):
 }
 
 // ---------- Scambio ----------
-/** Un giocatore (`contract`) o una pick che passa da `from` a `to`; `slot`: dove arriva il giocatore (default: lo slot che aveva). */
-export interface TradeMoveInput {
-  kind: "contract" | "pick";
-  id: number;
-  version: number;
-  from: string;
-  to: string;
-  slot?: "starter" | "reserve";
-}
 export interface TradeInput {
   /** squadre dello scambio, nell'ordine scelto (R-56: due o più, al massimo `tradeMaxTeams`) */
   teams: string[];
@@ -201,66 +179,29 @@ export interface TradeInput {
 export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
-  if (!Array.isArray(input.teams) || !Array.isArray(input.moves)) return fail("Dati non validi.");
-  const badMove = input.moves.some(
-    (m) =>
-      (m.kind !== "contract" && m.kind !== "pick") ||
-      !isNum(m.id) ||
-      !isNum(m.version) ||
-      !input.teams.includes(m.from) ||
-      !input.teams.includes(m.to) ||
-      (m.slot !== undefined && (m.kind !== "contract" || (m.slot !== "starter" && m.slot !== "reserve"))),
-  );
-  if (badMove) return fail("Dati dello scambio non validi.");
+  const bad = tradeInputError(input.teams, input.moves);
+  if (bad) return fail(bad);
   const league = await loadLeague();
-  const views = input.teams.map((id) => league.teams.find((t) => t.team.id === id));
-  if (views.some((t) => !t)) return fail("Una squadra dello scambio non esiste.");
-
-  const parties = input.teams.map((id, i): TradeParty => {
-    const t = views[i]!;
-    const contracts = input.moves.filter((m) => m.kind === "contract" && m.from === id);
-    const picks = input.moves.filter((m) => m.kind === "pick" && m.from === id);
-    return {
-      id,
-      name: t.team.name,
-      side: teamSide(t),
-      picks: teamPicks(league, id),
-      gives: {
-        contracts: new Set(contracts.map((m) => m.id)),
-        picks: new Set(picks.map((m) => m.id)),
-        slots: new Map(contracts.flatMap((m) => (m.slot ? [[m.id, m.slot] as const] : []))),
-        to: { contracts: new Map(contracts.map((m) => [m.id, m.to])), picks: new Map(picks.map((m) => [m.id, m.to])) },
-      },
-    };
-  });
-  const ev = evaluateTrade(parties, league.settings);
+  const { ev, names } = evaluateMoves(league, input.teams, input.moves);
+  if (!names) return fail("Una squadra dello scambio non esiste.");
   if (ev.errors.length) return fail(ev.errors.join(" "));
   const reason = input.overrideReason.trim();
   if (ev.capBreakers.length && !reason) {
     return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(", ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
   }
 
-  // Le etichette restano nello storico anche se il giocatore viene poi tagliato (le RPC leggono solo id e version).
-  const players = new Map(league.teams.flatMap((t) => [...t.starters, ...t.reserves].map((p) => [p.id, p.name] as const)));
-  const label = (m: TradeMoveInput) => {
-    if (m.kind === "contract") return players.get(m.id);
-    const pick = league.picks.find((x) => x.id === m.id);
-    return pick ? `Draft ${pick.year} · ${pick.round}° giro (${league.teamNames.get(pick.original_team_id) ?? "?"})` : undefined;
-  };
-
   const { rosterRev } = await loadVersions();
   const db = await createClient();
   const { error } = await db.rpc("admin_execute_trade", {
     p_teams: input.teams,
-    p_moves: input.moves.map((m) => ({ ...m, label: label(m) })),
+    p_moves: input.moves.map((m) => ({ ...m, label: moveLabel(league, m) })),
     p_approved_by: input.approvedBy,
     p_override_reason: ev.capBreakers.length ? reason : "",
     p_roster_revs: Object.fromEntries(input.teams.map((id) => [id, rosterRev[id] ?? null])),
   });
   if (error) return rpcError(error.message);
   refresh();
-  const names = views.map((t) => t!.team.name);
-  return done(`Scambio registrato tra ${names.slice(0, -1).join(", ")} e ${names.at(-1)}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
+  return done(`Scambio registrato tra ${joinNames(names)}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
 }
 
 // ---------- Rimozione (correzione di un errore, senza quota di taglio) ----------
@@ -473,6 +414,75 @@ export async function setTradeMarket(input: { open: boolean }): Promise<ActionRe
   if (error) return rpcError(error.message);
   refresh();
   return done(input.open ? "Mercato degli scambi aperto." : "Mercato degli scambi chiuso.");
+}
+
+// ---------- Proposte di scambio (Fase 7.3) ----------
+/**
+ * Approva ed esegue una proposta accettata da tutte (R-55: il moderatore ufficializza). Lo scambio si rivaluta sulle rose di
+ * adesso con `evaluateTrade`; lo sforamento del cap (R-57) passa solo con la motivazione dell'eccezione.
+ */
+export async function approveProposal(input: { id: number; version: number; approvedBy: string; overrideReason: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id) || !isNum(input.version)) return fail("Dati non validi.");
+  const proposal = (await loadProposals())?.find((p) => p.id === input.id);
+  if (!proposal) return fail("Proposta non disponibile.");
+  const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
+  const { ev, stale, names } = evaluateMoves(league, proposal.teams, proposal.moves, versions);
+  if (!names) return fail("Una squadra dello scambio non esiste.");
+  if (stale.length) return fail("Un giocatore o una pick della proposta è cambiato dopo l'invio: rimandala alle squadre.");
+  if (ev.errors.length) return fail(`Con le rose di adesso lo scambio non è in regola: ${ev.errors.join(" ")} Respingila o rimandala alle squadre.`);
+  const reason = String(input.overrideReason ?? "").trim();
+  if (ev.capBreakers.length && !reason) {
+    return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(", ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
+  }
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_approve_trade_proposal", {
+    p_id: input.id,
+    p_version: input.version,
+    p_approved_by: String(input.approvedBy ?? ""),
+    p_override_reason: ev.capBreakers.length ? reason : "",
+    p_roster_revs: Object.fromEntries(proposal.teams.map((id) => [id, versions.rosterRev[id] ?? null])),
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Scambio eseguito tra ${joinNames(names)}. Ora va fatto anche su Dunkest.`, ev.warnings);
+}
+
+export async function declineProposal(input: { id: number; version: number; note: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id) || !isNum(input.version)) return fail("Dati non validi.");
+  if (!String(input.note ?? "").trim()) return fail("Scrivi il motivo: lo leggono le squadre.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_decline_trade_proposal", { p_id: input.id, p_version: input.version, p_note: input.note });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done("Proposta respinta.");
+}
+
+/** «Rimanda alle squadre»: rose o versioni cambiate dopo l'accettazione; il proponente può rifarla. */
+export async function returnProposal(input: { id: number; version: number; note: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id) || !isNum(input.version)) return fail("Dati non validi.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_return_trade_proposal", { p_id: input.id, p_version: input.version, p_note: String(input.note ?? "") });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done("Proposta rimandata alle squadre.");
+}
+
+export async function markDunkestDone(input: { id: number }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id)) return fail("Dati non validi.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_mark_dunkest_done", { p_id: input.id });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done("Segnato come fatto su Dunkest.");
 }
 
 // ---------- Dati Dunkest (issue #68) ----------
