@@ -124,7 +124,7 @@ export function AwardsGrid({ awards, teams, myTeamId, provisional, noLineups, ma
           <Tile key={a.kind} award={a} teams={teams} myTeamId={myTeamId} i={i} matchday={matchday} />
         ))}
       </ol>
-      <p className="mt-3 text-xs text-muted">Punti come li dà Dunkest (per il capitano non si sa se comprendono il bonus). A pari valore il premio è condiviso.</p>
+      <p className="mt-3 text-xs text-muted">Punti come contano nel punteggio di squadra: il capitano vale 1,5 volte, la panchina (sesto uomo escluso) la metà. A pari valore il premio è condiviso.</p>
     </div>
   );
 }

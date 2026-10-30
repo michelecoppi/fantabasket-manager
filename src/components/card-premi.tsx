@@ -92,7 +92,7 @@ export function AwardsCardImage({ model, logo }: { model: AwardsCardModel; logo:
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", position: "absolute", right: 56, bottom: 24, fontSize: 14, fontWeight: 700, color: "#b9c4e4" }}>Punti come li dà Dunkest</div>
+      <div style={{ display: "flex", position: "absolute", right: 56, bottom: 24, fontSize: 14, fontWeight: 700, color: "#b9c4e4" }}>Punti contati: capitano 1,5×, panchina 0,5×</div>
     </Frame>
   );
 }

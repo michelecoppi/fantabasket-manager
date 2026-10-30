@@ -22,7 +22,7 @@ export function ShareCard({
   className = "",
   label,
   sheetTitle = "Condividi la card",
-  note = "Immagine 1200×630, con i punti come li dà Dunkest.",
+  note = "Immagine 1200×630, con i punti contati (capitano 1,5×, panchina 0,5×).",
 }: {
   src: string;
   title: string;

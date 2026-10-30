@@ -1,5 +1,5 @@
-// Premi della giornata (Fase 6.1): solo dai punti che dà Dunkest, mai ricostruendo il punteggio di squadra (il 2026-10-29
-// il punteggio di uno scontro non è la somma dei 10 schierati: capitano e panchina hanno regole che non abbiamo). Puro e testato.
+// Premi della giornata (Fase 6.1): dai punti dei giocatori (`pts` è già contato: capitano ×1,5, panchina ×0,5, vedi `countedPts`)
+// e dal punteggio di squadra così come lo dà Dunkest. Puro e testato.
 import type { LeagueMatch, LineupPlayer } from "./dunkest-league";
 
 export type AwardKind =
