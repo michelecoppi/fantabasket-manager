@@ -62,7 +62,7 @@ Stesso job, dopo statistiche e infortuni (le due parti sono indipendenti: se una
 - **Prova in locale**: con `DUNKEST_TOKEN` anche in `.env.local` (mai committato) «Aggiorna ora» dal sito locale scrive sul database reale come in produzione.
 
 ## Scrittura sul database (`--apply`)
-`npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply [--season=AAAA] [--force]`. Prima il report (stesso di sempre; si ferma se ci sono problemi, salvo `--force`), poi il controllo del payload (`payloadErrors` in `scripts/lib/payload.ts`: contratti senza giocatore, squadre sconosciute, foglio senza contratti), poi **una sola chiamata** alla RPC `import_replace_season` (migrazione `20261026201951`). Eseguibile solo con la `service_role`; la transazione è unica, quindi un errore in qualunque punto non lascia nessuna modifica (provato in `supabase/tests/import.sql`).
+`npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply [--season=AAAA] [--force]`. Prima il report (stesso di sempre; si ferma se ci sono problemi, salvo `--force`), poi il controllo del payload (`payloadErrors` in `scripts/lib/payload.ts`: contratti senza giocatore, squadre sconosciute, foglio senza contratti), poi il confronto dei talenti con il database (`talentTeamDrift` in `scripts/lib/talent-drift.ts`: un talento scambiato nell'app che nel foglio è ancora nella vecchia squadra verrebbe riportato indietro e perderebbe il collegamento al listone, quindi l'import elenca questi talenti e si ferma, salvo `--force`; decisione dell'utente del 2026-10-30), poi **una sola chiamata** alla RPC `import_replace_season` (migrazione `20261026201951`). Eseguibile solo con la `service_role`; la transazione è unica, quindi un errore in qualunque punto non lascia nessuna modifica (provato in `supabase/tests/import.sql`).
 
 Cosa viene sostituito, per la stagione `--season` (default 2026, deve esistere in `seasons`):
 
@@ -70,7 +70,7 @@ Cosa viene sostituito, per la stagione `--season` (default 2026, deve esistere i
 | --- | --- |
 | `contracts`, `cuts`, `rookie_draft`, `team_season` | sostituiti per quella stagione; le altre stagioni non si toccano |
 | `draft_picks` | sostituiti solo gli anni presenti nel foglio (es. 2027-2029) |
-| `talents` | non legata a una stagione: sostituita per intero con quella del foglio |
+| `talents` | non legata a una stagione: sostituita per intero con quella del foglio (i collegamenti al listone restano per squadra e nome; prima si controlla che il foglio non annulli scambi di talenti fatti nell'app) |
 | `last_contracts` | sostituite le righe dei giocatori presenti nel foglio; le altre (scadenze di `admin_close_season`) restano |
 | `players` | non si svuota: si aggiornano ruolo e crediti, si creano i nuovi, si tolgono solo quelli che nessuna tabella referenzia più |
 

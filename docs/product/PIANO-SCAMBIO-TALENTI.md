@@ -157,3 +157,8 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - Nello storico i talenti non aprono la scheda del giocatore (servirebbero i dati Dunkest nella pagina): restano testo, «Diritti su Nome (draft 2026)».
 - La firma della bozza (`draftKey`) ora comprende i talenti; il desk admin la ricalcola con `draftKey(emptyDraft(...))` invece di scriverla a mano.
 - `decodeMoves` rifiuta lo slot (`t17r`) su talenti e pick, come la RPC.
+
+## Note dalla PR 4 (2026-10-30)
+
+- Il controllo sta in `write()` di `scripts/import-xlsx.ts`, dopo il report e il controllo del payload e prima della RPC: serve il database, quindi la modalità solo report non lo fa.
+- Un talento firmato nell'app sparisce dalla tabella e il foglio vecchio lo rimetterebbe tra i talenti: non è una divergenza di squadra e questo controllo non lo vede. Con un foglio vecchio l'import riscrive comunque anche i contratti, come prima (docs/IMPORT.md: il foglio è la fonte della stagione che si importa).
