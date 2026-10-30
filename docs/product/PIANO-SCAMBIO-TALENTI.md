@@ -150,3 +150,10 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - Il limite di 4096 caratteri si controlla sull'HTML (più lungo del testo che conta Telegram, quindi con margine). Se l'annuncio non ci sta si tolgono i dettagli delle righe; se ancora non basta, restano 6 righe per squadra (`SHORT_LIST`) con «…e altri N». Titolo, eccezione al cap, battute, chiusura e link restano sempre.
 - `talentRights` scatta per un talento collegato al listone, `talentAbroad` per uno senza collegamento: in uno scambio con entrambi escono tutte e due (al massimo due battute per annuncio, come sempre).
 - `onlyFuture` sostituisce `onlyPicks` quando ci sono talenti e nessun contratto; le frasi non nominano «pick», così vanno bene anche per uno scambio di soli talenti.
+
+## Note dalla PR 2 (2026-10-30)
+
+- `TradeParty.talents` e `gives.talents` sono facoltativi: il cercatore e i test che costruiscono squadre a mano non cambiano, e una squadra senza talenti non ha la sezione nella trade machine.
+- Nello storico i talenti non aprono la scheda del giocatore (servirebbero i dati Dunkest nella pagina): restano testo, «Diritti su Nome (draft 2026)».
+- La firma della bozza (`draftKey`) ora comprende i talenti; il desk admin la ricalcola con `draftKey(emptyDraft(...))` invece di scriverla a mano.
+- `decodeMoves` rifiuta lo slot (`t17r`) su talenti e pick, come la RPC.

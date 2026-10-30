@@ -92,6 +92,8 @@ export interface Versions {
   contracts: Record<number, number>;
   picks: Record<number, number>;
   cuts: Record<number, number>;
+  /** talenti: la versione cambia solo col proprietario (migrazione 20261030160000, scambio dei talenti) */
+  talents: Record<number, number>;
   /** per squadra (la riga delle quote può non esistere ancora) */
   teamSeason: Record<string, number>;
   /** per squadra: contatore delle modifiche alla rosa, riletto dalla RPC dopo il lock di squadra (migrazione 0012) */

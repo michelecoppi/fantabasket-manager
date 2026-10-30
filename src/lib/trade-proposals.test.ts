@@ -139,7 +139,10 @@ describe("evaluateMoves", () => {
     settings,
     contracts: [contract(1, "a", 30), contract(2, "b", 240)],
     cuts: [],
-    talents: [],
+    talents: [
+      { id: 20, team_id: "a", player_id: 900, players: { first_name: "Cooper", last_name: "Flagg", pos: "A", nba_team: "DAL" }, display_name: "C.Flagg", draft_year: 2025, entry_credits: 9.5, notes: null },
+      { id: 21, team_id: "b", player_id: null, players: null, display_name: "Estero", draft_year: null, entry_credits: null, notes: null },
+    ],
     picks: [{ id: 10, year: 2027, round: 1, original_team_id: "b", current_team_id: "a", to_confirm: false, note: null }],
     teamSeason: [],
     rookieDraft: [],
@@ -165,5 +168,20 @@ describe("evaluateMoves", () => {
     expect(moveLabel(league, { kind: "contract", id: 2 })).toBe("P2");
     expect(moveLabel(league, { kind: "pick", id: 10 })).toBe("Draft 2027 · 1° giro (Beta)");
     expect(moveLabel(league, { kind: "contract", id: 99 })).toBeUndefined();
+  });
+
+  it("talenti (7.6): etichetta, esito senza effetto sul cap, versione cambiata = stale", () => {
+    expect(moveLabel(league, { kind: "talent", id: 20 })).toBe("Cooper Flagg (draft 2025)");
+    expect(moveLabel(league, { kind: "talent", id: 21 })).toBe("Estero");
+    expect(moveLabel(league, { kind: "talent", id: 99 })).toBeUndefined();
+    const swap = [
+      { kind: "talent" as const, id: 20, version: 1, from: "a", to: "b" },
+      { kind: "talent" as const, id: 21, version: 1, from: "b", to: "a" },
+    ];
+    const { ev } = evaluateMoves(league, ["a", "b"], swap);
+    expect(ev.errors).toEqual([]);
+    expect(ev.impacts.map((i) => i.after.payroll)).toEqual([30, 240]);
+    expect(evaluateMoves(league, ["a", "b"], swap, { contracts: {}, picks: {}, talents: { 20: 2, 21: 1 } }).stale.map((m) => m.id)).toEqual([20]);
+    expect(parseProposalMoves([{ ...swap[0], label: "Cooper Flagg (draft 2025)", slot: "reserve" }])).toEqual([{ ...swap[0], label: "Cooper Flagg (draft 2025)" }]);
   });
 });

@@ -5,7 +5,7 @@ import { Callout } from "@/components/controls";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { CapLine } from "@/components/cap-line";
-import { verdict, type SimTeam } from "@/components/trade-parts";
+import { TalentChip, talentDetails, verdict, type SimTeam } from "@/components/trade-parts";
 import { Badge, PosChip, StatChange } from "@/components/ui";
 import type { ActionResult } from "@/lib/action-result";
 import { evaluateTrade, type LeagueSettings, type TradeEvaluation } from "@/lib/cap";
@@ -62,6 +62,7 @@ export function ProposalCard({
   const mine = awaitsAnswer(p, myTeamId);
   // dati di adesso (ruolo, stipendio) per i giocatori ancora in lega; l'etichetta resta quella dell'invio
   const players = new Map(teams.flatMap((t) => t.players.map((x) => [x.id, x] as const)));
+  const talents = new Map(teams.flatMap((t) => (t.talents ?? []).map((x) => [x.id, x] as const)));
 
   return (
     <article id={`p${p.id}`} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-surface ${mine ? "border-gold/70" : "border-line"}`}>
@@ -107,18 +108,22 @@ export function ProposalCard({
                 <ul className="divide-y divide-line/70">
                   {got.map((m) => {
                     const now = m.kind === "contract" ? players.get(m.id) : undefined;
+                    const talent = m.kind === "talent" ? talents.get(m.id) : undefined;
                     return (
                       <li key={`${m.kind}-${m.id}`} className="flex min-h-9 items-center gap-2 py-1">
                         {m.kind === "contract" ? (
                           <PosChip pos={now?.pos ?? null} />
+                        ) : m.kind === "talent" ? (
+                          <TalentChip />
                         ) : (
                           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-subtle text-muted">
                             <Icon name="ticket" size={15} />
                           </span>
                         )}
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold">{m.label ?? now?.name ?? "?"}</span>
+                          <span className="block truncate text-sm font-semibold">{m.label ?? now?.name ?? talent?.name ?? "?"}</span>
                           {m.slot && <span className="block text-[0.6875rem] leading-tight font-semibold text-brand-blue">come {m.slot === "starter" ? "titolare" : "riserva"}</span>}
+                          {m.kind === "talent" && <span className="block truncate text-[0.6875rem] leading-tight text-muted">{talentDetails(talent?.draftYear, talent?.nbaTeam)}</span>}
                         </span>
                         {now && <span className="font-display tnum text-base leading-none font-black">{fmt(now.salary)}</span>}
                         <span className="shrink-0" title={`Da ${name(m.from)}`}>
@@ -150,8 +155,8 @@ export function ProposalCard({
         )}
         {stale.length > 0 && (
           <Callout tone="warn" title="Le rose sono cambiate dopo l'invio">
-            {stale.length === 1 ? "Un giocatore o una pick" : `${stale.length} giocatori o pick`} non {stale.length === 1 ? "è" : "sono"} più dove {stale.length === 1 ? "era" : "erano"}{" "}
-            (scambiati, tagliati o rinnovati): così la proposta non si può eseguire, va rifatta.
+            {stale.length === 1 ? "Un giocatore, un talento o una pick" : `${stale.length} tra giocatori, talenti e pick`} non {stale.length === 1 ? "è" : "sono"} più dove{" "}
+            {stale.length === 1 ? "era" : "erano"} (scambiati, tagliati, rinnovati o firmati dalla squadra talenti): così la proposta non si può eseguire, va rifatta.
           </Callout>
         )}
       </div>

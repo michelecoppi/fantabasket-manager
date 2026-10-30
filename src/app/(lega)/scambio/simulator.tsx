@@ -48,10 +48,10 @@ export function TradeSimulator({
       <p className="mt-4 text-xs text-muted">
         Assunzioni: se non scegli altro, i giocatori arrivano nello stesso slot (titolare/riserva) che avevano; se una squadra è già sopra il cap, lo scambio è
         accettabile solo se non aumenta il suo monte ingaggi. Un moderatore può autorizzare eccezioni (R-57). Al massimo {settings.tradeMaxTeams} squadre per
-        scambio.
+        scambio. Un talento passa con il diritto di firmarlo (R-35) e resta in squadra talenti: niente stipendio, niente cap.
       </p>
       <p className="mt-2 text-xs font-semibold text-warning">
-        Ogni scambio va fatto anche su Dunkest, titolari e riserve compresi: questa app non modifica le rose Dunkest.
+        Ogni scambio con giocatori a contratto va fatto anche su Dunkest, titolari e riserve compresi: questa app non modifica le rose Dunkest.
       </p>
     </>
   );

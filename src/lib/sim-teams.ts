@@ -1,8 +1,8 @@
 import type { SimTeam } from "./trade-draft";
-import type { LeagueView, Versions } from "./league";
+import { playerName, type LeagueView, type Versions } from "./league";
 
 /** Squadre nella forma che usano simulatore e scambio admin; con `versions` ogni riga porta la versione vista (concorrenza, migrazione 0006). */
-export function simTeams(league: LeagueView, versions?: Pick<Versions, "contracts" | "picks">): SimTeam[] {
+export function simTeams(league: LeagueView, versions?: Pick<Versions, "contracts" | "picks"> & Partial<Pick<Versions, "talents">>): SimTeam[] {
   return league.teams.map((t) => ({
     id: t.team.id,
     name: t.team.name,
@@ -26,5 +26,14 @@ export function simTeams(league: LeagueView, versions?: Pick<Versions, "contract
         version: versions?.picks[p.id],
         label: `${p.year} · ${p.round}° giro${p.original_team_id !== t.team.id ? ` (di ${league.teamNames.get(p.original_team_id) ?? "?"})` : ""}${p.to_confirm ? " · da confermare" : ""}`,
       })),
+    // R-56/R-35 (7.6): i talenti si scambiano; il nome è quello del giocatore collegato al listone, se c'è.
+    talents: t.talents.map((x) => ({
+      id: x.id,
+      name: x.players ? playerName(x.players) : x.display_name,
+      draftYear: x.draft_year,
+      credits: x.entry_credits === null ? null : Number(x.entry_credits),
+      nbaTeam: x.players?.nba_team ?? null,
+      version: versions?.talents?.[x.id],
+    })),
   }));
 }

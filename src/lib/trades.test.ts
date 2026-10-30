@@ -46,6 +46,20 @@ describe("parseTrade", () => {
     expect(parseTrade({ team_a: "a", team_b: "b", a_gives: { contracts: [null, { id: "x" }, { id: 3 }] } }).moves.map((m) => m.id)).toEqual([3]);
     expect(parseTrade({ teams: ["a", "b"], moves: [{ kind: "contract", id: 1, from: "a", to: "z" }, { kind: "x", id: 2, from: "a", to: "b" }] }).moves).toEqual([]);
   });
+  it("legge i talenti con i dati scritti dal database (7.6); uno scambio di soli talenti è completo", () => {
+    const t = parseTrade({
+      teams: ["a", "b"],
+      moves: [
+        { kind: "talent", id: 5, version: 1, from: "a", to: "b", label: "Cooper Flagg", draft_year: 2025, entry_credits: "9.5", player_id: 77, slot: "reserve" },
+        { kind: "talent", id: 6, version: 1, from: "b", to: "a", label: "Estero", draft_year: null, entry_credits: null, player_id: null },
+      ],
+    });
+    expect(t.complete).toBe(true);
+    expect(t.moves).toEqual([
+      { kind: "talent", id: 5, from: "a", to: "b", label: "Cooper Flagg", slot: undefined, draftYear: 2025, credits: 9.5, playerId: 77 },
+      { kind: "talent", id: 6, from: "b", to: "a", label: "Estero", slot: undefined, draftYear: undefined, credits: undefined, playerId: undefined },
+    ]);
+  });
 });
 
 describe("auditChanges", () => {

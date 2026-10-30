@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS as S, evaluateTrade } from "./cap";
 import {
   addTeam,
+  decodeMoves,
   draftFromMoves,
   draftKey,
   draftMoves,
   emptyDraft,
+  encodeMoves,
   nextTeam,
   removeTeam,
   setArrivalSlot,
@@ -13,6 +15,7 @@ import {
   staleMoves,
   togglePick,
   togglePlayer,
+  toggleTalent,
   toParties,
   tradeInputError,
   type SimTeam,
@@ -125,5 +128,89 @@ describe("movimenti salvati (proposte, Fase 7)", () => {
     expect(tradeInputError(["a", "b"], [{ ...moves[2], version: Number.NaN }])).not.toBeNull();
     expect(tradeInputError("a", [])).not.toBeNull();
     expect(tradeInputError(["a", "b"], [null])).not.toBeNull();
+  });
+});
+
+describe("diritti dei talenti negli scambi (R-56, R-35, 7.6)", () => {
+  const talent = (id: number, name: string, version = 1) => ({ id, name, draftYear: 2026, credits: 3.5, nbaTeam: "DAL", version });
+  const withTalents: SimTeam[] = [
+    { ...team("a", 1, 30, 10), talents: [talent(51, "Flagg"), talent(52, "Estero")] },
+    { ...team("b", 2, 20), talents: [talent(61, "Harper")] },
+    team("c", 3, 10),
+  ];
+  const ev = (d: ReturnType<typeof emptyDraft>) => evaluateTrade(toParties(withTalents, d), S);
+
+  it("scambio di soli talenti: in regola, nessun effetto su cap e riserve", () => {
+    let d = toggleTalent(emptyDraft(["a", "b"]), "a", 51);
+    d = toggleTalent(d, "b", 61);
+    const r = ev(d);
+    expect(r.errors).toEqual([]);
+    expect(r.capBreakers).toEqual([]);
+    for (const i of r.impacts) {
+      expect(i.after.payroll).toBe(i.before.payroll);
+      expect(i.after.reserveSpace).toBe(i.before.reserveSpace);
+    }
+    expect(draftMoves(withTalents, d).map((m) => `${m.kind}:${m.id}:${m.from}>${m.to}:${m.version}:${m.label}`)).toEqual([
+      "talent:51:a>b:1:Flagg",
+      "talent:61:b>a:1:Harper",
+    ]);
+  });
+
+  it("un talento per niente: chi lo riceve partecipa, chi non cede né riceve blocca", () => {
+    const d = toggleTalent(emptyDraft(["a", "b"]), "a", 52);
+    expect(ev(d).errors).toEqual([]);
+    const three = toggleTalent(emptyDraft(["a", "b", "c"]), "a", 52);
+    expect(ev(three).errors).toEqual(["C: non cede e non riceve nulla."]);
+    expect(ev(setDestination(three, "talents", 52, "c")).errors).toEqual(["B: non cede e non riceve nulla."]);
+  });
+
+  it("talento contro titolare: il cap si muove solo per il giocatore", () => {
+    let d = toggleTalent(emptyDraft(["a", "b"]), "a", 51);
+    d = togglePlayer(d, "b", 2);
+    const r = ev(d);
+    expect(r.errors).toEqual([]);
+    expect(r.impacts.map((i) => i.after.payroll)).toEqual([50, 0]);
+    expect(draftMoves(withTalents, d).map((m) => m.kind)).toEqual(["contract", "talent"]);
+  });
+
+  it("talento che non è di chi lo cede, o verso una squadra fuori dallo scambio", () => {
+    const parties = toParties(withTalents, emptyDraft(["a", "b"]));
+    const notMine = parties.map((p) => (p.id === "b" ? { ...p, gives: { ...p.gives, talents: new Set([51]) } } : p));
+    expect(evaluateTrade(notMine, S).errors).toContain("Un talento ceduto non appartiene a B.");
+    const outside = parties.map((p) =>
+      p.id === "a" ? { ...p, gives: { ...p.gives, talents: new Set([51]), to: { talents: new Map([[51, "z"]]) } } } : p,
+    );
+    expect(evaluateTrade(outside, S).errors).toContain("A: un talento va a una squadra che non è nello scambio.");
+  });
+
+  it("togliere una squadra toglie le sue cessioni e riassegna ciò che riceveva; la firma della bozza cambia", () => {
+    let d = toggleTalent(emptyDraft(["a", "b", "c"]), "a", 51);
+    d = setDestination(d, "talents", 51, "c");
+    d = toggleTalent(d, "b", 61);
+    expect(d.talents.get(61)?.to).toBe("c");
+    const noC = removeTeam(d, "c");
+    expect(noC.talents.get(51)?.to).toBe("b");
+    expect(noC.talents.get(61)?.to).toBe("a");
+    expect(removeTeam(d, "a").talents.has(51)).toBe(false);
+    expect(draftKey(toggleTalent(emptyDraft(["a", "b"]), "a", 51))).not.toBe(draftKey(emptyDraft(["a", "b"])));
+  });
+
+  it("movimenti salvati: bozza, stale (firmato, scambiato, versione), forma e URL", () => {
+    const moves: TradeMoveInput[] = [{ kind: "talent", id: 51, version: 1, from: "a", to: "b" }];
+    expect(draftFromMoves(["a", "b"], moves).talents.get(51)).toEqual({ from: "a", to: "b" });
+    expect(staleMoves(withTalents, moves)).toEqual([]);
+    const signed = withTalents.map((t) => (t.id === "a" ? { ...t, talents: [] } : t));
+    expect(staleMoves(signed, moves)).toHaveLength(1);
+    expect(staleMoves(withTalents, [{ ...moves[0], version: 2 }])).toHaveLength(1);
+    expect(staleMoves(withTalents, [{ ...moves[0], from: "b" }])).toHaveLength(1);
+    expect(tradeInputError(["a", "b"], moves)).toBeNull();
+    expect(tradeInputError(["a", "b"], [{ ...moves[0], slot: "reserve" }])).not.toBeNull();
+    expect(encodeMoves(moves)).toBe("t51");
+    expect(decodeMoves(withTalents, ["a", "b"], "t51,c2")).toEqual([
+      { kind: "talent", id: 51, version: 1, from: "a", to: "b" },
+      { kind: "contract", id: 2, version: 1, from: "b", to: "a" },
+    ]);
+    expect(decodeMoves(withTalents, ["a", "b"], "t51r")).toBeNull();
+    expect(decodeMoves(withTalents, ["a", "c"], "t61")).toBeNull();
   });
 });
