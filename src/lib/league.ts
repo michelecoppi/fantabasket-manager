@@ -51,6 +51,8 @@ interface TalentRow {
   team_id: string;
   /** giocatore del listone collegato (null = non collegato o non gioca in NBA), migrazione 20261030013427 */
   player_id: number | null;
+  /** il giocatore collegato (nome, ruolo e squadra NBA per la scheda Dunkest) */
+  players?: PlayerJoin | null;
   display_name: string;
   draft_year: number | null;
   entry_credits: number | null;
