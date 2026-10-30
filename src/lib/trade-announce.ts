@@ -3,6 +3,8 @@
  * scambiato (decisione dell'utente 2026-10-29: sul canale solo gli scambi eseguiti, «con frasi divertenti»). Puro e testato:
  * l'invio sta in `telegram.ts`. Le soglie qui sotto scelgono solo la battuta, non sono regole di lega: sono tarate sulla lega
  * del 2026-10-29 (stipendio mediano dei titolari 14,5, il 90% sotto 36; PDK mediano 21,5).
+ * Dal 7.6 uno scambio muove anche i diritti dei talenti (R-56): non hanno stipendio e non giocano per la squadra, quindi
+ * restano fuori dalle battute su stipendi, PDK e rose e hanno le loro.
  */
 import { fmt } from "./format";
 
@@ -23,6 +25,10 @@ const SERIAL_TRADES = 3;
 const BIG_SWAP_PLAYERS = 5;
 /** Battute per annuncio. */
 const MAX_JOKES = 2;
+/** Lunghezza massima di un messaggio Telegram (`sendMessage`, in caratteri UTF-16 come `String.length`). */
+export const TELEGRAM_MAX_LENGTH = 4096;
+/** Righe per squadra quando l'annuncio non ci sta nemmeno senza dettagli. */
+const SHORT_LIST = 6;
 
 export interface AnnouncedTeam {
   id: string;
@@ -31,13 +37,14 @@ export interface AnnouncedTeam {
   seasonTrades: number;
 }
 export interface AnnouncedMove {
-  kind: "contract" | "pick";
+  /** `talent`: diritti su un giocatore della squadra talenti (R-35), 7.6 */
+  kind: "contract" | "pick" | "talent";
   id: number;
   from: string;
   to: string;
   /** slot di arrivo scelto nello scambio */
   slot?: "starter" | "reserve";
-  /** nome salvato nello scambio, se il contratto non c'è più */
+  /** nome salvato nello scambio, se il contratto non c'è più; per i talenti lo scrive il database */
   label?: string;
   name?: string;
   pos?: string | null;
@@ -52,6 +59,11 @@ export interface AnnouncedMove {
   year?: number;
   round?: number;
   originalTeam?: string;
+  /** talento: anno di draft, valore d'ingresso (R-26), giocatore del listone collegato e sua squadra NBA */
+  draftYear?: number;
+  entryCredits?: number;
+  playerId?: number;
+  nbaTeam?: string;
 }
 export interface AnnouncedTrade {
   id: number;
@@ -82,7 +94,7 @@ export function parseAnnouncements(data: unknown): AnnouncedTrade[] {
       const mid = num(m.id);
       const from = str(m.from);
       const to = str(m.to);
-      if ((m.kind !== "contract" && m.kind !== "pick") || mid === undefined || !from || !to || !ids.has(from) || !ids.has(to)) return [];
+      if ((m.kind !== "contract" && m.kind !== "pick" && m.kind !== "talent") || mid === undefined || !from || !to || !ids.has(from) || !ids.has(to)) return [];
       return [{
         kind: m.kind,
         id: mid,
@@ -101,6 +113,10 @@ export function parseAnnouncements(data: unknown): AnnouncedTrade[] {
         year: num(m.year),
         round: num(m.round),
         originalTeam: str(m.original_team),
+        draftYear: num(m.draft_year),
+        entryCredits: num(m.entry_credits),
+        playerId: num(m.player_id),
+        nbaTeam: str(m.nba_team),
       }];
     });
     if (id === undefined || teams.length < 2 || !moves.length) return [];
@@ -233,6 +249,30 @@ export const JOKES = {
     "Nessun giocatore toccato, solo carta: fantabasket in modalità Piazza Affari.",
     "Pick per pick, come figurine al bar: ce l'ho, ce l'ho, mi manca.",
   ],
+  onlyFuture: [
+    "Nessun giocatore in rosa coinvolto: si scambiano solo promesse, cioè speranze con la data di scadenza.",
+    "Scambio di soli futuri: la formazione di domenica resta uguale, i rimpianti tra tre anni no.",
+    "Niente titolari né riserve: fantabasket per chi vive di proiezioni e sogni a lungo termine.",
+    "Si scambiano diritti e promesse. I notai ringraziano, la classifica non se ne accorge nemmeno.",
+    "Zero punti spostati oggi, tutto rimandato a data da destinarsi. Il mercato del «poi vediamo».",
+  ],
+  talentRights: [
+    "{X} cede i diritti di {P} a {Y}: la pazienza è la virtù dei forti, a {X} hanno preferito la fretta.",
+    "{Y} si prende i diritti di {P}. Non gioca, non costa, non fa punti: l'investimento perfetto per chi ama aspettare.",
+    "{X} rinuncia a {P} prima ancora di vederlo in campo. Come vendere il biglietto della lotteria il giorno prima dell'estrazione.",
+    "I diritti di {P} passano da {X} a {Y}. Tra due anni uno dei due farà finta di non ricordarselo.",
+    "{Y} mette {P} in cantina a invecchiare, come un buon vino. {X} spera che diventi aceto.",
+    "Scambio di diritti: {X} cede {P}, {Y} lo parcheggia in squadra talenti. Il parcheggio, almeno, è gratis.",
+    "Sam Presti ha costruito una dinastia accumulando giovani. {Y} con {P} ha appena posato il primo mattone. O il primo sassolino.",
+    "{P} cambia squadra senza aver firmato niente: è il calciomercato delle promesse, e {Y} ci ha creduto.",
+  ],
+  talentAbroad: [
+    "{Y} si prende {P}, che in NBA non si è ancora visto. Scouting fatto su YouTube, a velocità 2x.",
+    "{P} gioca lontano dai riflettori NBA. {Y} giura di averlo visto in una partita alle quattro di notte: nessuno può smentirlo.",
+    "{Y} investe su {P}, talento dall'altra parte dell'oceano. Il fuso orario è l'ultimo dei problemi.",
+    "{P} non è nemmeno nel listone Dunkest: {Y} ha comprato un nome, il resto si vedrà.",
+    "{Y} scommette su {P}. Il giorno in cui sbarca in NBA qualcuno dirà di averlo detto per primo. Probabilmente {Y}.",
+  ],
   rookie: [
     "{X} rinuncia al giovane {P}: la pazienza non è mai stata il suo forte.",
     "{P} non ha ancora imparato la strada per lo spogliatoio e l'hanno già scambiato. Benvenuto nel fantabasket.",
@@ -296,6 +336,9 @@ export const JOKE_VARS: Record<JokeKind, readonly string[]> = {
   serial: ["X", "n"],
   picks: ["X"],
   onlyPicks: [],
+  onlyFuture: [],
+  talentRights: ["X", "Y", "P"],
+  talentAbroad: ["Y", "P"],
   rookie: ["X", "Y", "P"],
   longContract: ["Y", "P", "n"],
   ghost: ["Y", "P"],
@@ -337,7 +380,8 @@ export function tradeJokes(t: AnnouncedTrade): Joke[] {
   const name = (id: string) => t.teams.find((x) => x.id === id)?.name ?? "?";
   const players = t.moves.filter((m) => m.kind === "contract");
   const picks = t.moves.filter((m) => m.kind === "pick");
-  const player = (m: AnnouncedMove) => m.name ?? m.label ?? "un giocatore";
+  const talents = t.moves.filter((m) => m.kind === "talent");
+  const player = (m: AnnouncedMove) => m.name ?? m.label ?? (m.kind === "talent" ? "un talento" : "un giocatore");
   const two = t.teams.length === 2;
 
   if (t.capOverrideReason) out.push({ kind: "capOverride", vars: {} });
@@ -356,8 +400,13 @@ export function tradeJokes(t: AnnouncedTrade): Joke[] {
   if (star) out.push({ kind: "star", vars: { X: name(star.from), Y: name(star.to), P: player(star) } });
   const serial = [...t.teams].sort((a, b) => b.seasonTrades - a.seasonTrades)[0];
   if (serial.seasonTrades >= SERIAL_TRADES) out.push({ kind: "serial", vars: { X: serial.name, n: serial.seasonTrades } });
-  if (!players.length) out.push({ kind: "onlyPicks", vars: {} });
+  if (!players.length) out.push({ kind: talents.length ? "onlyFuture" : "onlyPicks", vars: {} });
   else if (picks.length) out.push({ kind: "picks", vars: { X: name(picks[0].from) } });
+  // Talenti: chi gioca in NBA è collegato al listone (ha `playerId`), gli altri sono solo un nome del foglio.
+  const rights = talents.find((m) => m.playerId !== undefined);
+  if (rights) out.push({ kind: "talentRights", vars: { X: name(rights.from), Y: name(rights.to), P: player(rights) } });
+  const abroad = talents.find((m) => m.playerId === undefined);
+  if (abroad) out.push({ kind: "talentAbroad", vars: { Y: name(abroad.to), P: player(abroad) } });
   const rookie = players.find((m) => m.rookie);
   if (rookie) out.push({ kind: "rookie", vars: { X: name(rookie.from), Y: name(rookie.to), P: player(rookie) } });
   const long = players.filter((m) => (m.yearsLeft ?? 0) >= LONG_YEARS).sort((a, b) => (b.yearsLeft ?? 0) - (a.yearsLeft ?? 0))[0];
@@ -383,33 +432,53 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function moveText(m: AnnouncedMove, t: AnnouncedTrade): string {
+/** Una riga di «riceve»; `short`: solo il nome, per gli annunci che non ci stanno in un messaggio. */
+function moveText(m: AnnouncedMove, t: AnnouncedTrade, short = false): string {
   const from = t.teams.length > 2 ? ` · da ${t.teams.find((x) => x.id === m.from)?.name ?? "?"}` : "";
   if (m.kind === "pick") {
     const what = m.year && m.round ? `Pick ${m.year} · ${m.round}° giro${m.originalTeam ? ` (${m.originalTeam})` : ""}` : (m.label ?? "Una pick");
     return `${escapeHtml(what)}${escapeHtml(from)}`;
   }
-  const details = [
-    m.pos,
-    m.salary !== undefined ? `${fmt(m.salary)} cr` : null,
-    m.slot === "reserve" ? "riserva" : null,
-    m.injury ? "🚑" : null,
-  ].filter(Boolean).join(" · ");
-  return `${escapeHtml(m.name ?? m.label ?? "Un giocatore")}${details ? ` <i>(${escapeHtml(details)})</i>` : ""}${escapeHtml(from)}`;
+  const details = short
+    ? []
+    : m.kind === "talent"
+      ? [
+          "diritti",
+          m.draftYear !== undefined ? `draft ${m.draftYear}` : null,
+          m.entryCredits !== undefined ? `val. ${fmt(m.entryCredits)}` : "val. ?",
+          m.nbaTeam,
+          m.injury ? "🚑" : null,
+        ]
+      : [m.pos, m.salary !== undefined ? `${fmt(m.salary)} cr` : null, m.slot === "reserve" ? "riserva" : null, m.injury ? "🚑" : null];
+  const text = details.filter(Boolean).join(" · ");
+  const label = m.kind === "talent" ? `🎓 ${m.name ?? m.label ?? "Un talento"}` : (m.name ?? m.label ?? "Un giocatore");
+  return `${escapeHtml(label)}${text ? ` <i>(${escapeHtml(text)})</i>` : ""}${escapeHtml(from)}`;
 }
 
-/** Messaggio completo: titolo, squadre, chi riceve cosa, eventuale eccezione al cap, battute, chiusura, link allo storico. */
+/**
+ * Messaggio completo: titolo, squadre, chi riceve cosa, eventuale eccezione al cap, battute, chiusura, link allo storico.
+ * Telegram rifiuta i messaggi oltre `TELEGRAM_MAX_LENGTH`: uno scambio enorme (4 squadre, molti talenti e pick) perde prima i
+ * dettagli delle righe, poi le righe oltre le prime `SHORT_LIST` per squadra.
+ */
 export function announcementText(t: AnnouncedTrade, siteUrl?: string | null): string {
-  const lines = [`<b>${escapeHtml(pickFor(t, "headline", HEADLINES))}</b>`, t.teams.map((x) => `<b>${escapeHtml(x.name)}</b>`).join(" ⇄ "), ""];
-  for (const team of t.teams) {
-    const got = t.moves.filter((m) => m.to === team.id);
-    lines.push(`➡️ <b>${escapeHtml(team.name)}</b> riceve:`);
-    lines.push(...(got.length ? got.map((m) => `• ${moveText(m, t)}`) : ["• niente, solo la gioia di aver fatto spazio"]));
-  }
-  if (t.capOverrideReason) lines.push("", `⚖️ Eccezione al cap: <i>${escapeHtml(t.capOverrideReason)}</i>`);
-  lines.push("", ...tradeJokes(t).slice(0, MAX_JOKES).map((j) => `😏 ${escapeHtml(fillJoke(t, j))}`));
-  lines.push("", `<i>${escapeHtml(pickFor(t, "closing", CLOSINGS))}</i>`);
-  const site = siteUrl?.replace(/\/+$/, "");
-  if (site) lines.push(`<a href="${escapeHtml(`${site}/storico-scambi`)}">Storico scambi</a>`);
-  return lines.join("\n");
+  const build = (short: boolean, max: number) => {
+    const lines = [`<b>${escapeHtml(pickFor(t, "headline", HEADLINES))}</b>`, t.teams.map((x) => `<b>${escapeHtml(x.name)}</b>`).join(" ⇄ "), ""];
+    for (const team of t.teams) {
+      const got = t.moves.filter((m) => m.to === team.id);
+      lines.push(`➡️ <b>${escapeHtml(team.name)}</b> riceve:`);
+      lines.push(...(got.length ? got.slice(0, max).map((m) => `• ${moveText(m, t, short)}`) : ["• niente, solo la gioia di aver fatto spazio"]));
+      if (got.length > max) lines.push(`• …e altri ${got.length - max}`);
+    }
+    if (t.capOverrideReason) lines.push("", `⚖️ Eccezione al cap: <i>${escapeHtml(t.capOverrideReason)}</i>`);
+    lines.push("", ...tradeJokes(t).slice(0, MAX_JOKES).map((j) => `😏 ${escapeHtml(fillJoke(t, j))}`));
+    lines.push("", `<i>${escapeHtml(pickFor(t, "closing", CLOSINGS))}</i>`);
+    const site = siteUrl?.replace(/\/+$/, "");
+    if (site) lines.push(`<a href="${escapeHtml(`${site}/storico-scambi`)}">Storico scambi</a>`);
+    return lines.join("\n");
+  };
+  const fits = (s: string) => s.length <= TELEGRAM_MAX_LENGTH;
+  const full = build(false, Infinity);
+  if (fits(full)) return full;
+  const short = build(true, Infinity);
+  return fits(short) ? short : build(true, SHORT_LIST);
 }

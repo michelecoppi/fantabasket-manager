@@ -144,3 +144,9 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, t
 - D4 è nella RPC, non nell'action: `admin_approve_trade_proposal` imposta `dunkest_done_at` e scrive l'evento `dunkest_done` («Nessun giocatore a contratto: niente da fare su Dunkest») nella stessa transazione. Restano alla PR 2 solo i messaggi delle action.
 - Riepilogo nel registro: `· N giocatori, N pick`, con `, 1 talento` / `, N talenti` solo se ce ne sono (il formato degli scambi senza talenti non cambia).
 - Il caso 5 di `supabase/tests/concurrency.sh` prende la squadra come `trade_apply` e poi scambia il talento mentre parte una firma: con la funzione vecchia va in deadlock (verificato), con la nuova la firma risponde `CONFLICT: il talento è passato a un'altra squadra`.
+
+## Note dalla PR 3 (2026-10-30)
+
+- Il limite di 4096 caratteri si controlla sull'HTML (più lungo del testo che conta Telegram, quindi con margine). Se l'annuncio non ci sta si tolgono i dettagli delle righe; se ancora non basta, restano 6 righe per squadra (`SHORT_LIST`) con «…e altri N». Titolo, eccezione al cap, battute, chiusura e link restano sempre.
+- `talentRights` scatta per un talento collegato al listone, `talentAbroad` per uno senza collegamento: in uno scambio con entrambi escono tutte e due (al massimo due battute per annuncio, come sempre).
+- `onlyFuture` sostituisce `onlyPicks` quando ci sono talenti e nessun contratto; le frasi non nominano «pick», così vanno bene anche per uno scambio di soli talenti.

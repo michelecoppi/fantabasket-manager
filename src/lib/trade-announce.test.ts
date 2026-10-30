@@ -7,6 +7,7 @@ import {
   JOKE_VARS,
   JOKES,
   parseAnnouncements,
+  TELEGRAM_MAX_LENGTH,
   tradeJokes,
   type AnnouncedTrade,
   type JokeKind,
@@ -132,6 +133,55 @@ describe("annuncio Telegram degli scambi (Fase 7.5)", () => {
     expect(announcementText(t)).toContain("• Big Star <i>(40 cr · 🚑)</i>");
     // senza il PDK di tutti i giocatori niente rapina
     expect(tradeJokes(one({ moves: [{ ...row().moves[0], pdk: 40 }, row().moves[1]] })).map((j) => j.kind)).not.toContain("heist");
+  });
+
+  // 7.6: talenti come li restituisce trade_announce_claim dalla migrazione 20261030160000 (dati salvati nel payload più il collegato).
+  const linked = { kind: "talent", id: 11, version: 1, from: "a", to: "b", label: "Cooper Flagg", draft_year: 2025, entry_credits: 9.5, player_id: 501, name: "Cooper Flagg", nba_team: "DAL" };
+  const abroad = { kind: "talent", id: 12, version: 1, from: "b", to: "a", label: "Rogkavopoulos", draft_year: 2024, entry_credits: null, player_id: null };
+
+  it("talenti: lettura, riga dell'annuncio, valore mancante", () => {
+    const t = one({ moves: [linked, abroad] });
+    expect(t.moves[0]).toMatchObject({ kind: "talent", id: 11, name: "Cooper Flagg", draftYear: 2025, entryCredits: 9.5, playerId: 501, nbaTeam: "DAL" });
+    expect(t.moves[1]).toMatchObject({ kind: "talent", label: "Rogkavopoulos", draftYear: 2024, entryCredits: undefined, playerId: undefined });
+    const text = announcementText(t);
+    expect(text).toContain("➡️ <b>Spaccinos</b> riceve:\n• 🎓 Cooper Flagg <i>(diritti · draft 2025 · val. 9,5 · DAL)</i>");
+    expect(text).toContain("➡️ <b>Bol Bollerz</b> riceve:\n• 🎓 Rogkavopoulos <i>(diritti · draft 2024 · val. ?)</i>");
+  });
+
+  it("talenti: solo futuri e non «solo pick», diritti e talento fuori dalla NBA", () => {
+    const kinds = (moves: unknown[]) => tradeJokes(one({ moves })).map((j) => j.kind);
+    expect(kinds([linked, abroad])).toEqual(["onlyFuture", "talentRights", "talentAbroad"]);
+    expect(kinds([linked, { kind: "pick", id: 5, from: "b", to: "a" }])).toEqual(["onlyFuture", "talentRights"]);
+    expect(kinds([{ kind: "pick", id: 5, from: "b", to: "a" }])).toEqual(["onlyPicks"]);
+    // con un giocatore a contratto: niente «solo futuri»; il talento non entra in stipendi, PDK e trasloco
+    const withPlayer = tradeJokes(one({ moves: [{ ...linked, from: "b", to: "a" }, { kind: "contract", id: 1, from: "a", to: "b", name: "X", salary: 4, pdk: 10, gp: 5 }] }));
+    expect(withPlayer.map((j) => j.kind)).toEqual(["talentRights"]);
+    expect(withPlayer[0].vars).toEqual({ X: "Spaccinos", Y: "Bol Bollerz", P: "Cooper Flagg" });
+    expect(tradeJokes(one({ moves: [abroad] })).find((j) => j.kind === "talentAbroad")?.vars).toEqual({ Y: "Bol Bollerz", P: "Rogkavopoulos" });
+  });
+
+  it("talento senza nome né etichetta e talento infortunato", () => {
+    const text = announcementText(one({ moves: [{ kind: "talent", id: 13, from: "a", to: "b", player_id: 7, injury: "Caviglia" }] }));
+    expect(text).toContain("• 🎓 Un talento <i>(diritti · val. ? · 🚑)</i>");
+  });
+
+  it("annuncio entro il limite di Telegram anche per lo scambio più grande", () => {
+    const teams = ["a", "b", "c", "d"].map((id, i) => ({ id, name: `Squadra con un nome lunghissimo ${i}`, season_trades: 1 }));
+    const next = (id: string) => ["b", "c", "d", "a"][["a", "b", "c", "d"].indexOf(id)];
+    const moves = teams.flatMap(({ id }, i) => [
+      ...Array.from({ length: 19 }, (_, k) => ({ kind: "contract", id: i * 100 + k, from: id, to: next(id), name: `Giocatore dal nome lungo ${i}-${k}`, pos: "G", salary: 12.5, injury: "Ginocchio" })),
+      ...Array.from({ length: 12 }, (_, k) => ({ ...linked, id: i * 100 + 40 + k, from: id, to: next(id), name: `Talento dal nome lungo ${i}-${k}` })),
+      ...Array.from({ length: 15 }, (_, k) => ({ kind: "pick", id: i * 100 + 60 + k, from: id, to: next(id), year: 2027, round: 1, original_team: `Squadra ${i}` })),
+    ]);
+    const big = one({ teams, moves, cap_override_reason: "x".repeat(1000) });
+    const text = announcementText(big, "https://lega.example");
+    expect(text.length).toBeLessThanOrEqual(TELEGRAM_MAX_LENGTH);
+    expect(text).toContain("• …e altri 40");
+    expect(text).toContain("Storico scambi");
+    // uno scambio medio resta con tutti i dettagli
+    const medium = one({ moves: [...row().moves, linked, abroad, { kind: "pick", id: 5, from: "b", to: "a", year: 2027, round: 1 }] });
+    expect(announcementText(medium)).toContain("(diritti · draft 2025");
+    expect(announcementText(medium)).not.toContain("…e altri");
   });
 
   it("scambio a tre: numeri della battuta", () => {

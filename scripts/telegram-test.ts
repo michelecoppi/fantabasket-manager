@@ -19,6 +19,7 @@ const SAMPLE = parseAnnouncements([
       { kind: "contract", id: 1, from: "a", to: "b", name: "Giocatore Costoso", pos: "A", salary: 24 },
       { kind: "contract", id: 2, from: "b", to: "a", name: "Giocatore Economico", pos: "G", salary: 6.5, slot: "reserve" },
       { kind: "pick", id: 3, from: "b", to: "a", year: 2027, round: 2, original_team: "Squadra di prova B" },
+      { kind: "talent", id: 4, from: "a", to: "b", label: "Talento di Prova", draft_year: 2026, entry_credits: 3.5, player_id: 1, nba_team: "TST" },
     ],
   },
 ])[0];
