@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
 import type { GameLine, LeaderRow } from "./dunkest-games";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
-import { buildLeagueView, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
+import { buildLeagueView, countedPts, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { PlayerListItem } from "./players";
 import { buildHistory, closedSeasonRows, type LeagueHistory } from "./league-history";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
@@ -443,7 +443,11 @@ const loadLineupsByKey = cache(async (key: string): Promise<Map<number, Map<stri
                 courtPosition: row.court_position,
                 isCaptain: row.is_captain,
                 isSixthMan: row.is_sixth_man,
-                pts: row.pts === null ? null : Number(row.pts),
+                pts: countedPts(row.pts === null ? null : Number(row.pts), {
+                  isCaptain: row.is_captain,
+                  isSixthMan: row.is_sixth_man,
+                  role: row.role as LineupPlayer["role"],
+                }),
               }),
             ),
           ]),

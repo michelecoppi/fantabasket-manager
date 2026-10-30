@@ -7,6 +7,7 @@ import {
   buildLeaguePayload,
   buildLeagueView,
   checkLineup,
+  countedPts,
   lineupBackfill,
   matchdaysToRead,
   parseMatchday,
@@ -90,6 +91,25 @@ describe("parser dell'API della lega", () => {
     expect(home.find((x) => x.isSixthMan)).toMatchObject({ lastName: "Young", role: "bench", pos: "G" });
     // Pts null: non ha ancora giocato nella giornata.
     expect(d.sides[1].players!.find((x) => x.lastName === "Camara")?.pts).toBeNull();
+  });
+
+  it("punti contati: la somma dei 10 schierati torna al centesimo col punteggio dello scontro", () => {
+    const d = parseMatchDetail(fx.match);
+    const score = new Map(parseMatchday(fx.matchday).flatMap((m) => [[m.home.dunkestTeamId, m.home.pts], [m.away.dunkestTeamId, m.away.pts]] as const));
+    for (const side of d.sides) {
+      const total = side.players!.reduce((sum, x) => sum + (countedPts(x.pts, x) ?? 0), 0);
+      expect(Math.round(total * 100) / 100).toBe(score.get(side.dunkestTeamId));
+    }
+  });
+
+  it("countedPts: capitano ×1,5, panchina non titolare ×0,5, sesto uomo e quintetto interi, chi non ha giocato resta null", () => {
+    const starter = { isCaptain: false, isSixthMan: false, role: "starter" as const };
+    expect(countedPts(40, { ...starter, isCaptain: true })).toBe(60);
+    expect(countedPts(-2, { ...starter, isCaptain: true })).toBe(-3);
+    expect(countedPts(40, starter)).toBe(40);
+    expect(countedPts(40, { ...starter, role: "bench" })).toBe(20);
+    expect(countedPts(40, { ...starter, role: "bench", isSixthMan: true })).toBe(40);
+    expect(countedPts(null, { ...starter, isCaptain: true })).toBeNull();
   });
 
   it("scontro da giocare: formazioni null", () => {

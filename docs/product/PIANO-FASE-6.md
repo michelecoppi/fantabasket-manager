@@ -56,7 +56,7 @@ Tutto è già letto da `loadLeagueDunkest()`, `loadLineups()`, `loadDunkest()` e
 | Squadra della giornata / Cucchiaio di legno | punteggio di squadra più alto / più basso | `dunkest_matches` |
 | Goleada / Al fotofinish | scontro col margine più largo / più stretto | `dunkest_matches` |
 
-**Esclusi di proposito.** «Punti lasciati in panchina» e qualunque premio che richieda il calcolo del punteggio di squadra: servono le regole di Dunkest su capitano e panchina, che non abbiamo (vedi principi). I punti del capitano si mostrano come li dà Dunkest, senza dire se includono il bonus.
+**Esclusi di proposito.** «Punti lasciati in panchina» e qualunque premio che richieda il calcolo del punteggio di squadra: servono le regole di Dunkest su capitano e panchina, che non abbiamo (vedi principi). (Aggiornamento 2026-10-30: la regola è nota, capitano ×1,5 e panchina non titolare ×0,5; l'app mostra i punti già contati.)
 
 **Logica.** `src/lib/awards.ts`: `matchdayAwards(matches, lineups)` → lista di premi `{ kind, winners: { teamId, name?, playerId?, value }[] }`; giocatori con `pts` null esclusi; giocatori non collegati ammessi (il nome viene dalla formazione). Per la bacheca: `seasonAwards(perMatchday)` conta i premi per squadra.
 **Dati.** In `/classifica` le formazioni della giornata scelta sono già caricate (`loadLineups`): zero query in più. In home una `loadLineups` sull'ultima giornata chiusa. Per la bacheca serve una lettura di tutte le formazioni della stagione: ~80 righe a giornata, quindi oltre 1000 righe dalla tredicesima giornata → paginare come `fetchAllPlayers`.
@@ -124,6 +124,6 @@ Per ogni PR: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`; v
 ## Domande da chiudere durante lo sviluppo
 
 1. **Pareggio in classifica Dunkest** (6.4): quanto vale rispetto a una vittoria? Finché non capita resta un'ASSUNZIONE con controllo a runtime.
-2. **Punti del capitano** (6.1): i `pts` della formazione includono già il bonus del capitano? Cambia solo l'etichetta, non il calcolo.
+2. **Punti del capitano** (6.1): chiusa il 2026-10-30, i `pts` sono grezzi e il capitano vale ×1,5 (vedi OPEN-QUESTIONS).
 3. **Soglie di 6.2** (partite minime, quante righe): valori proposti sopra, da confermare guardando i dati veri.
 4. **Formazioni vecchie** (6.0): Dunkest le restituisce ancora per la giornata 1? Una `GET` lo dice.

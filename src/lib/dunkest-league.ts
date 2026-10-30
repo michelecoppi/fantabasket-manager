@@ -430,8 +430,29 @@ export interface LineupPlayer {
   courtPosition: number;
   isCaptain: boolean;
   isSixthMan: boolean;
+  /** punti che valgono per la squadra (capitano ×1,5, panchina ×0,5: vedi `countedPts`); null = non ha ancora giocato */
   pts: number | null;
 }
+
+/**
+ * Moltiplicatore del capitano. Dunkest lo scrive su ogni giocatore di ogni formazione (`captain_multiplier`, sempre 1,5 finora)
+ * ma i `pts` in formazione sono quelli grezzi: sul database vero, in tutte le 32 formazioni di 4 giornate, il punteggio dello
+ * scontro è quintetto + sesto uomo + 1,5 × capitano + 0,5 × resto della panchina, al centesimo (2026-10-30).
+ */
+export const CAPTAIN_MULTIPLIER = 1.5;
+
+/** Peso della panchina che non è il sesto uomo (stessa verifica di `CAPTAIN_MULTIPLIER`; qui Dunkest non scrive il valore). */
+export const BENCH_WEIGHT = 0.5;
+
+/**
+ * Punti di un giocatore come contano nel punteggio di squadra: il capitano vale `CAPTAIN_MULTIPLIER` volte, la panchina che
+ * non è il sesto uomo `BENCH_WEIGHT`, gli altri per intero. Non arrotonda.
+ */
+export const countedPts = (rawPts: number | null, p: Pick<LineupPlayer, "isCaptain" | "isSixthMan" | "role">): number | null => {
+  if (rawPts === null) return null;
+  if (p.isCaptain) return rawPts * CAPTAIN_MULTIPLIER;
+  return p.role === "bench" && !p.isSixthMan ? rawPts * BENCH_WEIGHT : rawPts;
+};
 
 /** "token_missing" = DUNKEST_TOKEN non impostato, "token_rejected" = Dunkest risponde 401 (token da rinnovare). */
 export type LeagueErrorCode = "token_missing" | "token_rejected" | "error";
