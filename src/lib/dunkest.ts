@@ -6,11 +6,9 @@ import { lettersOnly } from "./text";
 // ---------- Fonti (endpoint interni di dunkest.com, non documentati: verificati il 2026-10-27) ----------
 
 /** Medie stagionali di tutti i giocatori che hanno giocato almeno una partita. `max_cr=35`: il più caro oggi vale 29,5. */
+export const STATS_FILTERS = "&positions[]=1&positions[]=2&positions[]=3&player_search=&min_cr=0&max_cr=35&sort_by=pdk&sort_order=desc";
 export function dunkestStatsUrl(dunkestSeasonId: number): string {
-  return (
-    `https://www.dunkest.com/api/stats/table?season_id=${dunkestSeasonId}&mode=nba&stats_type=avg&date_from=2000-01-01&date_to=2100-01-01` +
-    "&positions[]=1&positions[]=2&positions[]=3&player_search=&min_cr=0&max_cr=35&sort_by=pdk&sort_order=desc"
-  );
+  return `https://www.dunkest.com/api/stats/table?season_id=${dunkestSeasonId}&mode=nba&stats_type=avg&date_from=2000-01-01&date_to=2100-01-01${STATS_FILTERS}`;
 }
 export const DUNKEST_INJURIES_URL = "https://www.dunkest.com/it/nba/infortuni";
 
@@ -50,12 +48,12 @@ export interface SourceInjury {
 /** Errore di formato: la fonte ha risposto ma non come ci aspettiamo. Il job non scrive nulla e registra il motivo. */
 export class SourceFormatError extends Error {}
 
-const num = (v: unknown): number => {
+export const num = (v: unknown): number => {
   const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
   return Number.isFinite(n) ? n : NaN;
 };
 
-const POS: Record<string, Position> = { G: "G", F: "A", C: "C" };
+export const POS: Record<string, Position> = { G: "G", F: "A", C: "C" };
 
 /** Righe di `/api/stats/table` (valori quasi tutti stringhe). Lancia se la forma non è quella attesa. */
 export function parseStats(json: unknown): SourceStat[] {

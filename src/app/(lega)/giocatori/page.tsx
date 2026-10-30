@@ -136,6 +136,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
           options={[
             { href: "/giocatori", label: "Listone", hint: "tutti i giocatori, filtri e crediti", icon: "jersey", active: view === "list" },
             { href: "/giocatori?vista=affari", label: "Affari e flop", hint: "stipendio contro rendimento", icon: "trending-up", active: view === "deals" },
+            { href: "/giocatori/leader", label: "Leader", hint: "migliori della notte e della giornata", icon: "flame", active: false },
           ]}
         />
       </div>

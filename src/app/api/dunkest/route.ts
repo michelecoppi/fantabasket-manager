@@ -1,3 +1,4 @@
+import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
@@ -37,5 +38,10 @@ export async function GET(request: Request) {
     if (announced.sent) console.log(`[telegram] ${announced.sent} scambi annunciati`);
     if (announced.errors.length) console.error(`[telegram] ${announced.errors.join("; ")}`);
   }
-  return Response.json({ stats, league }, { status: stats.ok && league.ok ? 200 : 502 });
+  // Partite NBA per giorno e giornate fantasy: per ultime, perché il primo recupero è il giro più lungo e, se sfora i 60 secondi, deve
+  // saltare solo questo passo (scadenze e Telegram sono già fatte). Dopo statistiche (giocatori collegati) e lega (giornata in corso).
+  const games = await runDunkestGamesSync(db, secret);
+  if (games.ok) console.log(`[dunkest] partite: ${games.days} giorni letti, ${games.games} partite, ${games.weeks} righe di giornata${games.skipped.length ? `; da riprovare: ${games.skipped.join("; ")}` : ""}`);
+  else console.error(`[dunkest] partite non aggiornate: ${games.error}`);
+  return Response.json({ stats, league, games }, { status: stats.ok && league.ok && games.ok ? 200 : 502 });
 }

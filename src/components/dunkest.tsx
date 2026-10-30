@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { TeamCrest } from "@/components/crest";
 import { Icon } from "@/components/icons";
@@ -281,6 +282,11 @@ export function PlayerSheet({ player, dunkest }: { player: SheetPlayer; dunkest:
                 : "Nessuna partita giocata in questa stagione, oppure non ancora collegato ai dati Dunkest."}
           </div>
         )}
+
+        <Link href={`/giocatori/${player.playerId}`} className="group inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue">
+          Andamento partita per partita
+          <Icon name="arrow-right" size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+        </Link>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
           <DunkestSource dunkest={dunkest} />

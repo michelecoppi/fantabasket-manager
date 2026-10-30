@@ -8,10 +8,10 @@ type Db = Awaited<ReturnType<typeof createClient>>;
 export type SyncResult = { ok: true; stats: number; injuries: number; links: number; report: LinkReport } | { ok: false; error: string };
 
 // Gli endpoint non chiedono autenticazione ma rifiutano i client senza User-Agent da browser.
-const HEADERS = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36", "Accept-Language": "it-IT,it" };
+export const HEADERS = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36", "Accept-Language": "it-IT,it" };
 const TIMEOUT_MS = 20_000;
 
-async function download(url: string, what: string): Promise<Response> {
+export async function download(url: string, what: string): Promise<Response> {
   let res: Response;
   try {
     res = await fetch(url, { headers: HEADERS, cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS) });
