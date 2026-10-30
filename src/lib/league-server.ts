@@ -110,7 +110,7 @@ const loadLeagueData = cache(async () => {
       .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,original_is_rookie,team_option,${playerCols}`)
       .eq("season_id", sid)
       .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
-    db.from("talents").select("id,team_id,player_id,display_name,draft_year,entry_credits,notes"),
+    db.from("talents").select(`id,team_id,player_id,display_name,draft_year,entry_credits,notes,${playerCols}`),
     db.from("draft_picks").select("id,version,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
     db.from("team_season").select("team_id,version,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
     db.from("rookie_draft").select("pick_no,team_id,original_team_id,note").eq("season_id", sid),
@@ -123,7 +123,7 @@ const loadLeagueData = cache(async () => {
     settings: settings.data ?? [],
     contracts: (contracts.data ?? []) as unknown as ContractRow[],
     cuts: (cuts.data ?? []) as unknown as CutRow[],
-    talents: talents.data ?? [],
+    talents: (talents.data ?? []) as unknown as RawLeague["talents"], // il join a players arriva come oggetto (FK many-to-one)
     picks: picks.data ?? [],
     teamSeason: teamSeason.data ?? [],
     rookieDraft: rookie.data ?? [],
