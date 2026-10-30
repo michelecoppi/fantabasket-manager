@@ -581,7 +581,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                     return (
                     <li key={x.id} className="relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60">
                       {player && dunkest.available && <SheetTrigger id={sheetId(player.playerId)} name={player.name} />}
-                      {player && <PosChip pos={player.pos} />}
+                      <PosChip pos={player?.pos ?? null} />
                       <span className="min-w-0 flex-1">
                         <span className="flex min-w-0 items-center gap-1.5">
                           <span className="truncate font-semibold">{player?.name ?? x.display_name}</span>
@@ -593,9 +593,15 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                           </span>
                         )}
                       </span>
-                      {player && dunkest.available && (
-                        <PdkCell stats={dunkest.stats.get(player.playerId)} role={player.pos ? dunkest.roles[player.pos] : dunkest.all} />
-                      )}
+                      {dunkest.available &&
+                        (player ? (
+                          <PdkCell stats={dunkest.stats.get(player.playerId)} role={player.pos ? dunkest.roles[player.pos] : dunkest.all} />
+                        ) : (
+                          <span title="Non collegato al listone Dunkest" className="font-display w-12 shrink-0 text-right text-xl leading-none font-extrabold text-muted/60">
+                            <span aria-hidden>–</span>
+                            <span className="sr-only">Non collegato al listone Dunkest</span>
+                          </span>
+                        ))}
                       {x.entry_credits !== null ? (
                         <span className="font-display w-12 shrink-0 text-right text-2xl leading-none font-black">
                           <Aligned value={Number(x.entry_credits)} />
