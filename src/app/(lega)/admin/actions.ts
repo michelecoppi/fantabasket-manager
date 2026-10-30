@@ -119,6 +119,65 @@ export async function signContract(input: SignInput): Promise<ActionResult> {
   return done(`${name} firmato da ${team.team.name}.${rightNote}`, ev.warnings);
 }
 
+// ---------- Firma di un talento ----------
+export interface SignTalentInput {
+  talentId: number;
+  playerId: number;
+  slot: "starter" | "reserve";
+  years: number | null;
+  teamOption: boolean;
+  salary: number;
+  notes: string;
+}
+
+/**
+ * R-35/R-26: solo la squadra che ha il talento può firmarlo, con un contratto rookie (stipendio precompilato col valore
+ * d'ingresso, modificabile). Blocca se in rosa non c'è posto (R-01..R-03), come la firma normale; il cap resta un avviso.
+ */
+export async function signTalent(input: SignTalentInput): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.talentId) || !isNum(input.playerId) || !isNum(input.salary) || (input.slot !== "starter" && input.slot !== "reserve")) return fail("Dati non validi.");
+
+  const league = await loadLeague();
+  const team = league.teams.find((t) => t.talents.some((x) => x.id === input.talentId));
+  const talent = team?.talents.find((x) => x.id === input.talentId);
+  if (!team || !talent) return fail("Talento non trovato: forse è già stato firmato.");
+  if (talent.player_id !== null && talent.player_id !== input.playerId) return fail("Il talento è collegato a un altro giocatore del listone.");
+  if (league.teams.some((t) => [...t.starters, ...t.reserves].some((p) => p.playerId === input.playerId))) {
+    return fail("Questo giocatore ha già un contratto in questa stagione.");
+  }
+
+  const db = await createClient();
+  const player = await db.from("players").select("pos,first_name,last_name").eq("id", input.playerId).maybeSingle<{ pos: "G" | "A" | "C" | null; first_name: string; last_name: string }>();
+  if (player.error || !player.data) return fail("Giocatore non trovato.");
+
+  const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary, isRookie: true };
+  const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
+  const last = await loadLastContract(input.playerId);
+  const floorErrors = auctionFloorErrors(input.salary, auctionFloor(last, new Date().toISOString().slice(0, 10), league.settings));
+  const restriction = signingRestriction(last, false);
+  const errors = [...ev.errors, ...floorErrors];
+  if (errors.length) return fail(errors.join(" "));
+  const name = [player.data.first_name, player.data.last_name].join(" ").trim();
+
+  const { error } = await db.rpc("admin_sign_talent", {
+    p_talent_id: input.talentId,
+    p_team_id: team.team.id,
+    p_player_id: input.playerId,
+    p_slot: input.slot,
+    p_years: input.years,
+    p_team_option: input.teamOption,
+    p_salary: input.salary,
+    p_restriction: restriction.unrestricted ? "unrestricted" : null,
+    p_notes: input.notes,
+    p_roster_rev: (await loadVersions()).rosterRev[team.team.id] ?? null,
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`${name} firmato da ${team.team.name} dalla squadra talenti.`, ev.warnings);
+}
+
 // ---------- Modifica contratto ----------
 export interface UpdateInput {
   contractId: number;

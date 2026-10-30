@@ -453,6 +453,59 @@ begin
   end if;
 end $$;
 
+-- ---------- Firma di un talento (R-35, R-26): contratto rookie della sua squadra, talento tolto, audit ----------
+do $$
+declare
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  sid int := (select id from seasons where is_current);
+  n_audit bigint := (select count(*) from audit_log);
+begin
+  insert into players (id, first_name, last_name, pos, nba_team) values (900031, 'RLS', 'Talento', 'C', 'TST');
+  insert into talents (id, team_id, display_name, draft_year, entry_credits) values (900031, t1, 'Talento 26', 2026, 3.5);
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer firma un talento',
+    rls_t.try(format('select public.admin_sign_talent(900031, %L, 900031, ''reserve'', 2, false, 3.5, null, null, 0)', t1)), array['error: FORBIDDEN%']);
+
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin firma il talento per un''altra squadra',
+    rls_t.try(format('select public.admin_sign_talent(900031, %L, 900031, ''reserve'', 2, false, 3.5, null, null, %s)', t2, (select roster_rev from teams where id = t2))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('admin firma il talento nella squadra talenti',
+    rls_t.try(format('select public.admin_sign_talent(900031, %L, 900031, ''talent'', 2, false, 3.5, null, null, %s)', t1, (select roster_rev from teams where id = t1))),
+    array['error: INVALID%']);
+  perform public.admin_sign_talent(900031, t1, 900031, 'reserve', 2, false, 3.5, null, 'nota', (select roster_rev from teams where id = t1));
+  perform rls_t.chk('admin firma due volte lo stesso talento',
+    rls_t.try(format('select public.admin_sign_talent(900031, %L, 900031, ''reserve'', 2, false, 3.5, null, null, %s)', t1, (select roster_rev from teams where id = t1))),
+    array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+
+  perform rls_t.ok('il talento firmato non ha un contratto rookie della sua squadra',
+    exists (select 1 from contracts where season_id = sid and player_id = 900031 and team_id = t1 and slot = 'reserve' and is_rookie and salary = 3.5));
+  perform rls_t.ok('il talento firmato è ancora nella squadra talenti', not exists (select 1 from talents where id = 900031));
+  perform rls_t.ok('la firma del talento non ha scritto due righe di audit', (select count(*) from audit_log) = n_audit + 2);
+
+  -- Collegamento al listone: un giocatore per talento, niente giocatori sotto contratto, concorrenza su chi era collegato.
+  insert into players (id, first_name, last_name, pos, nba_team) values (900032, 'RLS', 'Collegato', 'G', 'TST');
+  insert into talents (id, team_id, display_name) values (900032, t1, 'Collegato'), (900033, t2, 'Doppione');
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer collega un talento', rls_t.try('select public.admin_link_talents(''[{"id": 900032, "player_id": 900032, "expected": null}]'')'), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('admin collega un talento a un giocatore sotto contratto',
+    rls_t.try('select public.admin_link_talents(''[{"id": 900032, "player_id": 900031, "expected": null}]'')'), array['error: INVALID%']);
+  perform rls_t.chk('admin collega un talento', rls_t.try('select public.admin_link_talents(''[{"id": 900032, "player_id": 900032, "expected": null}]'')'), array['rows=1']);
+  perform rls_t.chk('admin collega con un collegamento vecchio', rls_t.try('select public.admin_link_talents(''[{"id": 900032, "player_id": null, "expected": null}]'')'), array['error: CONFLICT%']);
+  perform rls_t.chk('admin collega lo stesso giocatore a due talenti',
+    rls_t.try('select public.admin_link_talents(''[{"id": 900033, "player_id": 900032, "expected": null}]'')'), array['error: CONFLICT%']);
+  perform rls_t.chk('admin firma il talento con un altro giocatore',
+    rls_t.try(format('select public.admin_sign_talent(900032, %L, 900031, ''reserve'', 1, false, 1, null, null, %s)', t1, (select roster_rev from teams where id = t1))),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('admin scollega un talento', rls_t.try('select public.admin_link_talents(''[{"id": 900032, "player_id": null, "expected": 900032}]'')'), array['rows=1']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('il talento è ancora collegato', (select player_id from talents where id = 900032) is null);
+end $$;
+
 -- ---------- import_replace_season: solo service_role ----------
 -- Non è admin_*: niente guardia admin, ma nessun ruolo API può eseguirla (l'import cancella e riscrive una stagione).
 -- Il comportamento (atomicità, altre stagioni intatte) è provato in supabase/tests/import.sql.

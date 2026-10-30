@@ -110,7 +110,7 @@ const loadLeagueData = cache(async () => {
       .select(`id,version,team_id,player_id,status,paid_salary,years_left,original_salary,original_slot,original_is_rookie,team_option,${playerCols}`)
       .eq("season_id", sid)
       .in("status", ["pending", "cut"]), // rientrati e assegnati non pesano più sul monte ingaggi
-    db.from("talents").select("id,team_id,display_name,draft_year,entry_credits,notes"),
+    db.from("talents").select("id,team_id,player_id,display_name,draft_year,entry_credits,notes"),
     db.from("draft_picks").select("id,version,year,round,original_team_id,current_team_id,to_confirm,note").order("year").order("round"),
     db.from("team_season").select("team_id,version,bonus,final_rank,entry_fee_paid,luxury_tax_paid").eq("season_id", sid),
     db.from("rookie_draft").select("pick_no,team_id,original_team_id,note").eq("season_id", sid),
@@ -194,7 +194,7 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
   const db = await createClient();
   const sid = (await loadSeason()).id;
 
-  const [players, contracts, cuts, restricted] = await Promise.all([
+  const [players, contracts, cuts, talents, restricted] = await Promise.all([
     fetchAll<Record<string, unknown>>((from, to) =>
       db
         .from("players")
@@ -205,12 +205,14 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     ),
     db.from("contracts").select("player_id,team_id").eq("season_id", sid),
     db.from("cuts").select("player_id,team_id").eq("season_id", sid).in("status", ["pending", "cut"]),
+    db.from("talents").select("player_id,team_id").not("player_id", "is", null),
     // In ordine di data: conta solo l'ultima scadenza di ogni giocatore (una successiva unrestricted cancella il diritto, R-24).
     db.from("last_contracts").select("player_id,team_id,restricted,salary,last_contract_on").order("last_contract_on").order("id"),
   ]);
-  must(contracts, cuts, restricted);
+  must(contracts, cuts, talents, restricted);
 
   const owner = new Map((contracts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
+  const talentOf = new Map((talents.data ?? []).map((t) => [t.player_id as number, t.team_id as string]));
   const cutBy = new Map((cuts.data ?? []).map((c) => [c.player_id as number, c.team_id as string]));
   // PostgREST taglia a 1000 righe: last_contracts ne ha poche decine all'anno, quindi basta una richiesta.
   const restrictedBy = new Map((restricted.data ?? []).map((c) => [c.player_id as number, c.restricted ? (c.team_id as string | null) : null]));
@@ -223,6 +225,7 @@ export const loadPlayers = cache(async (): Promise<PlayerListItem[]> => {
     nbaTeam: p.nba_team as string | null,
     credits: p.dunkest_credits === null ? null : Number(p.dunkest_credits),
     ownerTeamId: owner.get(p.id as number) ?? null,
+    talentTeamId: talentOf.get(p.id as number) ?? null,
     cutByTeamId: cutBy.get(p.id as number) ?? null,
     restrictedTeamId: restrictedBy.get(p.id as number) ?? null,
     lastContract: lastBy.get(p.id as number) ?? null,

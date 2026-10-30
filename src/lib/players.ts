@@ -9,6 +9,8 @@ export interface PlayerListItem {
   credits: number | null;
   /** Squadra della lega che lo ha a contratto nella stagione corrente. */
   ownerTeamId: string | null;
+  /** R-35: squadra che lo ha nella squadra talenti (talento collegato al listone): non è libero, lo firma solo lei. */
+  talentTeamId: string | null;
   cutByTeamId: string | null;
   /** R-23: squadra che può pareggiare l'offerta più alta per un restricted (ex contratto scaduto a fine stagione). */
   restrictedTeamId: string | null;
@@ -18,8 +20,8 @@ export interface PlayerListItem {
   pdk?: number | null;
 }
 
-export type OwnerFilter = "all" | "free" | "open" | "cut" | "restricted" | "taken";
-export type PlayerStatus = "taken" | "cut" | "restricted" | "free";
+export type OwnerFilter = "all" | "free" | "open" | "cut" | "restricted" | "taken" | "talent";
+export type PlayerStatus = "taken" | "talent" | "cut" | "restricted" | "free";
 export type SortKey = "credits" | "name" | "pdk";
 
 export interface PlayerFilters {
@@ -34,9 +36,10 @@ export interface PlayerFilters {
 
 export const PAGE_SIZE = 50;
 
-/** Stati mutuamente esclusivi: in rosa, tagliato (in asta), restricted (R-23), libero senza vincoli. */
+/** Stati mutuamente esclusivi: in rosa, talento (R-35), tagliato (in asta), restricted (R-23), libero senza vincoli. */
 export function playerStatus(p: PlayerListItem): PlayerStatus {
   if (p.ownerTeamId) return "taken";
+  if (p.talentTeamId) return "talent";
   if (p.cutByTeamId) return "cut";
   if (p.restrictedTeamId) return "restricted";
   return "free";
@@ -50,8 +53,8 @@ export function filterPlayers(all: PlayerListItem[], f: PlayerFilters): PlayerLi
     if (q && !norm(p.name).includes(q)) return false;
     if (f.pos && p.pos !== f.pos) return false;
     if (f.nbaTeam && p.nbaTeam !== f.nbaTeam) return false;
-    // "free" = senza contratto (include tagliati e restricted); gli altri filtri sono uno stato preciso.
-    if (f.owner === "free" && p.ownerTeamId) return false;
+    // "free" = senza contratto né squadra talenti (include tagliati e restricted); gli altri filtri sono uno stato preciso.
+    if (f.owner === "free" && (p.ownerTeamId || p.talentTeamId)) return false;
     if (f.owner !== "all" && f.owner !== "free" && playerStatus(p) !== (f.owner === "open" ? "free" : f.owner)) return false;
     return true;
   });
@@ -77,7 +80,7 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     q: one("q").slice(0, 60),
     pos: pos === "G" || pos === "A" || pos === "C" ? pos : "",
     nbaTeam: one("nba").slice(0, 5),
-    owner: owner === "free" || owner === "open" || owner === "cut" || owner === "restricted" || owner === "taken" ? owner : "all",
+    owner: owner === "free" || owner === "open" || owner === "cut" || owner === "restricted" || owner === "taken" || owner === "talent" ? owner : "all",
     sort: one("ordina") === "name" ? "name" : one("ordina") === "pdk" ? "pdk" : "credits",
     page: Math.max(1, Math.min(Math.floor(Number(one("pagina"))) || 1, 1000)),
   };

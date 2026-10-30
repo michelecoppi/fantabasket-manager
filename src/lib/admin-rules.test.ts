@@ -6,6 +6,7 @@ import {
   cutShare,
   pickLimitWarnings,
   pickYearAllowed,
+  rookieDurations,
   rosterLimitErrors,
   evaluateContractEdit,
   evaluateSigning,
@@ -86,6 +87,11 @@ describe("durate e team option (R-20, R-22)", () => {
   it("durate: ½ e gli interi fino al massimo di lega", () => {
     expect(contractDurations(S)).toEqual([0.5, 1, 2, 3]);
     expect(contractDurations({ ...S, contractMaxYears: 2 })).toEqual([0.5, 1, 2]);
+  });
+
+  it("durate del rookie: fino al massimo del rookie (R-26)", () => {
+    expect(rookieDurations(S)).toEqual([0.5, 1, 2]);
+    expect(rookieDurations({ ...S, rookieMaxYears: 1 })).toEqual([0.5, 1]);
   });
 
   it("team option solo su 1 o 2 stagioni", () => {
@@ -429,6 +435,17 @@ describe("evaluateSigning con i massimi di rosa", () => {
     const roster = many(5, "starter", "G").map((e, i) => ({ ...e, id: i + 1 }));
     const r = evaluateSigning(side(0, roster), { position: "G", slot: "starter", years: 1, teamOption: false, salary: 5 }, S);
     expect(r.errors).toEqual(["Titolari G: 6 (max 5)."]);
+  });
+
+  it("firma di un talento: serve un posto libero nel ruolo, il cap resta un avviso (R-35, R-01..R-03)", () => {
+    const roster = [...many(5, "starter", "G"), ...many(3, "reserve", "G")].map((e, i) => ({ ...e, id: i + 1, salary: 62 }));
+    const talent = { position: "G" as const, years: 2, teamOption: false, salary: 4, isRookie: true };
+    expect(evaluateSigning(side(0, roster), { ...talent, slot: "starter" }, S).errors).toEqual(["Titolari G: 6 (max 5)."]);
+    expect(evaluateSigning(side(0, roster), { ...talent, slot: "reserve" }, S).errors).toEqual(["Riserve G: 4 (max 3)."]);
+    const free = evaluateSigning(side(0, roster.slice(1)), { ...talent, slot: "starter" }, S);
+    expect(free.errors).toEqual([]);
+    expect(free.warnings).toContain("Dopo la firma il monte ingaggi supera il cap (R-10).");
+    expect(evaluateSigning(side(0, roster.slice(1)), { ...talent, slot: "starter", years: 2, teamOption: true }, S).errors).toHaveLength(1);
   });
 });
 
