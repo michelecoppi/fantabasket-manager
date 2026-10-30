@@ -265,7 +265,9 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   if (error) return rpcError(error.message);
   refresh();
   announce();
-  return done(`Scambio registrato tra ${joinNames(names)}. Ricordati di farlo anche su Dunkest.`, ev.warnings);
+  // Su Dunkest ci sono solo i titolari: uno scambio di soli talenti e pick non va rifatto lì (decisione dell'utente 2026-10-30).
+  const dunkest = input.moves.some((m) => m.kind === "contract") ? " Ricordati di farlo anche su Dunkest." : "";
+  return done(`Scambio registrato tra ${joinNames(names)}.${dunkest}`, ev.warnings);
 }
 
 // ---------- Rimozione (correzione di un errore, senza quota di taglio) ----------
@@ -496,7 +498,7 @@ export async function approveProposal(input: { id: number; version: number; appr
   const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
   const { ev, stale, names } = evaluateMoves(league, proposal.teams, proposal.moves, versions);
   if (!names) return fail("Una squadra dello scambio non esiste.");
-  if (stale.length) return fail("Un giocatore o una pick della proposta è cambiato dopo l'invio: rimandala alle squadre.");
+  if (stale.length) return fail("Un giocatore, un talento o una pick della proposta è cambiato dopo l'invio: rimandala alle squadre.");
   if (ev.errors.length) return fail(`Con le rose di adesso lo scambio non è in regola: ${ev.errors.join(" ")} Respingila o rimandala alle squadre.`);
   const reason = String(input.overrideReason ?? "").trim();
   if (ev.capBreakers.length && !reason) {
@@ -514,7 +516,9 @@ export async function approveProposal(input: { id: number; version: number; appr
   if (error) return rpcError(error.message);
   refresh();
   announce();
-  return done(`Scambio eseguito tra ${joinNames(names)}. Ora va fatto anche su Dunkest.`, ev.warnings);
+  // Senza contratti la RPC segna già la proposta come fatta su Dunkest (migrazione 20261030160000).
+  const dunkest = proposal.moves.some((m) => m.kind === "contract") ? " Ora va fatto anche su Dunkest." : " Niente da fare su Dunkest: muove solo talenti o pick.";
+  return done(`Scambio eseguito tra ${joinNames(names)}.${dunkest}`, ev.warnings);
 }
 
 export async function declineProposal(input: { id: number; version: number; note: string }): Promise<ActionResult> {

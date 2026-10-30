@@ -1,5 +1,5 @@
 import { evaluateTrade, type TradeEvaluation } from "./cap";
-import type { LeagueView, Versions } from "./league";
+import { playerName, type LeagueView, type Versions } from "./league";
 import { simTeams } from "./sim-teams";
 import { draftFromMoves, staleMoves, toParties, type TradeMoveInput } from "./trade-draft";
 
@@ -71,7 +71,7 @@ export function parseProposalMoves(json: unknown): ProposalMove[] {
   return json.flatMap((x): ProposalMove[] => {
     if (!x || typeof x !== "object") return [];
     const o = x as Record<string, unknown>;
-    const kind = o.kind === "contract" || o.kind === "pick" ? o.kind : undefined;
+    const kind = o.kind === "contract" || o.kind === "pick" || o.kind === "talent" ? o.kind : undefined;
     const from = str(o.from);
     const to = str(o.to);
     if (!kind || !from || !to || typeof o.id !== "number" || typeof o.version !== "number") return [];
@@ -165,6 +165,14 @@ export function moveLabel(league: LeagueView, m: Pick<TradeMoveInput, "kind" | "
     }
     return undefined;
   }
+  if (m.kind === "talent") {
+    // Il database scrive comunque l'etichetta dei talenti eseguiti (trade_apply); questa serve alle proposte.
+    for (const t of league.teams) {
+      const x = t.talents.find((y) => y.id === m.id);
+      if (x) return `${x.players ? playerName(x.players) : x.display_name}${x.draft_year ? ` (draft ${x.draft_year})` : ""}`;
+    }
+    return undefined;
+  }
   const pick = league.picks.find((x) => x.id === m.id);
   return pick ? `Draft ${pick.year} · ${pick.round}° giro (${league.teamNames.get(pick.original_team_id) ?? "?"})` : undefined;
 }
@@ -178,7 +186,7 @@ export function evaluateMoves(
   league: LeagueView,
   teams: readonly string[],
   moves: readonly TradeMoveInput[],
-  versions?: Pick<Versions, "contracts" | "picks">,
+  versions?: Pick<Versions, "contracts" | "picks"> & Partial<Pick<Versions, "talents">>,
 ): { ev: TradeEvaluation; stale: TradeMoveInput[]; names: string[] | undefined } {
   const sim = simTeams(league, versions);
   const found = teams.map((id) => sim.find((t) => t.id === id)?.name);

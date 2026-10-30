@@ -47,10 +47,13 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
     const p = league.picks.find((x) => x.id === id);
     return p ? `Draft ${p.year} · ${p.round}° giro (${league.teamNames.get(p.original_team_id) ?? "?"})` : undefined;
   };
+  // Talenti (7.6): nome e anno di draft li scrive il database nello scambio, quindi restano anche dopo firma o import.
   const itemLabel = (m: TradeMove): string =>
     m.kind === "contract"
       ? `${m.label ?? names.get(m.id) ?? "Giocatore non più in archivio"}${m.slot ? ` (come ${m.slot === "starter" ? "titolare" : "riserva"})` : ""}`
-      : (m.label ?? pickLabel(m.id) ?? "Pick non più in archivio");
+      : m.kind === "talent"
+        ? `Diritti su ${m.label ?? "un talento"}${m.draftYear ? ` (draft ${m.draftYear})` : ""}`
+        : (m.label ?? pickLabel(m.id) ?? "Pick non più in archivio");
 
   const colors = teamColors(league.teams.map((t) => t.team.id));
   const team = (id: string | null) => {

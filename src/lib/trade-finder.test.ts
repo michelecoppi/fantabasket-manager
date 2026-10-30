@@ -135,6 +135,17 @@ describe("cercatore di scambi (Fase 7.4)", () => {
   });
 });
 
+describe("cercatore e talenti (7.6)", () => {
+  it("non propone mai talenti, nemmeno se le squadre ne hanno (decisione dell'utente 2026-10-30)", () => {
+    const withTalents = teams.map((t, i) => ({ ...t, talents: [{ id: 900 + i, name: `T${i}`, draftYear: 2026, credits: 2, nbaTeam: null, version: 1 }] }));
+    for (const need of [{ kind: "cap" as const, amount: 5 }, { kind: "role" as const, pos: "C" as const }]) {
+      const out = findTrades({ ...base, teams: withTalents, picks: true, need });
+      expect(out.results.length).toBeGreaterThan(0);
+      for (const r of out.results) expect(r.moves.every((m) => m.kind !== "talent")).toBe(true);
+    }
+  });
+});
+
 describe("bozza nell'URL («Usa questa»)", () => {
   it("andata e ritorno, con slot e versioni di adesso", () => {
     const moves = [

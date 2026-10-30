@@ -2,15 +2,21 @@
  * Storico scambi: legge `trades.payload` come lo scrive `admin_execute_trade`. Formato attuale (scambi a 2+ squadre):
  * `{ teams: [uuid...], moves: [{ kind, id, version, from, to, slot?, label? }] }`. Formato vecchio (solo due squadre):
  * `{ team_a, team_b, a_gives: { contracts, picks }, b_gives }`, convertito negli stessi movimenti.
+ * Dal 7.6 un movimento può essere un talento (R-56): `trade_apply` ci scrive nome, anno di draft, valore d'ingresso e giocatore
+ * collegato, letti dal database.
  */
 export interface TradeMove {
-  kind: "contract" | "pick";
+  kind: "contract" | "pick" | "talent";
   id: number;
   from: string;
   to: string;
   label?: string;
   /** slot di arrivo, solo se il giocatore è cambiato di slot nello scambio */
   slot?: "starter" | "reserve";
+  /** solo talenti */
+  draftYear?: number;
+  credits?: number;
+  playerId?: number;
 }
 export interface TradeView {
   /** squadre nell'ordine in cui sono state scelte */
@@ -22,15 +28,17 @@ export interface TradeView {
 
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 const slotOf = (v: unknown) => (v === "starter" || v === "reserve" ? v : undefined);
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined);
 
 function asMove(x: unknown, fallback?: { kind: TradeMove["kind"]; from: string; to: string }): TradeMove[] {
   if (!x || typeof x !== "object") return [];
   const o = x as Record<string, unknown>;
-  const kind = fallback?.kind ?? (o.kind === "contract" || o.kind === "pick" ? o.kind : undefined);
+  const kind = fallback?.kind ?? (o.kind === "contract" || o.kind === "pick" || o.kind === "talent" ? o.kind : undefined);
   const from = fallback?.from ?? str(o.from);
   const to = fallback?.to ?? str(o.to);
   if (typeof o.id !== "number" || !kind || !from || !to) return [];
-  return [{ kind, id: o.id, from, to, label: str(o.label), slot: kind === "contract" ? slotOf(o.slot) : undefined }];
+  const talent = kind === "talent" ? { draftYear: num(o.draft_year), credits: num(o.entry_credits), playerId: num(o.player_id) } : {};
+  return [{ kind, id: o.id, from, to, label: str(o.label), slot: kind === "contract" ? slotOf(o.slot) : undefined, ...talent }];
 }
 
 /** Movimenti del formato vecchio: ciò che `from` cede va tutto a `to`. */

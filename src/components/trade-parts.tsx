@@ -20,6 +20,7 @@ import {
   setDestination,
   togglePick,
   togglePlayer,
+  toggleTalent,
   toParties,
   type ArrivalSlot,
   type DraftMove,
@@ -53,8 +54,9 @@ const span = (n: number) => Math.min(Math.max(n, 1), 4) as 1 | 2 | 3 | 4;
 const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`;
 
 /**
- * Trade machine (R-55..R-57): scambi tra due o più squadre, fino a `tradeMaxTeams`. Ogni giocatore o pick ceduto va a una
- * squadra precisa (con due squadre è l'altra) e può arrivare come titolare o riserva. Le regole sono tutte in `evaluateTrade`.
+ * Trade machine (R-55..R-57): scambi tra due o più squadre, fino a `tradeMaxTeams`. Ogni giocatore, talento o pick ceduto va a
+ * una squadra precisa (con due squadre è l'altra); i giocatori possono arrivare come titolari o riserve, i talenti restano in
+ * squadra talenti (R-35). Le regole sono tutte in `evaluateTrade`.
  */
 export function TradeMachine({
   teams,
@@ -228,7 +230,7 @@ function TeamStrip({
   );
 }
 
-/** Rosa e pick di una squadra: si tocca ciò che cede, poi (con più squadre) a chi va e come arriva. */
+/** Rosa, talenti e pick di una squadra: si tocca ciò che cede, poi (con più squadre) a chi va e come arriva. */
 function TeamPanel({
   team,
   draft,
@@ -249,6 +251,8 @@ function TeamPanel({
   const c = color(team.id);
   const gone = team.players.filter((p) => draft.players.get(p.id)?.from === team.id);
   const gonePicks = team.picks.filter((p) => draft.picks.get(p.id)?.from === team.id);
+  const talents = team.talents ?? [];
+  const goneTalents = talents.filter((x) => draft.talents.get(x.id)?.from === team.id);
   const groups = [
     { label: "Titolari", players: team.players.filter((p) => p.slot === "starter") },
     { label: "Riserve", players: team.players.filter((p) => p.slot === "reserve") },
@@ -263,7 +267,8 @@ function TeamPanel({
         <div className="shrink-0 text-right leading-none">
           <div className="font-display tnum text-xl font-black">{fmt(gone.reduce((n, p) => n + p.salary, 0))}</div>
           <div className="eyebrow mt-0.5 whitespace-nowrap text-muted">
-            cede {gone.length} gioc · {gonePicks.length} pick
+            cede {gone.length} gioc · {goneTalents.length > 0 && `${goneTalents.length} tal · `}
+            {gonePicks.length} pick
           </div>
         </div>
       </header>
@@ -311,6 +316,46 @@ function TeamPanel({
           </div>
         ))}
         {groups.length === 0 && <p className="px-3 py-4 text-sm text-muted">Nessun giocatore sotto contratto.</p>}
+
+        {talents.length > 0 && (
+          <div>
+            <div className="eyebrow sticky top-0 z-[1] flex justify-between border-y border-line bg-surface/95 px-3 py-1.5 text-muted backdrop-blur-sm">
+              <span>Talenti · {talents.length}</span>
+              <span title="Si scambia il diritto di firmarlo (R-35): niente stipendio, niente cap">diritti</span>
+            </div>
+            <ul className="space-y-0.5 p-1">
+              {talents.map((x) => {
+                const move = draft.talents.get(x.id);
+                const on = move?.from === team.id;
+                return (
+                  <li key={x.id}>
+                    <label
+                      className={`relative flex min-h-11 items-center gap-2.5 rounded-xl border border-transparent px-2 py-1 transition-[background-color,border-color] ${
+                        canGive ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+                      } ${on ? "" : "hover:bg-surface-subtle"}`}
+                      style={on ? { background: tint(c, 13), borderColor: tint(c, 45) } : undefined}
+                    >
+                      <input type="checkbox" className="peer sr-only" checked={on} disabled={!canGive} onChange={() => onChange(toggleTalent(draft, team.id, x.id))} />
+                      <TalentChip />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{x.name}</span>
+                        <span className="block truncate text-[0.6875rem] leading-tight text-muted">{talentDetails(x.draftYear, x.nbaTeam)}</span>
+                      </span>
+                      <span className="text-right leading-none" title="Valore d'ingresso alla firma (R-26)">
+                        <span className="font-display tnum text-lg font-black text-muted">{x.credits !== null ? fmt(x.credits) : "–"}</span>
+                        <span className="sr-only">{x.credits !== null ? " di valore d'ingresso" : "Valore d'ingresso non indicato"}</span>
+                      </span>
+                      <Tick on={on} color={c} />
+                    </label>
+                    {on && move && others.length > 1 && (
+                      <MoveControls others={others} to={move.to} color={color} onTo={(to) => onChange(setDestination(draft, "talents", x.id, to))} />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {team.picks.length > 0 && (
           <div className="border-t border-line px-3 pt-2 pb-3">
@@ -368,6 +413,21 @@ function Tick({ on, color }: { on: boolean; color: string }) {
       <Icon name="check" size={14} strokeWidth={3} />
     </span>
   );
+}
+
+/** Segno di un talento (R-35) dove i giocatori hanno il ruolo: stessa misura di `PosChip` e del segno delle pick. */
+export function TalentChip() {
+  return (
+    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-brand-blue/10 text-brand-blue dark:bg-gold/15 dark:text-gold" title="Talento: si scambia il diritto di firmarlo">
+      <Icon name="crown" size={15} />
+      <span className="sr-only">Talento</span>
+    </span>
+  );
+}
+
+/** «diritti · draft 2026 · DAL»: cosa passa con un talento, per le righe di trade machine e proposte. */
+export function talentDetails(draftYear: number | null | undefined, nbaTeam?: string | null): string {
+  return ["diritti", draftYear ? `draft ${draftYear}` : null, nbaTeam].filter(Boolean).join(" · ");
 }
 
 const SLOT_LABEL = { starter: "Titolare", reserve: "Riserva" } as const;
@@ -528,7 +588,7 @@ function TradeOutcome({
       </div>
       {moves.length === 0 ? (
         <Empty title="Prepara lo scambio" icon="swap">
-          Tocca giocatori o pick da cedere: qui vedi subito chi riceve cosa e l&apos;effetto su cap e riserve di ogni squadra.
+          Tocca giocatori, talenti o pick da cedere: qui vedi subito chi riceve cosa e l&apos;effetto su cap e riserve di ogni squadra.
         </Empty>
       ) : (
         <OutcomeGrid teams={teams} moves={moves} ev={ev} color={color} name={name} />
@@ -607,6 +667,7 @@ function TeamResult({
   const r = impact;
   const c = color(team.id);
   const outSalary = outgoing.reduce((n, m) => n + (m.salary ?? 0), 0);
+  const goneTalents = outgoing.filter((m) => m.kind === "talent").length;
   return (
     <article className={`pop relative flex flex-col overflow-hidden rounded-2xl border bg-surface ${r.breaksCap ? "border-danger/60" : "border-line"}`}>
       <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: r.breaksCap ? "var(--danger)" : c }} />
@@ -638,6 +699,8 @@ function TeamResult({
               <li key={`${m.kind}-${m.id}`} className="flex min-h-9 items-center gap-2 py-1">
                 {m.kind === "contract" ? (
                   <PosChip pos={m.pos ?? null} />
+                ) : m.kind === "talent" ? (
+                  <TalentChip />
                 ) : (
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-subtle text-muted">
                     <Icon name="ticket" size={15} />
@@ -646,6 +709,7 @@ function TeamResult({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{m.label}</span>
                   {m.slot && <span className="block text-[0.6875rem] leading-tight font-semibold text-brand-blue">come {m.slot === "starter" ? "titolare" : "riserva"}</span>}
+                  {m.kind === "talent" && <span className="block truncate text-[0.6875rem] leading-tight text-muted">{talentDetails(m.draftYear)}</span>}
                 </span>
                 {m.salary !== undefined && <span className="font-display tnum text-base leading-none font-black">{fmt(m.salary)}</span>}
                 <span className="shrink-0" title={`Da ${name(m.from)}`}>
@@ -662,7 +726,9 @@ function TeamResult({
             "niente"
           ) : (
             <>
-              {outgoing.filter((m) => m.kind === "contract").length} gioc. · {outgoing.filter((m) => m.kind === "pick").length} pick
+              {outgoing.filter((m) => m.kind === "contract").length} gioc. ·{" "}
+              {goneTalents > 0 && `${goneTalents} ${goneTalents === 1 ? "talento" : "talenti"} · `}
+              {outgoing.filter((m) => m.kind === "pick").length} pick
               {outSalary > 0 && <span className="tnum"> ({fmt(outSalary)} cr)</span>}
             </>
           )}

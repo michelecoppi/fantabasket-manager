@@ -126,9 +126,15 @@ function Approve({ p, ctx, notify }: { p: Proposal; ctx: ProposalContext; notify
               Serve l&apos;eccezione del moderatore, sentito il presidente. La motivazione finisce nel registro dello scambio.
             </Callout>
           )}
-          <Callout tone="warn" title="Fallo anche su Dunkest">
-            Approvando, rose e pick cambiano subito qui. Le squadre devono rifare lo scambio su Dunkest, titolari e riserve compresi; poi segnalo come fatto.
-          </Callout>
+          {p.moves.some((m) => m.kind === "contract") ? (
+            <Callout tone="warn" title="Fallo anche su Dunkest">
+              Approvando, rose e pick cambiano subito qui. Le squadre devono rifare lo scambio su Dunkest, titolari e riserve compresi; poi segnalo come fatto.
+            </Callout>
+          ) : (
+            <Callout tone="info" title="Niente da fare su Dunkest">
+              Lo scambio muove solo talenti o pick: su Dunkest ci sono solo i titolari, quindi approvando è già tutto fatto.
+            </Callout>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             {needsReason && (
               <Field label="Motivazione dell'eccezione" htmlFor={`reason-${p.id}`} hint="Obbligatoria. Precompilata con la richiesta della squadra.">

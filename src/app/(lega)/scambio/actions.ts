@@ -51,7 +51,7 @@ export async function proposeTrade(input: ProposeInput): Promise<ActionResult> {
   const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
   const { ev, stale, names } = evaluateMoves(league, input.teams, input.moves, versions);
   if (!names) return fail("Una squadra dello scambio non esiste.");
-  if (stale.length) return fail("Un giocatore o una pick dello scambio è cambiato nel frattempo. Aggiorna la pagina (pulsante in alto) e riprova.");
+  if (stale.length) return fail("Un giocatore, un talento o una pick dello scambio è cambiato nel frattempo. Aggiorna la pagina (pulsante in alto) e riprova.");
   if (ev.errors.length) return fail(ev.errors.join(" "));
   if (ev.capBreakers.length && !capReason) {
     return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(", ")} (R-57): scrivi la richiesta di eccezione per l'admin.`);
@@ -85,7 +85,7 @@ export async function answerProposal(input: { id: number; version: number; answe
   if (input.answer === "accept") {
     const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
     const { ev, stale } = evaluateMoves(league, proposal.teams, proposal.moves, versions);
-    if (stale.length) return fail("Un giocatore o una pick della proposta è cambiato: la proposta va rifatta (rifiutala o controproponi).");
+    if (stale.length) return fail("Un giocatore, un talento o una pick della proposta è cambiato: la proposta va rifatta (rifiutala o controproponi).");
     if (ev.errors.length) return fail(`Con le rose di adesso lo scambio non è in regola: ${ev.errors.join(" ")}`);
   }
 
