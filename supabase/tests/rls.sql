@@ -1037,6 +1037,102 @@ begin
     and exists (select 1 from audit_log where action = 'market' and after ->> 'summary' like '% · 1 proposte ritirate'));
 end $$;
 
+-- ---------- Scambio dei talenti (7.6, R-56): proprietario, versione, etichetta dal server, proposte, firma dopo ----------
+-- Il viewer è della prima squadra (t1), l'admin della seconda (t2). Un talento non ha stipendio: le regole sono in cap.ts.
+do $$
+declare
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  sid int := (select id from seasons where is_current);
+  revs jsonb;
+  mv jsonb;
+  m2 jsonb;
+  trade text := 'select public.admin_execute_trade(%L, %L, null, null, %L)';
+  propose text := 'select public.trade_propose(%L, %L, %L, null, null, null)';
+  tr int;
+  p int;
+  p2 int;
+begin
+  insert into players (id, first_name, last_name, pos, nba_team) values (900041, 'RLS', 'Diritti', 'A', 'TST'), (900043, 'RLS', 'Listone', 'G', 'TST');
+  insert into talents (id, team_id, player_id, display_name, draft_year, entry_credits) values
+    (900041, t1, 900041, 'R.Diritti', 2026, 2.5), (900042, t2, null, 'Estero', 2025, null);
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  mv := jsonb_build_object('kind', 'talent', 'id', 900041, 'version', 1, 'from', t1, 'to', t2, 'label', 'Nome dal client');
+  m2 := jsonb_build_object('kind', 'talent', 'id', 900042, 'version', 1, 'from', t2, 'to', t1);
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('il viewer scambia un talento', rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv), revs)), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('talento con slot di arrivo', rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv || '{"slot": "reserve"}'), revs)), array['error: INVALID%']);
+  perform rls_t.chk('pick con slot di arrivo',
+    rls_t.try(format(trade, array[t1, t2], jsonb_build_array(jsonb_build_object('kind', 'pick', 'id', 1, 'version', 1, 'from', t1, 'to', t2, 'slot', 'starter')), revs)), array['error: INVALID%']);
+  perform rls_t.chk('talento ripetuto', rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv, mv), revs)), array['error: INVALID%']);
+  perform rls_t.chk('talento ceduto da chi non lo ha',
+    rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv || jsonb_build_object('from', t2, 'to', t1)), revs)), array['error: CONFLICT%']);
+  perform rls_t.chk('talento con versione vecchia', rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv || '{"version": 2}'), revs)), array['error: CONFLICT%']);
+  perform rls_t.chk('talento inesistente', rls_t.try(format(trade, array[t1, t2], jsonb_build_array(mv || '{"id": 999999}'), revs)), array['error: CONFLICT%']);
+  tr := public.admin_execute_trade(array[t1, t2], jsonb_build_array(mv, m2), 'Moderatore', null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('scambio di soli talenti non applicato',
+    (select team_id from talents where id = 900041) = t2 and (select team_id from talents where id = 900042) = t1
+    and (select version from talents where id = 900041) = 2 and (select player_id from talents where id = 900041) = 900041);
+  perform rls_t.ok('scambio di talenti senza audit',
+    exists (select 1 from audit_log where action = 'trade' and table_name = 'talents' and row_id = '900041'
+      and before ->> 'team_id' = t1::text and after ->> 'team_id' = t2::text and user_id = rls_t.admin())
+    and exists (select 1 from audit_log where table_name = 'trades' and row_id = tr::text and after ->> 'summary' like '% · 0 giocatori, 0 pick, 2 talenti'));
+  perform rls_t.ok('etichetta del talento presa dal client o mancante',
+    (select payload -> 'moves' -> 0 ->> 'label' from trades where id = tr) = 'RLS Diritti'
+    and (select (payload -> 'moves' -> 0 ->> 'draft_year')::int from trades where id = tr) = 2026
+    and (select (payload -> 'moves' -> 0 ->> 'entry_credits')::numeric from trades where id = tr) = 2.5
+    and (select (payload -> 'moves' -> 0 ->> 'player_id')::int from trades where id = tr) = 900041
+    and (select payload -> 'moves' -> 1 ->> 'label' from trades where id = tr) = 'Estero');
+
+  -- Collegare un talento al listone non ne cambia la versione: le proposte aperte restano valide.
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.admin_link_talents('[{"id": 900042, "player_id": 900043, "expected": null}]');
+  perform rls_t.become('postgres');
+  perform rls_t.ok('il collegamento al listone cambia la versione del talento', (select version from talents where id = 900042) = 2);
+
+  -- Proposte: il viewer (t1) offre il talento 900042; con due proposte uguali, l'approvazione della prima supera l'altra.
+  -- Senza contratti non c'è niente da fare su Dunkest (D4).
+  update seasons set trade_market_open = true where id = sid;
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  mv := jsonb_build_array(jsonb_build_object('kind', 'talent', 'id', 900042, 'version', 2, 'from', t1, 'to', t2));
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('proposta con un talento di un''altra squadra',
+    rls_t.try(format(propose, array[t1, t2], jsonb_build_array(jsonb_build_object('kind', 'talent', 'id', 900041, 'version', 2, 'from', t1, 'to', t2)), revs)),
+    array['error: CONFLICT%']);
+  perform rls_t.chk('proposta con un talento a versione vecchia', rls_t.try(format(propose, array[t1, t2], jsonb_set(mv, '{0,version}', '1'), revs)), array['error: CONFLICT%']);
+  perform rls_t.chk('proposta con slot su un talento', rls_t.try(format(propose, array[t1, t2], jsonb_set(mv, '{0,slot}', '"starter"'), revs)), array['error: INVALID%']);
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  p2 := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.trade_answer(p, (select version from trade_proposals where id = p), 'accept', null);
+  tr := public.admin_approve_trade_proposal(p, (select version from trade_proposals where id = p), null, null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('proposta con un talento non eseguita', (select team_id from talents where id = 900042) = t2
+    and exists (select 1 from trade_proposals where id = p and status = 'approved' and trade_id = tr));
+  perform rls_t.ok('proposta senza contratti ancora da fare su Dunkest',
+    (select dunkest_done_at from trade_proposals where id = p) is not null
+    and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'dunkest_done'));
+  perform rls_t.ok('proposta con lo stesso talento non superata', (select status from trade_proposals where id = p2) = 'superseded');
+  perform rls_t.ok('etichetta del talento collegato dopo', (select payload -> 'moves' -> 0 ->> 'label' from trades where id = tr) = 'RLS Listone');
+
+  -- Firma dopo lo scambio: la vecchia squadra non può, la nuova sì; poi il talento non si scambia più.
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('la vecchia squadra firma il talento scambiato',
+    rls_t.try(format('select public.admin_sign_talent(900041, %L, 900041, ''reserve'', 1, false, 2.5, null, null, %s)', t1, (select roster_rev from teams where id = t1))),
+    array['error: CONFLICT%']);
+  perform public.admin_sign_talent(900041, t2, 900041, 'reserve', 1, false, 2.5, null, null, (select roster_rev from teams where id = t2));
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  perform rls_t.chk('scambio di un talento già firmato',
+    rls_t.try(format(trade, array[t2, t1], jsonb_build_array(jsonb_build_object('kind', 'talent', 'id', 900041, 'version', 2, 'from', t2, 'to', t1)), revs)),
+    array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('talento firmato dalla squadra che l''ha ricevuto',
+    exists (select 1 from contracts where season_id = sid and player_id = 900041 and team_id = t2 and is_rookie));
+end $$;
+
 -- ---------- Bot Telegram (Fase 7.5): coda degli scambi da annunciare ----------
 -- Solo il job (segreto) o un admin prendono gli scambi; una presa esclude le altre, l'esito la chiude o la libera. Gli scambi
 -- eseguiti dai test qui sopra (stessa transazione) sono la coda.
@@ -1063,6 +1159,13 @@ begin
             where m ->> 'name' like 'RLS%' and m ? 'salary')
     and not exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'teams') t
                     where t ->> 'name' is null or (t ->> 'season_trades')::int < 1));
+  -- 7.6: un talento firmato dopo lo scambio resta leggibile dai dati salvati, e dal giocatore collegato.
+  perform rls_t.ok('annuncio senza i dati del talento',
+    exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'moves') m
+            where m ->> 'kind' = 'talent' and m ->> 'label' = 'RLS Diritti' and m ->> 'name' = 'RLS Diritti'
+              and m ->> 'nba_team' = 'TST' and (m ->> 'draft_year')::int = 2026)
+    and exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'moves') m
+                where m ->> 'kind' = 'talent' and m ->> 'label' = 'Estero' and not m ? 'name'));
   perform public.trade_announce_done(null, tr, false);
   perform rls_t.become('anon');
   v2 := public.trade_announce_claim('rls-segreto-del-job-0123', 72);

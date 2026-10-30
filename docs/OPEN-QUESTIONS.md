@@ -118,3 +118,11 @@ Piano in [product/PIANO-PROPOSTE-SCAMBIO.md](product/PIANO-PROPOSTE-SCAMBIO.md).
 - **ASSUNZIONE**: se una squadra ha più profili, risponde per la squadra il primo che accetta o rifiuta.
 - **Decisione dell'utente (2026-10-29)**: sul canale Telegram vanno solo gli scambi eseguiti, con frasi divertenti che prendono in giro chi scambia; le proposte restano private.
 - **ASSUNZIONE**: l'annuncio parte subito dopo l'esecuzione (il cron giornaliero riprova quelli falliti); gli scambi più vecchi di 72 ore e quelli registrati prima del bot non si annunciano.
+
+## Scambio dei talenti (7.6)
+Piano in [product/PIANO-SCAMBIO-TALENTI.md](product/PIANO-SCAMBIO-TALENTI.md). R-56 ammette i talenti negli scambi ma non dice come; **decisioni dell'utente del 2026-10-30**:
+- R-35: il talento scambiato conserva anno di draft e valore d'ingresso, quindi la scadenza della prelazione (che l'app non gestisce ancora, domanda 4). Si scambia solo il proprietario (`talents.team_id`).
+- Nessun massimo di talenti per squadra (il regolamento non lo fissa). Se la lega lo vuole, diventa un parametro di `league_settings`.
+- Un talento non ha stipendio: non pesa su cap (R-57), budget riserve, massimi di rosa (R-01..R-03) né sul limite di pick (R-33).
+- Uno scambio senza contratti (solo talenti e/o pick) non va rifatto su Dunkest, dove ci sono solo i titolari.
+- L'import dal foglio non deve annullare gli scambi di talenti fatti nell'app: si ferma se un talento ha nel database una squadra diversa da quella del foglio (salvo `--force`).
