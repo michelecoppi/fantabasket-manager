@@ -10,7 +10,7 @@ import { PlayerList, PlayerRow } from "@/components/player-row";
 import { RivalryList } from "@/components/rivalries";
 import { RosterMovesList } from "@/components/roster-moves";
 import { PositionSparkline } from "@/components/standings-chart";
-import { Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
+import { Aligned, Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
 import { TeamValue } from "@/components/value-board";
 import { TrophyCase } from "@/components/trophy-case";
 import { RingRow, TeamHistory } from "@/components/history";
@@ -593,10 +593,15 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                           </span>
                         )}
                       </span>
+                      {player && dunkest.available && (
+                        <PdkCell stats={dunkest.stats.get(player.playerId)} role={player.pos ? dunkest.roles[player.pos] : dunkest.all} />
+                      )}
                       {x.entry_credits !== null ? (
-                        <span className="font-display tnum text-2xl font-black">{fmt(Number(x.entry_credits))}</span>
+                        <span className="font-display w-12 shrink-0 text-right text-2xl leading-none font-black">
+                          <Aligned value={Number(x.entry_credits)} />
+                        </span>
                       ) : (
-                        <span title="Crediti non indicati" className="font-display text-2xl font-black text-muted/60">
+                        <span title="Crediti non indicati" className="font-display w-12 shrink-0 text-right text-2xl leading-none font-black text-muted/60">
                           <span aria-hidden>–</span>
                           <span className="sr-only">Crediti non indicati</span>
                         </span>
@@ -616,9 +621,25 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
               ) : (
                 <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
                   {t.cuts.map((c) => (
-                    <li key={c.id} className="flex items-center gap-3 px-3 py-2.5">
-                      <span className="min-w-0 flex-1 truncate text-muted line-through decoration-danger/50">{c.name}</span>
-                      <span className="font-display tnum text-2xl font-black text-danger">{fmt(c.paid)}</span>
+                    <li key={c.id} className="relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60">
+                      {dunkest.available && <SheetTrigger id={sheetId(c.playerId)} name={c.name} />}
+                      <PosChip pos={c.pos} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-muted line-through decoration-danger/50">{c.name}</span>
+                        <span className="block truncate text-xs text-muted">
+                          {[
+                            c.status === "pending" ? "in asta" : "definitivo",
+                            c.originalSalary !== null && `stipendio ${fmt(c.originalSalary)}`,
+                            c.yearsLeft !== null && (c.yearsLeft === 0.5 ? "mezza stagione" : `${fmt(c.yearsLeft)} ${c.yearsLeft === 1 ? "anno" : "anni"}`),
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </span>
+                      {dunkest.available && <PdkCell stats={dunkest.stats.get(c.playerId)} role={c.pos ? dunkest.roles[c.pos] : dunkest.all} />}
+                      <span className="font-display w-12 shrink-0 text-right text-2xl leading-none font-black text-danger">
+                        <Aligned value={c.paid} />
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -635,6 +656,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           const player = talentPlayer(x);
           return player ? [<PlayerSheet key={`talento-${x.id}`} player={{ ...player, owner: { name: t.team.name, color } }} dunkest={dunkest} />] : [];
         })}
+      {dunkest.available &&
+        t.cuts.map((c) => <PlayerSheet key={`taglio-${c.id}`} player={{ playerId: c.playerId, name: c.name, pos: c.pos, nbaTeam: c.nbaTeam }} dunkest={dunkest} />)}
     </>
   );
 }

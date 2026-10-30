@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { TeamCrest } from "@/components/crest";
 import { Icon } from "@/components/icons";
-import { PosChip, Scoreboard } from "@/components/ui";
+import { Aligned, PosChip, Scoreboard } from "@/components/ui";
 import type { Position } from "@/lib/cap";
 import { syncState, type DunkestView, type Injury, type InjuryStatus, type PlayerStats, type RoleStat } from "@/lib/dunkest";
 import { fmt, fmtDateTime, fmtDay } from "@/lib/format";
@@ -98,7 +98,7 @@ export function PdkCell({ stats, role }: { stats: PlayerStats | undefined; role:
   const avgPct = role && role.max > 0 ? Math.min(100, (role.avg / role.max) * 100) : null;
   return (
     <span className="flex w-12 shrink-0 flex-col items-end leading-none" title={`Punteggio Dunkest medio ${fmt(stats.pdk)} in ${stats.gp} partite`}>
-      <span className="font-display tnum text-xl font-extrabold text-brand-blue">{fmt(stats.pdk)}</span>
+      <span className="font-display text-xl font-extrabold text-brand-blue"><Aligned value={stats.pdk} /></span>
       <span aria-hidden className="relative mt-1 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
         <span className="meter-fill absolute inset-y-0 left-0 rounded-full bg-brand-blue" style={{ width: `${pct}%` }} />
         {avgPct !== null && <span className="absolute inset-y-0 w-px bg-foreground/60" style={{ left: `${avgPct}%` }} />}

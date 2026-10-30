@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { SheetTrigger } from "@/components/dunkest";
-import { PosChip, stagger } from "@/components/ui";
-import { fmt } from "@/lib/format";
+import { Aligned, PosChip, stagger } from "@/components/ui";
 
 /**
  * Riga giocatore condivisa (rose, scadenze, listone): gettone ruolo, nome e contesto, badge, contratto, valore in crediti.
@@ -52,7 +51,7 @@ export function PlayerRow({
       </div>
       {contract && <span className="hidden shrink-0 sm:inline-flex">{contract}</span>}
       {score}
-      <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black">{value === null ? "–" : fmt(value)}</span>
+      <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black">{value === null ? "–" : <Aligned value={value} />}</span>
     </li>
   );
 }
