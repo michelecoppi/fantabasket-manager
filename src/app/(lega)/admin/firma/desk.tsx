@@ -53,7 +53,7 @@ export function SignDesk({ teams, free, talents, settings }: { teams: SimTeam[];
   const team = teams.find((t) => t.id === (fromTalents ? talent?.teamId : teamId));
   const rookie = fromTalents || isRookie;
   const durations = fromTalents ? rookieDurations(settings) : contractDurations(settings);
-  const results = q.trim() ? filterPlayers(free, { q, pos: "", nbaTeam: "", owner: "free", sort: "credits" }).slice(0, 8) : [];
+  const results = q.trim() ? filterPlayers(free, { q, pos: [], nbaTeam: "", owner: "free", sort: "credits", dir: "desc" }).slice(0, 8) : [];
   const amount = salary === "" ? NaN : Number(salary);
   const optionOk = teamOptionAllowed(years, settings);
 

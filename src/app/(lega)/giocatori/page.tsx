@@ -1,26 +1,15 @@
-import Form from "next/form";
-import Link from "next/link";
 import { ChipLinks, ViewSwitch } from "@/components/chips";
-import { SubmitButton } from "@/components/controls";
-import { TeamCrest } from "@/components/crest";
-import { DunkestSource, InjuryChip, PdkCell, PlayerSheet, SheetTrigger, sheetId } from "@/components/dunkest";
+import { DunkestSource, PlayerSheet } from "@/components/dunkest";
 import { teamIndex } from "@/components/dunkest-league";
-import { Icon } from "@/components/icons";
-import { Badge, Empty, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
+import { PlayerListing } from "@/components/player-listing";
+import { Empty, PageTitle, Scoreboard } from "@/components/ui";
 import { ValueList } from "@/components/value-board";
 import type { DunkestView } from "@/lib/dunkest";
 import type { LeagueView } from "@/lib/league";
-import { fmt, POS_LABEL } from "@/lib/format";
 import { loadDunkest, loadLeague, loadPlayers } from "@/lib/league-server";
-import { filterPlayers, PAGE_SIZE, parseFilters, playerStatus } from "@/lib/players";
+import { parseFilters, playerStatus } from "@/lib/players";
 import { teamColors } from "@/lib/team-colors";
 import { VALUE_MIN_GAMES, valueBoard, valueContracts } from "@/lib/value";
-
-const control = "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15";
-const pagerLink = "font-display inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-lg font-extrabold transition-colors hover:border-foreground/40";
-// Con i dati Dunkest c'è una colonna in più (PDK) prima dei crediti.
-const cols = (withPdk: boolean) =>
-  `md:grid md:items-center md:gap-4 ${withPdk ? "md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_3.5rem_4.5rem]" : "md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(8rem,11rem)_minmax(9rem,12rem)_4.5rem]"}`;
 
 /**
  * Seconda vista (Fase 6.2, `?vista=affari`): affari e flop, cioè posizione per stipendio contro posizione per punteggio
@@ -81,30 +70,13 @@ function DealsView({ league, dunkest, teamFilter }: { league: LeagueView; dunkes
 export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const sp = await props.searchParams;
   const view = sp.vista === "affari" ? "deals" : "list";
-  const filters = parseFilters(sp);
+  const parsed = parseFilters(sp);
   const [listed, league, dunkest] = await Promise.all([loadPlayers(), loadLeague(), loadDunkest()]);
-  const players = dunkest.available ? listed.map((p) => ({ ...p, pdk: dunkest.stats.get(p.id)?.pdk ?? null })) : listed;
-  const withPdk = dunkest.available;
-  const injuredCount = players.filter((p) => dunkest.injuries.has(p.id)).length;
+  // chi ha la riga ma 0 partite non ha un punteggio: senza questo, dal minore finirebbe in cima
+  const players = dunkest.available ? listed.map((p) => ({ ...p, pdk: (dunkest.stats.get(p.id)?.gp ?? 0) > 0 ? dunkest.stats.get(p.id)!.pdk : null })) : listed;
   const nbaTeams = [...new Set(players.map((p) => p.nbaTeam).filter((t): t is string => !!t))].sort();
-  const rows = filterPlayers(players, filters);
-  const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const page = Math.min(filters.page ?? 1, pages);
-  const offset = (page - 1) * PAGE_SIZE;
-  const shown = rows.slice(offset, offset + PAGE_SIZE);
   const count = { free: 0, cut: 0, restricted: 0, taken: 0, talent: 0 };
   for (const p of players) count[playerStatus(p)]++;
-  const pageHref = (n: number) => {
-    const qs = new URLSearchParams();
-    if (filters.q) qs.set("q", filters.q);
-    if (filters.pos) qs.set("ruolo", filters.pos);
-    if (filters.nbaTeam) qs.set("nba", filters.nbaTeam);
-    if (filters.owner !== "all") qs.set("stato", filters.owner);
-    if (filters.sort !== "credits") qs.set("ordina", filters.sort);
-    if (n > 1) qs.set("pagina", String(n));
-    const s = qs.toString();
-    return s ? `/giocatori?${s}` : "/giocatori";
-  };
   const colors = teamColors(league.teams.map((t) => t.team.id));
 
   return (
@@ -144,182 +116,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
       {view === "deals" ? (
         <DealsView league={league} dunkest={dunkest} teamFilter={typeof sp.squadra === "string" && league.teamNames.has(sp.squadra) ? sp.squadra : null} />
       ) : (
-        <>
-
-          <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 shadow-[0_12px_30px_-24px_rgb(6_10_20/0.6)] backdrop-blur-md md:sticky md:top-[4.5rem] md:shadow-[0_-0.5rem_0_0_var(--background),0_12px_30px_-24px_rgb(6_10_20/0.6)]">
-            <Form className="grid grid-cols-2 gap-2 lg:grid-cols-[minmax(14rem,1.6fr)_repeat(4,minmax(8rem,1fr))_auto_auto]" action="/giocatori">
-              <label className="relative col-span-2 lg:col-span-1">
-                <span className="sr-only">Cerca per nome</span>
-                <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
-                <input name="q" defaultValue={filters.q} placeholder="Cerca per nome…" autoComplete="off" spellCheck={false} className={`${control} pl-10`} />
-              </label>
-              <select name="ruolo" defaultValue={filters.pos} className={control} aria-label="Ruolo">
-                <option value="">Tutti i ruoli</option>
-                {(["G", "A", "C"] as const).map((p) => (
-                  <option key={p} value={p}>
-                    {POS_LABEL[p]}
-                  </option>
-                ))}
-              </select>
-              <select name="nba" defaultValue={filters.nbaTeam} className={control} aria-label="Squadra NBA">
-                <option value="">Tutte le NBA</option>
-                {nbaTeams.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              <select name="stato" defaultValue={filters.owner} className={control} aria-label="Stato">
-                <option value="all">Tutti gli stati</option>
-                <option value="free">Senza contratto (tutti)</option>
-                <option value="open">Liberi (senza vincoli)</option>
-                <option value="cut">Tagliati (in asta)</option>
-                <option value="restricted">Restricted</option>
-                <option value="taken">In rosa</option>
-                <option value="talent">Talenti</option>
-              </select>
-              <select name="ordina" defaultValue={filters.sort} className={control} aria-label="Ordina per">
-                <option value="credits">Per crediti</option>
-                <option value="name">Per nome</option>
-                {withPdk && <option value="pdk">Per punteggio Dunkest</option>}
-              </select>
-              <SubmitButton icon="sliders">Filtra</SubmitButton>
-              <Link
-                href="/giocatori"
-                className="font-display inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-lg font-extrabold transition-colors hover:border-foreground/40"
-              >
-                Azzera
-              </Link>
-            </Form>
-          </div>
-
-          <div className="mt-5 mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <p className="text-sm font-semibold text-muted">
-              {rows.length} risultati
-              {rows.length > PAGE_SIZE && ` · ${offset + 1}–${offset + shown.length} (pagina ${page} di ${pages})`}
-              {injuredCount > 0 && ` · ${injuredCount} infortunati nel listone`}
-            </p>
-            <DunkestSource dunkest={dunkest} />
-          </div>
-
-          {shown.length === 0 ? (
-            <Empty title="Nessun giocatore" icon="search">
-              Nessun giocatore con questi filtri.
-            </Empty>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-              <div className={`eyebrow hidden border-b border-line bg-surface-subtle/60 px-4 py-2 text-muted ${cols(withPdk)}`}>
-                <span>#</span>
-                <span>Giocatore</span>
-                <span>NBA</span>
-                <span>Stato</span>
-                {withPdk && (
-                  <span className={`text-right ${filters.sort === "pdk" ? "text-brand-blue" : ""}`} title="Punteggio Dunkest medio a partita">
-                    PDK
-                  </span>
-                )}
-                <span className={`text-right ${filters.sort === "credits" ? "text-brand-blue" : ""}`}>Crediti</span>
-              </div>
-              <ul className="divide-y divide-line">
-                {shown.map((p, i) => (
-                  <li key={p.id} className={`rise relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60 sm:px-4 ${cols(withPdk)}`} style={stagger(i)}>
-                    {withPdk && <SheetTrigger id={sheetId(p.id)} name={p.name} />}
-                    <span className="tnum hidden text-sm font-semibold text-muted md:block">{offset + i + 1}</span>
-                    <span className="flex min-w-0 flex-1 items-center gap-3">
-                      <PosChip pos={p.pos} />
-                      <span className="min-w-0">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate font-semibold">{p.name}</span>
-                          {dunkest.injuries.has(p.id) && <InjuryChip injury={dunkest.injuries.get(p.id)!} />}
-                        </span>
-                        <span className="block truncate text-xs text-muted md:hidden">
-                          {p.nbaTeam ?? "NBA n.d."}
-                          {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && ` · può pareggiare ${league.teamNames.get(p.restrictedTeamId) ?? "?"}`}
-                        </span>
-                        {!p.ownerTeamId && !p.cutByTeamId && p.restrictedTeamId && (
-                          <span className="hidden truncate text-xs text-muted md:block">può pareggiare {league.teamNames.get(p.restrictedTeamId) ?? "?"}</span>
-                        )}
-                      </span>
-                    </span>
-                    <span className="hidden truncate text-sm font-semibold text-muted md:block">{p.nbaTeam ?? "n.d."}</span>
-                    <span className="min-w-0 shrink-0">
-                      {p.ownerTeamId ? (
-                        <Link href={`/squadre/${p.ownerTeamId}`} className="relative z-[2] inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
-                          <TeamCrest name={league.teamNames.get(p.ownerTeamId) ?? "?"} color={colors.get(p.ownerTeamId) ?? "#555"} size="xs" />
-                          <span className="hidden max-w-28 truncate sm:inline">{league.teamNames.get(p.ownerTeamId) ?? "?"}</span>
-                        </Link>
-                      ) : p.talentTeamId ? (
-                        <Link href={`/squadre/${p.talentTeamId}?vista=pick`} title={`Squadra talenti di ${league.teamNames.get(p.talentTeamId) ?? "?"} (R-35)`} className="relative z-[2] inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
-                          <TeamCrest name={league.teamNames.get(p.talentTeamId) ?? "?"} color={colors.get(p.talentTeamId) ?? "#555"} size="xs" />
-                          <Badge tone="accent">talento</Badge>
-                        </Link>
-                      ) : p.cutByTeamId ? (
-                        <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>
-                          tagliato
-                        </Badge>
-                      ) : p.restrictedTeamId ? (
-                        <Badge tone="warn" title="Restricted: il vecchio proprietario può pareggiare l'offerta più alta (R-23)">
-                          restricted
-                        </Badge>
-                      ) : (
-                        <Badge tone="good" icon="check">
-                          libero
-                        </Badge>
-                      )}
-                    </span>
-                    {withPdk && (
-                      <span className="flex shrink-0 justify-end">
-                        <PdkCell stats={dunkest.stats.get(p.id)} role={p.pos ? dunkest.roles[p.pos] : dunkest.all} />
-                      </span>
-                    )}
-                    <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black md:w-auto">{p.credits === null ? "–" : fmt(p.credits)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {withPdk &&
-            shown.map((p) => (
-              <PlayerSheet
-                key={p.id}
-                player={{
-                  playerId: p.id,
-                  name: p.name,
-                  pos: p.pos,
-                  nbaTeam: p.nbaTeam,
-                  owner: p.ownerTeamId ? { name: league.teamNames.get(p.ownerTeamId) ?? "?", color: colors.get(p.ownerTeamId) ?? "#555" } : null,
-                }}
-                dunkest={dunkest}
-              />
-            ))}
-
-          {pages > 1 && (
-            <nav aria-label="Paginazione" className="mt-4 flex items-center justify-between gap-3">
-              {page > 1 ? (
-                <Link href={pageHref(page - 1)} className={pagerLink}>
-                  ← Precedente
-                </Link>
-              ) : (
-                <span aria-hidden className={`${pagerLink} invisible`}>
-                  ← Precedente
-                </span>
-              )}
-              <span className="text-sm font-semibold text-muted">
-                Pagina {page} di {pages}
-              </span>
-              {page < pages ? (
-                <Link href={pageHref(page + 1)} className={pagerLink}>
-                  Successiva →
-                </Link>
-              ) : (
-                <span aria-hidden className={`${pagerLink} invisible`}>
-                  Successiva →
-                </span>
-              )}
-            </nav>
-          )}
-        </>
+        <PlayerListing players={players} nbaTeams={nbaTeams} dunkest={dunkest} teamNames={league.teamNames} colors={colors} initial={parsed} />
       )}
     </>
   );
