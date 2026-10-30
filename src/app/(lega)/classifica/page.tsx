@@ -278,7 +278,7 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
               <section aria-label="Premi della giornata">
                 {strip("premi")}
                 {awards.length > 0 ? (
-                  <AwardsGrid awards={awards} teams={teams} myTeamId={myTeamId} provisional={selected.state === "latest"} noLineups={!hasPlayerAwards(awards)} />
+                  <AwardsGrid awards={awards} teams={teams} myTeamId={myTeamId} provisional={selected.state === "latest"} noLineups={!hasPlayerAwards(awards)} matchday={selected.matchday} />
                 ) : (
                   <Empty title={selected.state === "upcoming" ? "Giornata da giocare" : "Ancora nessun premio"} icon="crown">
                     {selected.state === "upcoming" ? "I premi arrivano quando la giornata comincia." : "La giornata è appena cominciata: i premi arrivano con i primi punti."}

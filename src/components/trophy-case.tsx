@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AWARD_META } from "@/components/awards";
+import { AWARD_META } from "@/lib/awards-meta";
 import { TeamCrest } from "@/components/crest";
 import { fpt, type TeamIndex } from "@/components/dunkest-league";
 import { Icon } from "@/components/icons";

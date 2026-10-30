@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TeamCrest } from "@/components/crest";
+import { ShareCard } from "@/components/share-card";
 import { Empty, PageTitle, Section } from "@/components/ui";
 import { loadLeague } from "@/lib/league-server";
 import { playerName } from "@/lib/league";
@@ -80,11 +81,21 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
             {trades.map(({ row, view }) => {
               return (
                 <li key={row.id} className="rounded-2xl border border-line bg-surface p-4">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <time dateTime={row.created_at} className="eyebrow text-muted">
                       {when.format(new Date(row.created_at))}
                     </time>
                     {row.status !== "approved" && <span className="text-xs font-semibold text-warning">{STATUS[row.status] ?? row.status}</span>}
+                    {row.status === "approved" && view.complete && (
+                      <ShareCard
+                        src={`/card/scambio/${row.id}`}
+                        title={`Scambio del ${when.format(new Date(row.created_at))}`}
+                        filename={`scambio-${row.id}.png`}
+                        sheetTitle="Condividi lo scambio"
+                        note="Immagine 1200×630."
+                        className="-my-1"
+                      />
+                    )}
                   </div>
                   {view.complete ? (
                     <>
