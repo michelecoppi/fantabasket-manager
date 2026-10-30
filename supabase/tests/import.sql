@@ -3,6 +3,9 @@
 --
 --   psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/tests/import.sql
 --
+-- La CI lo lancia due volte: come `postgres` e come `supabase_admin` con `PGOPTIONS="-c session_preload_libraries=safeupdate"`,
+-- che è la condizione di PostgREST su Supabase (un DELETE/UPDATE senza WHERE nell'import fallisce solo così).
+--
 -- Tutto in una transazione che finisce con ROLLBACK, con id espliciti e stagioni fittizie (2098, 2099): non cambia i dati.
 -- Mai sul database reale.
 

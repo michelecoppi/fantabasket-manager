@@ -58,5 +58,12 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rls.sql
       - name: Test import atomico (rollback e altre stagioni intatte)
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/import.sql
+      # Su Supabase le richieste PostgREST passano da `authenticator`, che carica pg_safeupdate: un DELETE/UPDATE senza WHERE
+      # nell'import fallirebbe lì ma non come `postgres`. `LOAD` non è permesso a `postgres`, quindi si precarica da superuser.
+      - name: Test import con pg_safeupdate (come PostgREST)
+        env:
+          PGUSER: supabase_admin
+          PGOPTIONS: -c session_preload_libraries=safeupdate
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/tests/import.sql
       - name: Test di concorrenza (P1-06)
         run: bash supabase/tests/concurrency.sh
