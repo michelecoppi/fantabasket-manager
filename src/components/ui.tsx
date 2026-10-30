@@ -178,6 +178,19 @@ const POS_STYLE: Record<string, string> = {
 };
 const POS_NAME: Record<string, string> = { G: "Guardia", A: "Ala", C: "Centro" };
 
+/** Numero da incolonnare: riserva sempre lo spazio del decimale, così "7" e "9,5" hanno le cifre intere sulla stessa verticale. */
+export function Aligned({ value }: { value: number }) {
+  const [int, dec] = fmt(value).split(",");
+  return (
+    <span className="tnum">
+      {int}
+      <span className={dec ? undefined : "invisible"} aria-hidden={dec ? undefined : true}>
+        ,{dec ?? "0"}
+      </span>
+    </span>
+  );
+}
+
 /** Ruolo del giocatore come gettone colorato (G blu, A oro, C rosso); `?` se il ruolo non è noto. */
 export function PosChip({ pos }: { pos: string | null }) {
   return (

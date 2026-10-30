@@ -9,7 +9,7 @@ const player = (salary: number, yearsLeft: number | null, extra: Partial<RosterP
   return { id, playerId: id, name: `P${id}`, pos: "G", nbaTeam: null, contractLabel: String(yearsLeft ?? "?"), yearsLeft, teamOption: false, slot: "starter", salary, restriction: null, rookie: false, ...extra };
 };
 const cut = (paid: number, yearsLeft: number | null, status: "pending" | "cut" = "cut") => ({
-  id: nextId++, playerId: 0, name: "Tagliato", pos: null, status, paid, yearsLeft, originalSalary: null, originalSlot: null, originalIsRookie: false, teamOption: false,
+  id: nextId++, playerId: 0, name: "Tagliato", pos: null, nbaTeam: null, status, paid, yearsLeft, originalSalary: null, originalSlot: null, originalIsRookie: false, teamOption: false,
 });
 
 const long = player(40, 3);

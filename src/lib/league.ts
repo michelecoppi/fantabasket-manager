@@ -133,6 +133,7 @@ interface TeamCut {
   playerId: number;
   name: string;
   pos: Position | null;
+  nbaTeam: string | null;
   status: CutStatus;
   paid: number;
   yearsLeft: number | null;
@@ -247,6 +248,7 @@ export function buildLeague(raw: RawLeague): LeagueView {
         playerId: c.player_id,
         name: playerName(c.players),
         pos: c.players?.pos ?? null,
+        nbaTeam: c.players?.nba_team ?? null,
         status: c.status,
         paid: Number(c.paid_salary),
         yearsLeft: c.years_left === null ? null : Number(c.years_left),
