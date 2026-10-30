@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { parseWorkbook, type ImportData, type PoolPlayer } from "./lib/parse";
 import { buildImportPayload, payloadErrors } from "./lib/payload";
 import { buildReport } from "./lib/report";
+import { talentTeamDrift } from "./lib/talent-drift";
 
 const file = process.argv.find((a) => a.endsWith(".xlsx")) ?? "Dunkest.xlsx";
 const apply = process.argv.includes("--apply");
@@ -40,6 +41,23 @@ async function write(d: ImportData) {
   const payload = buildImportPayload(d, season);
   const errors = payloadErrors(payload);
   if (errors.length) throw new Error(`Payload non valido, nessuna scrittura:\n- ${errors.join("\n- ")}`);
+
+  // 7.6 (D3): i talenti scambiati nell'app che il foglio ha ancora nella vecchia squadra; l'import li riporterebbe indietro.
+  const current = await db.from("talents").select("display_name, teams(name)");
+  if (current.error) throw new Error(`Talenti del database non leggibili, nessuna scrittura: ${current.error.message}`);
+  const dbTalents = (current.data as unknown as { display_name: string; teams: { name: string } | null }[]).map((t) => ({
+    displayName: t.display_name,
+    team: t.teams?.name ?? "?",
+  }));
+  const drift = talentTeamDrift(d.talents, dbTalents);
+  if (drift.length) {
+    console.log(`\nTalenti con una squadra diversa dal foglio (scambiati nell'app?): ${drift.length}`);
+    for (const x of drift) console.log(`  ${x.displayName}: nel database ${x.dbTeam}, nel foglio ${x.sheetTeam}`);
+    if (!process.argv.includes("--force")) {
+      console.error("L'import li rimetterebbe nella squadra del foglio. Aggiorna il foglio (o usa --force sapendo cosa stai facendo). Import annullato.");
+      process.exit(1);
+    }
+  }
 
   // Una sola chiamata = una sola transazione (migrazione 20261026201951): se fallisce, il database resta com'era.
   const { data, error } = await db.rpc("import_replace_season", { p_payload: payload });
