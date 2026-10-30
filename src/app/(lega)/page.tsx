@@ -5,13 +5,14 @@ import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
 import { DunkestLogo } from "@/components/dunkest";
 import { LeagueSource, StandingsTable, fpt, teamIndex } from "@/components/dunkest-league";
+import { LeaderList, leaderOwners } from "@/components/leaders";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
-import { fmt, fmtEuro } from "@/lib/format";
+import { fmt, fmtDay, fmtEuro } from "@/lib/format";
 import { matchdayAwards } from "@/lib/awards";
 import { teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
-import { loadDunkest, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
+import { loadDunkest, loadLatestNight, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -49,12 +50,13 @@ export default async function Home(props: PageProps<"/">) {
     const award = matchdayAwards(day.matches, await loadLineups(day.matches.map((m) => m.id))).find((a) => a.kind === "mvp");
     return award ? { award, matchday: day.matchday } : null;
   };
-  const [league, profile, dunkest, view, mvp] = await Promise.all([
+  const [league, profile, dunkest, view, mvp, night] = await Promise.all([
     loadLeague(),
     loadProfile(),
     loadDunkest(),
     loadLeagueDunkest(),
     loadLeagueDunkest().then(mvpOf),
+    loadLatestNight(5),
   ]);
   // Infortunati di ogni rosa secondo Dunkest (issue #68).
   const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
@@ -272,6 +274,26 @@ export default async function Home(props: PageProps<"/">) {
           </div>
           <div className="mt-3">
             <LeagueSource league={view} />
+          </div>
+        </section>
+      )}
+
+      {night && (
+        <section className="mt-12" aria-labelledby="night-leaders-title">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div>
+              <p className="eyebrow text-muted">NBA · notte del {fmtDay(night.date)}</p>
+              <h2 id="night-leaders-title" className="font-display mt-1 text-5xl leading-none font-black">
+                Leader della notte
+              </h2>
+            </div>
+            <Link href="/giocatori/leader" className="group inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue">
+              Tutti i leader e la giornata
+              <Icon name="arrow-right" size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+          <div className="mt-5">
+            <LeaderList rows={night.rows} owners={leaderOwners(league.teams, colors)} myTeamId={myTeam?.team.id ?? null} kind="night" />
           </div>
         </section>
       )}

@@ -126,3 +126,4 @@ Piano in [product/PIANO-SCAMBIO-TALENTI.md](product/PIANO-SCAMBIO-TALENTI.md). R
 - Un talento non ha stipendio: non pesa su cap (R-57), budget riserve, massimi di rosa (R-01..R-03) né sul limite di pick (R-33).
 - Uno scambio senza contratti (solo talenti e/o pick) non va rifatto su Dunkest, dove ci sono solo i titolari.
 - L'import dal foglio non deve annullare gli scambi di talenti fatti nell'app: si ferma se un talento ha nel database una squadra diversa da quella del foglio (salvo `--force`).
+- **ASSUNZIONE** (Fase 8): la «giornata» dei leader NBA è la settimana Dunkest (`weeks[]`, «M4») con lo stesso numero della giornata della lega. Verificata il 2026-10-30 sulle giornate 1-4; se Dunkest o la lega numerassero diversamente (giornate saltate, stagione nuova) i leader della giornata andrebbero ricollegati.

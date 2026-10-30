@@ -139,6 +139,10 @@ insert into trades (id, season_id, payload) select 900001, id, '{}'::jsonb from 
 insert into audit_log (id, user_id, action, table_name) values (900001, rls_t.admin(), 'rls-test', 'rls');
 insert into dunkest_stats (season_id, player_id, gp, pdk) select id, 900001, 3, 21.5 from seasons where is_current;
 insert into dunkest_injuries (player_id, injured_on, injury, description) values (900002, date '2026-10-19', 'Caviglia', 'GTD: da valutare');
+insert into dunkest_games (season_id, dunkest_id, game_date, player_id, name, pos, team_code, pdk, pts)
+  select id, 990901, date '2026-10-29', 900001, 'RLS Uno', 'G', 'RLS', 28.4, 25 from seasons where is_current;
+insert into dunkest_week_stats (season_id, week, dunkest_id, player_id, name, pos, team_code, gp, pdk, pts)
+  select id, 1, 990901, 900001, 'RLS Uno', 'G', 'RLS', 2, 52.75, 40 from seasons where is_current;
 insert into dunkest_sync_runs (id, trigger, ok, stats_count, injuries_count, links_count) values (900001, 'cron', true, 1, 1, 0);
 -- dunkest_sync ha già la sua riga unica (migrazione 20261027025827).
 -- league_history ha già le sue righe (lo storico, migrazione 20261029192344).
@@ -553,6 +557,21 @@ begin
   perform rls_t.chk('anon scrive senza segreto',
     rls_t.try(format('select public.dunkest_sync_apply(null, %L)', jsonb_build_object('season_id', sid, 'stats', '[]'::jsonb, 'injuries', '[]'::jsonb))), array['error: FORBIDDEN%']);
   perform rls_t.chk('anon registra un errore senza segreto', rls_t.try('select public.dunkest_sync_fail(null, ''x'')'), array['error: FORBIDDEN%']);
+  -- Partite e giornate NBA: stesse regole del job (segreto o admin).
+  perform rls_t.chk('games_source senza segreto', rls_t.try('select public.dunkest_games_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon scrive partite senza segreto',
+    rls_t.try(format('select public.dunkest_games_apply(null, %L)', jsonb_build_object('season_id', sid, 'games', '[]'::jsonb, 'weeks', '[]'::jsonb))), array['error: FORBIDDEN%']);
+  v := public.dunkest_games_source('rls-segreto-del-job-0123');
+  perform rls_t.ok('games_source col segreto', (v->>'season_id')::int = sid and (v->>'last_date')::date = date '2026-10-29' and v->'weeks' = '[1]'::jsonb);
+  perform rls_t.chk('games_apply senza liste',
+    rls_t.try(format('select public.dunkest_games_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid))), array['error: INVALID%']);
+  perform rls_t.chk('games_apply con stagione sbagliata',
+    rls_t.try(format('select public.dunkest_games_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid + 1, 'games', '[]'::jsonb, 'weeks', '[]'::jsonb))), array['error: CONFLICT%']);
+  -- Un giorno presente sostituisce le righe che c'erano, un giorno assente o una giornata vuota non toccano niente;
+  v := public.dunkest_games_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid,
+    'games', '[{"dunkest_id": 990902, "game_date": "2026-10-30", "name": "RLS Due", "pos": "C", "team_code": "RLS", "pdk": 12.5, "min": 20.5, "starter": false, "pts": 8, "reb": 4}]'::jsonb,
+    'weeks', '[{"week": 1, "stats": []}, {"week": 2, "stats": [{"dunkest_id": 990902, "name": "RLS Due", "pos": "C", "team_code": "RLS", "gp": 1, "pdk": 12.5, "pts": 8, "reb": 4, "ast": 0}]}]'::jsonb));
+  perform rls_t.ok('games_apply conta le righe scritte', (v->>'games')::int = 1 and (v->>'weeks')::int = 1);
 
   v := public.dunkest_sync_source('rls-segreto-del-job-0123');
   perform rls_t.ok('dunkest_sync_source col segreto', (v->>'season_id')::int = sid and jsonb_array_length(v->'players') > 0);
@@ -590,6 +609,17 @@ begin
     and (select pdk from dunkest_stats where season_id = sid and player_id = 900001) = 30.5
     and (select count(*) from dunkest_injuries) = 1 and exists (select 1 from dunkest_injuries where player_id = 900001));
   perform rls_t.ok('apply non ha salvato l''id Dunkest', (select dunkest_id from players where id = 900001) = 990001);
+  perform rls_t.ok('games_apply ha toccato giorni o giornate che non erano nel payload',
+    (select count(*) from dunkest_games where season_id = sid) = 2
+    and exists (select 1 from dunkest_games where game_date = date '2026-10-29' and dunkest_id = 990901 and pdk = 28.4)
+    and exists (select 1 from dunkest_week_stats where week = 1 and dunkest_id = 990901 and gp = 2)
+    and (select count(*) from dunkest_week_stats where season_id = sid and week = 2) = 1);
+  -- Il collegamento al listone passa dall'id Dunkest, salvato dall'apply delle statistiche qui sopra.
+  perform public.dunkest_games_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid,
+    'games', '[{"dunkest_id": 990001, "game_date": "2026-10-31", "name": "RLS Uno", "pos": "G", "team_code": "RLS", "pdk": 9}]'::jsonb, 'weeks', '[]'::jsonb));
+  perform rls_t.ok('games_apply non ha collegato il giocatore dall''id Dunkest',
+    (select player_id from dunkest_games where dunkest_id = 990001 and game_date = date '2026-10-31') = 900001
+    and (select player_id from dunkest_games where dunkest_id = 990902) is null);
   perform rls_t.ok('add_players non ha creato il giocatore con ruolo, squadra e crediti',
     exists (select 1 from players where dunkest_id = 990101 and pos = 'A' and nba_team = 'Rls Team' and dunkest_credits = 7.5)
     and not exists (select 1 from players where last_name = 'Senzanome'));

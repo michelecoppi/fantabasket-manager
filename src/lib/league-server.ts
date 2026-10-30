@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
+import type { GameLine, LeaderRow } from "./dunkest-games";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
 import { buildLeagueView, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { PlayerListItem } from "./players";
@@ -478,6 +479,117 @@ export async function loadRosterMoves(teamId: string): Promise<Omit<RosterMove, 
     }));
   } catch (e) {
     console.error(`[dunkest] cambi di rosa non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
+/** Riga di `dunkest_games` o `dunkest_week_stats` come classifica NBA (i numeric arrivano come numeri o stringhe). */
+function toLeader(r: Record<string, unknown>): LeaderRow {
+  return {
+    dunkestId: r.dunkest_id as number,
+    playerId: r.player_id as number | null,
+    name: r.name as string,
+    pos: r.pos as LeaderRow["pos"],
+    teamCode: r.team_code as string,
+    pdk: Number(r.pdk),
+    pts: r.pts as number,
+    reb: r.reb as number,
+    ast: r.ast as number,
+    min: r.min === undefined ? null : Number(r.min),
+    gp: r.gp === undefined ? null : (r.gp as number),
+  };
+}
+
+/** Giorni di gioco già letti dal job, dal più recente (data americana). Vuoto se non si leggono. */
+export const loadGameDays = cache(async (): Promise<{ date: string; players: number }[]> => {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db.from("dunkest_game_days").select("game_date,players").eq("season_id", sid).order("game_date", { ascending: false }).limit(14);
+    must(r);
+    return (r.data ?? []).map((d) => ({ date: d.game_date as string, players: d.players as number }));
+  } catch (e) {
+    console.error(`[dunkest] giorni di gioco non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+});
+
+/** I migliori del giorno per punteggio Dunkest. */
+export async function loadNightLeaders(date: string, limit: number): Promise<LeaderRow[]> {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db
+      .from("dunkest_games")
+      .select("dunkest_id,player_id,name,pos,team_code,pdk,min,pts,reb,ast")
+      .eq("season_id", sid)
+      .eq("game_date", date)
+      .order("pdk", { ascending: false })
+      .order("dunkest_id")
+      .limit(limit);
+    must(r);
+    return (r.data ?? []).map(toLeader);
+  } catch (e) {
+    console.error(`[dunkest] leader della notte non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
+/** I migliori di una giornata fantasy (somma dei round) per punteggio Dunkest. */
+export async function loadWeekLeaders(week: number, limit: number): Promise<LeaderRow[]> {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db
+      .from("dunkest_week_stats")
+      .select("dunkest_id,player_id,name,pos,team_code,gp,pdk,pts,reb,ast")
+      .eq("season_id", sid)
+      .eq("week", week)
+      .order("pdk", { ascending: false })
+      .order("dunkest_id")
+      .limit(limit);
+    must(r);
+    return (r.data ?? []).map(toLeader);
+  } catch (e) {
+    console.error(`[dunkest] leader della giornata non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return [];
+  }
+}
+
+/** L'ultima notte letta con i suoi migliori (per la home). null se non ci sono partite. */
+export async function loadLatestNight(limit: number): Promise<{ date: string; rows: LeaderRow[] } | null> {
+  const days = await loadGameDays();
+  if (days.length === 0) return null;
+  const rows = await loadNightLeaders(days[0].date, limit);
+  return rows.length ? { date: days[0].date, rows } : null;
+}
+
+/** Partite della stagione di un giocatore, dalla più vecchia (una stagione ne ha meno di 100: una richiesta). */
+export async function loadPlayerGames(playerId: number): Promise<GameLine[]> {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db
+      .from("dunkest_games")
+      .select("game_date,pdk,min,starter,pts,reb,ast,stl,blk,tov")
+      .eq("season_id", sid)
+      .eq("player_id", playerId)
+      .order("game_date");
+    must(r);
+    return (r.data ?? []).map((g) => ({
+      date: g.game_date as string,
+      pdk: Number(g.pdk),
+      min: Number(g.min),
+      starter: g.starter as boolean,
+      pts: g.pts as number,
+      reb: g.reb as number,
+      ast: g.ast as number,
+      stl: g.stl as number,
+      blk: g.blk as number,
+      tov: g.tov as number,
+    }));
+  } catch (e) {
+    console.error(`[dunkest] partite non disponibili: ${e instanceof Error ? e.message : String(e)}`);
     return [];
   }
 }
