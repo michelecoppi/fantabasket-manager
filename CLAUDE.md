@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Gestionale web per una lega privata di fantabasket NBA (8 squadre). Lingua di UI, commenti utente e documenti: **italiano**. Codice e nomi di variabili/tabelle: **inglese**.
 
 ## Stato del progetto
-Fasi 0-2 completate (dati importati, sito online in sola lettura). Fase 3 (pannello admin) quasi chiusa; restano squadra talenti/rookie e chiusura stagione. Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
+Sito online: lettura per tutti, pannello admin (firma, contratti, tagli, scambi, pick, quote), dati Dunkest dal cron giornaliero (infortuni, punteggi, classifica, formazioni, leader), proposte di scambio dei proprietari, bot Telegram e card da condividere (Fasi 0-9 in PLAN.md). Aperti: prelazione dei talenti (domanda 4), chiusura stagione (`SEASON_CLOSE_ENABLED = false`) e le voci di «Controllo dello stato» in PLAN.md (backup mai ripristinato, flusso delle proposte mai provato con scritture vere). Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
 
 ## Regole di lega
 Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 ed è stato confermato ancora valido (2026-10-21). Dubbi aperti in [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md).
@@ -16,10 +16,10 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 ## Comandi
 - `npm run dev` · `npm run build` · `npm run lint` · `npm run typecheck` (fa `next typegen && tsc --noEmit`) · `npm test` (vitest, nessun config: prende ogni `*.test.ts`, in `src/lib/` e `scripts/lib/`).
 - Un solo file: `npx vitest run src/lib/cap.test.ts`; un solo test: `npx vitest run -t "parte del nome"`.
-- La CI (`.github/workflows/ci.yml`) esegue lint, typecheck, test e build su ogni PR e su `main`, più il job `rls` che applica migrazioni e seed su un Postgres Supabase e lancia `supabase/tests/rls.sql`. Prima di dire "fatto" esegui test, typecheck e lint. Una nuova tabella o RPC `admin_*` deve passare il test RLS (la tabella ha bisogno di una riga di prova in `rls.sql`).
+- La CI (`.github/workflows/ci.yml`) esegue lint, typecheck, test e build su ogni PR e su `main`, più il job `rls` che applica migrazioni e seed su un Postgres Supabase e lancia `supabase/tests/rls.sql`, `import.sql` e `concurrency.sh`. Prima di dire "fatto" esegui test, typecheck e lint. Una nuova tabella o RPC `admin_*` deve passare il test RLS (la tabella ha bisogno di una riga di prova in `rls.sql`).
 - Import dal foglio: `npx tsx scripts/import-xlsx.ts` fa solo il report; `npx tsx --env-file=.env.local scripts/import-xlsx.ts --apply [--season=AAAA]` **riscrive** su Supabase la stagione indicata, in una transazione sola (RPC `import_replace_season`; le altre stagioni restano) (serve `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, si ferma se il report ha problemi salvo `--force`). Non lanciarlo senza conferma dell'utente. Dettagli in [docs/IMPORT.md](docs/IMPORT.md).
 - SQL sul database reale: `SUPABASE_DB_URL` in `.env.local` (Supabase → Connect → Session pooler; mai su Vercel). Senza psql installato, via Docker: `export SUPABASE_DB_URL="$(grep '^SUPABASE_DB_URL=' .env.local | cut -d= -f2- | tr -d '\r')"; docker run --rm -i -e SUPABASE_DB_URL postgres:17-alpine sh -c 'psql "$SUPABASE_DB_URL" -X' < query.sql`. Scrivere sul DB reale solo dopo conferma dell'utente.
-- Env: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (vedi `.env.example`); la `service_role` serve solo agli script locali, mai su Vercel.
+- Env: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (vedi `.env.example`); la `service_role` serve solo agli script locali, mai su Vercel. Su Vercel anche `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET` (cron e RPC del job; l'hash sta in `private.job_secrets`), `DUNKEST_TOKEN` (classifica e formazioni della lega), `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`; `CRON_SECRET` e `DUNKEST_TOKEN` non sono in `.env.example`.
 - Next.js è una versione recente con breaking changes: leggi `node_modules/next/dist/docs/` e [AGENTS.md](AGENTS.md) prima di scrivere codice Next.
 
 ## Architettura
@@ -30,6 +30,10 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 **Regole in un solo posto.** `src/lib/cap.ts` contiene tutta la logica di lega, pura e con test: `teamFinance`, `tradeImpact`, `evaluateTrade`, `evaluateSigning`, `contractTermsErrors`, `cutShare`. La usano sia il simulatore di scambio in sola lettura (`/scambio`) sia le server action admin. Non duplicare regole nel SQL né nei componenti.
 
 **Percorso di scrittura (admin).** Componente client `admin/*/desk.tsx` → server action in `src/app/(lega)/admin/actions.ts` (`requireAdmin()`, validazione con `cap.ts`, poi `db.rpc(...)`) → funzione Postgres in `supabase/migrations/20261021220000_admin_rpc.sql` (`security definer`, `admin_guard()`/`is_admin()`, una transazione, scrive `audit_log`). Le RPC garantiscono solo coerenza dei dati (esistenza, proprietà, concorrenza), non le regole di lega. Concorrenza ottimistica: `contracts`, `cuts`, `draft_picks` hanno `version` (trigger `bump_version`); la UI la legge con `loadVersions()` e la rimanda, la RPC fallisce con `CONFLICT:` se è cambiata. Gli errori RPC hanno prefisso `FORBIDDEN|CONFLICT|INVALID` e `rpcError()` li traduce. Ogni nuova operazione admin segue questo schema e chiama `revalidatePath("/", "layout")`.
+
+**Scritture dei proprietari.** I viewer scrivono solo proponendo, rispondendo o ritirando scambi: action in `src/app/(lega)/scambio/actions.ts` → RPC `trade_propose` / `trade_answer` / `trade_withdraw` (controllano la squadra con `my_team_id()` e il mercato aperto; nessuna policy di scrittura sulle tabelle). L'approvazione resta a un admin (`admin_approve_trade_proposal` esegue lo scambio nella stessa transazione, via `trade_apply`). Le regole passano sempre da `evaluateMoves` → `evaluateTrade`.
+
+**Job giornaliero e canali esterni.** Il cron Vercel `/api/dunkest` (`vercel.json`, Bearer `CRON_SECRET`, 9:00 italiane) aggiorna da Dunkest statistiche, infortuni, lega e partite (`runDunkest*Sync`), poi marca le proposte scadute e manda gli annunci su Telegram (`src/lib/telegram.ts`; senza token il bot tace). Scrive con la chiave anon e le RPC `dunkest_*` / `trade_announce_*`, che accettano un admin oppure il segreto del job (hash in `private.job_secrets`). Le pagine leggono solo dal database, mai da Dunkest. Le card 1200×630 sono route in `src/app/card/*`, dietro il login.
 
 **UI.** Design system "Arena Night" in [docs/design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md): token in `globals.css`, primitive in `src/components/` (`ui`, `controls`, `icons`, `crest`, `cap-line`, `player-row`, `chips`), colori squadra da `lib/team-colors.ts`. Leggilo prima di toccare la grafica; niente librerie UI/icone/animazioni, niente colori esadecimali sparsi.
 
@@ -46,8 +50,8 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 - Il monte ingaggi include le quote dei tagliati.
 
 ## Ruoli e permessi
-- `admin`: scrive su tutto (Scuti e Gabby). `viewer`: sola lettura.
-- I permessi vanno applicati **nel database con Row Level Security**, non solo nascondendo bottoni nella UI. Ogni tabella: SELECT per utenti autenticati, INSERT/UPDATE/DELETE solo se `is_admin()`.
+- `admin`: scrive su tutto (quattro profili al 2026-10-30; chi deve esserlo è tra le voci aperte di PLAN.md). `viewer`: sola lettura sulle tabelle; l'unica scrittura è proporre, rispondere o ritirare scambi della propria squadra, solo via RPC `trade_*`.
+- I permessi vanno applicati **nel database con Row Level Security**, non solo nascondendo bottoni nella UI. Ogni tabella: SELECT per utenti autenticati (eccezioni: `audit_log` solo admin, le proposte di scambio solo squadre coinvolte e admin), INSERT/UPDATE/DELETE solo se `is_admin()`.
 - Ogni modifica admin a contratti/pick/budget scrive una riga in `audit_log` (oggi lo fanno le RPC).
 
 ## Fonte dati
@@ -75,5 +79,5 @@ Attenzione: il file ha encoding sporco (`1°` appare come `1�`, `Traoré` come
 ## Cosa NON fare
 - Non aggiungere servizi a pagamento o che richiedano carta di credito.
 - Non scrivere regole di lega nel codice senza averle messe in OPEN-QUESTIONS/PLAN.
-- Non dare permessi di scrittura ai viewer "per comodità".
+- Non dare permessi di scrittura ai viewer "per comodità" (l'unica eccezione sono le RPC `trade_*`, decise il 2026-10-29).
 - Non pushare/pubblicare senza che l'utente abbia confermato.
