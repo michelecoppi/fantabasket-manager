@@ -354,6 +354,11 @@ export function contractDurations(s: LeagueSettings): number[] {
   return [0.5, ...Array.from({ length: Math.floor(s.contractMaxYears) }, (_, i) => i + 1)];
 }
 
+/** R-26: durate ammesse per un contratto rookie (firma di un talento): quelle di lega fino al massimo del rookie. */
+export function rookieDurations(s: LeagueSettings): number[] {
+  return contractDurations(s).filter((y) => y <= s.rookieMaxYears);
+}
+
 /** R-22: team option solo su contratti da 1 o 2 stagioni (durata totale con l'option entro il massimo). */
 export function teamOptionAllowed(years: number | null, s: LeagueSettings): boolean {
   return years !== null && Number.isInteger(years) && years >= 1 && years + 1 <= s.contractMaxYears;

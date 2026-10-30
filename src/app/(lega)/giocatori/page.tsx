@@ -92,7 +92,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
   const page = Math.min(filters.page ?? 1, pages);
   const offset = (page - 1) * PAGE_SIZE;
   const shown = rows.slice(offset, offset + PAGE_SIZE);
-  const count = { free: 0, cut: 0, restricted: 0, taken: 0 };
+  const count = { free: 0, cut: 0, restricted: 0, taken: 0, talent: 0 };
   for (const p of players) count[playerStatus(p)]++;
   const pageHref = (n: number) => {
     const qs = new URLSearchParams();
@@ -122,6 +122,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
               { label: "Tagliati", value: count.cut },
               { label: "Restricted", value: count.restricted },
               { label: "In rosa", value: count.taken },
+              { label: "Talenti", value: count.talent },
             ]}
           />
         }
@@ -174,6 +175,7 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                 <option value="cut">Tagliati (in asta)</option>
                 <option value="restricted">Restricted</option>
                 <option value="taken">In rosa</option>
+                <option value="talent">Talenti</option>
               </select>
               <select name="ordina" defaultValue={filters.sort} className={control} aria-label="Ordina per">
                 <option value="credits">Per crediti</option>
@@ -244,6 +246,11 @@ export default async function PlayersPage(props: PageProps<"/giocatori">) {
                         <Link href={`/squadre/${p.ownerTeamId}`} className="relative z-[2] inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
                           <TeamCrest name={league.teamNames.get(p.ownerTeamId) ?? "?"} color={colors.get(p.ownerTeamId) ?? "#555"} size="xs" />
                           <span className="hidden max-w-28 truncate sm:inline">{league.teamNames.get(p.ownerTeamId) ?? "?"}</span>
+                        </Link>
+                      ) : p.talentTeamId ? (
+                        <Link href={`/squadre/${p.talentTeamId}?vista=pick`} title={`Squadra talenti di ${league.teamNames.get(p.talentTeamId) ?? "?"} (R-35)`} className="relative z-[2] inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2 text-sm font-semibold hover:underline">
+                          <TeamCrest name={league.teamNames.get(p.talentTeamId) ?? "?"} color={colors.get(p.talentTeamId) ?? "#555"} size="xs" />
+                          <Badge tone="accent">talento</Badge>
                         </Link>
                       ) : p.cutByTeamId ? (
                         <Badge tone="warn" title={`Tagliato da ${league.teamNames.get(p.cutByTeamId) ?? "?"}`}>

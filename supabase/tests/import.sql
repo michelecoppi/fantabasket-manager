@@ -116,8 +116,11 @@ begin
   perform imp_t.ok('pick con proprietario ignoto non importata', (select count(*) from draft_picks where year = 2098 and current_team_id is null and to_confirm) = 1);
   perform imp_t.ok('audit_log senza riga di import', exists (select 1 from audit_log where action = 'import' and row_id = '990098'));
 
-  -- Seconda esecuzione identica: stesso risultato, niente duplicati.
+  -- Seconda esecuzione identica: stesso risultato, niente duplicati. Il collegamento del talento al listone sopravvive.
+  update talents set player_id = 910005 where display_name = 'Talento';
   r := public.import_replace_season(pg_temp.payload());
+  perform imp_t.ok('secondo import: il talento ha perso il collegamento al listone',
+    (select player_id from talents where display_name = 'Talento') = 910005 and r->>'talent_links' = '1');
   perform imp_t.ok('secondo import: conteggi diversi', r @> '{"players":2,"contracts":2,"picks":2}'::jsonb and r->>'players_removed' = '0');
   select count(*) into n from players where last_name in ('Alfa', 'Beta');
   perform imp_t.ok('secondo import: giocatori duplicati', n = 2);

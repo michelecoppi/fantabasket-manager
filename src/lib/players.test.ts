@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { filterPlayers, parseFilters, type PlayerFilters, type PlayerListItem } from "./players";
 
 const mk = (id: number, name: string, over: Partial<PlayerListItem> = {}): PlayerListItem => ({
-  id, name, pos: "G", nbaTeam: "LAL", credits: 10, ownerTeamId: null, cutByTeamId: null, restrictedTeamId: null, lastContract: null, ...over,
+  id, name, pos: "G", nbaTeam: "LAL", credits: 10, ownerTeamId: null, talentTeamId: null, cutByTeamId: null, restrictedTeamId: null, lastContract: null, ...over,
 });
 const base: PlayerFilters = { q: "", pos: "", nbaTeam: "", owner: "all", sort: "credits", page: 1 };
 
@@ -44,6 +44,13 @@ describe("stati distinti", () => {
     mk(3, "C", { restrictedTeamId: "t1" }),
     mk(4, "D"),
   ];
+  it("un talento collegato al listone non è libero (R-35)", () => {
+    const withTalent = [...mixed, mk(5, "E", { talentTeamId: "t2" })];
+    expect(filterPlayers(withTalent, { ...base, owner: "free" }).map((p) => p.id)).toEqual([2, 3, 4]);
+    expect(filterPlayers(withTalent, { ...base, owner: "open" }).map((p) => p.id)).toEqual([4]);
+    expect(filterPlayers(withTalent, { ...base, owner: "talent" }).map((p) => p.id)).toEqual([5]);
+    expect(parseFilters({ stato: "talent" }).owner).toBe("talent");
+  });
   it("free = senza contratto, open = solo liberi senza vincoli", () => {
     expect(filterPlayers(mixed, { ...base, owner: "free" }).map((p) => p.id)).toEqual([2, 3, 4]);
     expect(filterPlayers(mixed, { ...base, owner: "open" }).map((p) => p.id)).toEqual([4]);

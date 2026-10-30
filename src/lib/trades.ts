@@ -74,6 +74,10 @@ const FIELD_LABELS: Record<string, string> = {
   bonus: "Bonus",
   entry_fee_paid: "Iscrizione pagata",
   luxury_tax_paid: "Luxury tax pagata",
+  display_name: "Nome",
+  draft_year: "Anno draft",
+  entry_credits: "Valore d'ingresso",
+  notes: "Note",
 };
 
 export function auditChanges(before: Record<string, unknown> | null, after: Record<string, unknown> | null): { field: string; before: string; after: string }[] {
