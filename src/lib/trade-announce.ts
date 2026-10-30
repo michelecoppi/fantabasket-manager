@@ -35,6 +35,8 @@ export interface AnnouncedTeam {
   name: string;
   /** scambi eseguiti in stagione dalla squadra, questo compreso */
   seasonTrades: number;
+  /** posto della squadra tra tutte quelle della lega (per id): ne esce il colore, come `teamColors` (migrazione 20261030180000) */
+  colorIndex?: number;
 }
 export interface AnnouncedMove {
   /** `talent`: diritti su un giocatore della squadra talenti (R-35), 7.6 */
@@ -86,7 +88,7 @@ export function parseAnnouncements(data: unknown): AnnouncedTrade[] {
     const teams = (Array.isArray(r.teams) ? r.teams : []).flatMap((x) => {
       const t = obj(x);
       const tid = str(t.id);
-      return tid ? [{ id: tid, name: str(t.name) ?? "?", seasonTrades: num(t.season_trades) ?? 1 }] : [];
+      return tid ? [{ id: tid, name: str(t.name) ?? "?", seasonTrades: num(t.season_trades) ?? 1, colorIndex: num(t.color_index) }] : [];
     });
     const ids = new Set(teams.map((t) => t.id));
     const moves = (Array.isArray(r.moves) ? r.moves : []).flatMap((x): AnnouncedMove[] => {
@@ -481,4 +483,37 @@ export function announcementText(t: AnnouncedTrade, siteUrl?: string | null): st
   if (fits(full)) return full;
   const short = build(true, Infinity);
   return fits(short) ? short : build(true, SHORT_LIST);
+}
+
+/** Lunghezza massima della didascalia di una foto su Telegram (`sendPhoto`, in caratteri). */
+export const TELEGRAM_CAPTION_MAX = 1024;
+/** Motivazione dell'eccezione al cap in didascalia: è testo libero dell'admin, lo si accorcia. */
+const REASON_MAX = 160;
+
+/**
+ * Didascalia della card dello scambio su Telegram: titolo, squadre, ciò che non entra nell'immagine (`extras`: «…e altri N» della
+ * card), eccezione al cap, battute, chiusura, link. Chi riceve cosa sta già nell'immagine, quindi qui non si ripete. Sta nel
+ * limite di `TELEGRAM_CAPTION_MAX`: se non ci sta perde prima la chiusura, poi le battute (una alla volta), poi gli extra. La prima
+ * battuta di `tradeJokes` sta già nella card, quindi la didascalia usa le successive.
+ */
+export function announcementCaption(t: AnnouncedTrade, extras: { team: string; labels: string[] }[] = [], siteUrl?: string | null): string {
+  const site = siteUrl?.replace(/\/+$/, "");
+  const clip = (s: string) => (s.length > REASON_MAX ? `${s.slice(0, REASON_MAX - 1)}…` : s);
+  const build = (jokes: number, closing: boolean, withExtras: boolean) => {
+    const lines = [`<b>${escapeHtml(pickFor(t, "headline", HEADLINES))}</b>`, t.teams.map((x) => `<b>${escapeHtml(x.name)}</b>`).join(" ⇄ ")];
+    if (withExtras) for (const e of extras) lines.push(`➕ <b>${escapeHtml(e.team)}</b> riceve anche: ${escapeHtml(e.labels.join(", "))}`);
+    if (t.capOverrideReason) lines.push(`⚖️ Eccezione al cap: <i>${escapeHtml(clip(t.capOverrideReason))}</i>`);
+    // la prima battuta è già scritta sulla card (`cardFromAnnounced`): qui si parte dalla seconda
+    const quips = tradeJokes(t).slice(1, 1 + jokes).map((j) => `😏 ${escapeHtml(fillJoke(t, j))}`);
+    if (quips.length) lines.push("", ...quips);
+    if (closing) lines.push("", `<i>${escapeHtml(pickFor(t, "closing", CLOSINGS))}</i>`);
+    if (site) lines.push(`<a href="${escapeHtml(`${site}/storico-scambi`)}">Storico scambi</a>`);
+    return lines.join("\n");
+  };
+  const steps: [number, boolean, boolean][] = [[2, true, true], [1, true, true], [1, false, true], [0, false, true], [0, false, false]];
+  for (const [jokes, closing, withExtras] of steps) {
+    const text = build(jokes, closing, withExtras);
+    if (text.length <= TELEGRAM_CAPTION_MAX) return text;
+  }
+  return build(0, false, false);
 }

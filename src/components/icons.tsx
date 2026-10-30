@@ -114,6 +114,8 @@ const paths = {
       <path d="M9 19l3 3l3 -3" />
     </>
   ),
+  // Condividi la card (share-3)
+  share: <path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z" />,
   search: (
     <>
       <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />

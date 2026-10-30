@@ -48,6 +48,8 @@ Il bot pubblica sul canale ogni scambio eseguito (da `/admin/scambio` o approvan
 4. Metti `TELEGRAM_CHAT_ID=<id>` in `.env.local` e rilancia lo stesso comando: arriva sul canale un annuncio di esempio (con `--dry-run` lo stampa e basta).
 5. Su Vercel aggiungi `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` (Production) e rifai il deploy.
 
+L'annuncio è una foto (la card dello scambio, la stessa di `/card/scambio/<id>`) con una didascalia breve; se la foto non si può disegnare o Telegram la rifiuta, un messaggio di testo con l'elenco completo. Per avere nella card gli stessi colori del sito serve la migrazione `20261030180000_announce_team_colors` (applicata sul progetto reale il 2026-10-30; senza, i colori possono differire). `scripts/telegram-test.ts --dry-run --png=card.png` mostra testo, didascalia e card senza mandare niente.
+
 L'annuncio parte subito dopo l'esecuzione dello scambio. Se Telegram non risponde, lo riprova il cron delle 9 (serve `CRON_SECRET`, vedi Fase 5 in PLAN.md). Gli scambi più vecchi di 72 ore non si annunciano più, così un canale configurato tardi non riceve l'arretrato; quelli registrati prima del bot non si annunciano mai.
 
 ## 4. Aggiornamenti
