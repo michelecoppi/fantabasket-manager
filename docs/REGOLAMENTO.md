@@ -4,7 +4,7 @@ Fonte: `REGOLAMENTO FANTABASKET.docx` ("Aggiornato 28/09/2024", tenuto in locale
 Tutti i valori numerici sono **parametri di lega** (tabella `league_settings`), non costanti nel codice.
 
 ## Organi
-- Presidente: Serde. Moderatore: Amedeo. Applicano le regole, ufficializzano gli scambi, possono autorizzare eccezioni. Nell'app il ruolo `admin` è assegnato a Scuti e Gabby (decisione utente), indipendentemente da presidente/moderatore.
+- Presidente: Serde. Moderatore: Amedeo. Applicano le regole, ufficializzano gli scambi, possono autorizzare eccezioni. Nell'app il ruolo `admin` è assegnato a Amedeo, Gabby, Scuti e Serde (decisione utente, 2026-10-30; in origine solo Scuti e Gabby).
 
 ## Franchigia e rosa
 - R-01 Rosa obbligatoria: **13 titolari + 3..6 riserve**.

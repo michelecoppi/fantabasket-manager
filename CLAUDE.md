@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Gestionale web per una lega privata di fantabasket NBA (8 squadre). Lingua di UI, commenti utente e documenti: **italiano**. Codice e nomi di variabili/tabelle: **inglese**.
 
 ## Stato del progetto
-Sito online: lettura per tutti, pannello admin (firma, contratti, tagli, scambi, pick, quote), dati Dunkest dal cron giornaliero (infortuni, punteggi, classifica, formazioni, leader), proposte di scambio dei proprietari, bot Telegram e card da condividere (Fasi 0-9 in PLAN.md). Aperti: prelazione dei talenti (domanda 4), chiusura stagione (`SEASON_CLOSE_ENABLED = false`) e le voci di «Controllo dello stato» in PLAN.md (backup mai ripristinato, flusso delle proposte mai provato con scritture vere). Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
+Sito online: lettura per tutti, pannello admin (firma, contratti, tagli, scambi, pick, quote), dati Dunkest dal cron giornaliero (infortuni, punteggi, classifica, formazioni, leader), proposte di scambio dei proprietari, bot Telegram e card da condividere (Fasi 0-9 in PLAN.md). Aperti: prelazione dei talenti (domanda 4), chiusura stagione (provata in locale il 2026-10-30, `SEASON_CLOSE_ENABLED` resta `false`) e le voci di «Controllo dello stato» in PLAN.md (backup mai ripristinato, import del foglio da correggere per `safeupdate`). Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
 
 ## Regole di lega
 Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 ed è stato confermato ancora valido (2026-10-21). Dubbi aperti in [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md).
@@ -50,7 +50,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 - Il monte ingaggi include le quote dei tagliati.
 
 ## Ruoli e permessi
-- `admin`: scrive su tutto (quattro profili al 2026-10-30; chi deve esserlo è tra le voci aperte di PLAN.md). `viewer`: sola lettura sulle tabelle; l'unica scrittura è proporre, rispondere o ritirare scambi della propria squadra, solo via RPC `trade_*`.
+- `admin`: scrive su tutto (Amedeo, Gabby, Scuti e Serde: confermati dall'utente il 2026-10-30). `viewer`: sola lettura sulle tabelle; l'unica scrittura è proporre, rispondere o ritirare scambi della propria squadra, solo via RPC `trade_*`.
 - I permessi vanno applicati **nel database con Row Level Security**, non solo nascondendo bottoni nella UI. Ogni tabella: SELECT per utenti autenticati (eccezioni: `audit_log` solo admin, le proposte di scambio solo squadre coinvolte e admin), INSERT/UPDATE/DELETE solo se `is_admin()`.
 - Ogni modifica admin a contratti/pick/budget scrive una riga in `audit_log` (oggi lo fanno le RPC).
 
