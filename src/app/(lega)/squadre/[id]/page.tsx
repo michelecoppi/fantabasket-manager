@@ -53,6 +53,13 @@ function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dun
   );
 }
 
+/** Giocatore del listone collegato a un talento (R-35), nella forma della scheda Dunkest; null se non è collegato. */
+function talentPlayer(x: TeamView["talents"][number]) {
+  if (x.player_id === null || !x.players) return null;
+  const { first_name, last_name, pos, nba_team } = x.players;
+  return { playerId: x.player_id, name: `${first_name} ${last_name}`.trim(), pos, nbaTeam: nba_team };
+}
+
 const injuryNote = (status: string, until: string | null) =>
   status === "season" ? "fuori per la stagione" : status === "doubtful" ? "da valutare prima della partita" : until ? `rientro previsto ${until}` : "indisponibile";
 
@@ -568,14 +575,21 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                 <Empty title="Nessun talento" icon="crown" />
               ) : (
                 <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
-                  {t.talents.map((x) => (
-                    <li key={x.id} className="flex items-center gap-3 px-3 py-2.5">
+                  {t.talents.map((x) => {
+                    const player = talentPlayer(x);
+                    const injury = player && dunkest.injuries.get(player.playerId);
+                    return (
+                    <li key={x.id} className="relative flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface-subtle/60">
+                      {player && dunkest.available && <SheetTrigger id={sheetId(player.playerId)} name={player.name} />}
+                      {player && <PosChip pos={player.pos} />}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{x.display_name}</span>
-                        {x.draft_year && (
-                          <span className="block text-xs text-muted">
-                            draft {x.draft_year}
-                            {x.notes ? ` · ${x.notes}` : ""}
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="truncate font-semibold">{player?.name ?? x.display_name}</span>
+                          {injury && <InjuryChip injury={injury} />}
+                        </span>
+                        {(x.draft_year || player) && (
+                          <span className="block truncate text-xs text-muted">
+                            {[x.draft_year && `draft ${x.draft_year}`, player?.nbaTeam, x.notes].filter(Boolean).join(" · ")}
                           </span>
                         )}
                       </span>
@@ -588,7 +602,8 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                         </span>
                       )}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </Section>
@@ -615,6 +630,11 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
       )}
 
       {dunkest.available && roster.map((p) => <PlayerSheet key={p.playerId} player={{ ...p, owner: { name: t.team.name, color } }} dunkest={dunkest} />)}
+      {dunkest.available &&
+        t.talents.flatMap((x) => {
+          const player = talentPlayer(x);
+          return player ? [<PlayerSheet key={`talento-${x.id}`} player={{ ...player, owner: { name: t.team.name, color } }} dunkest={dunkest} />] : [];
+        })}
     </>
   );
 }
