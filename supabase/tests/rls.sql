@@ -1189,6 +1189,11 @@ begin
             where m ->> 'name' like 'RLS%' and m ? 'salary')
     and not exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'teams') t
                     where t ->> 'name' is null or (t ->> 'season_trades')::int < 1));
+  -- Card su Telegram: il colore di ogni squadra è il suo posto tra tutte le squadre per id, come `teamColors` nel sito.
+  perform rls_t.ok('annuncio senza l''indice del colore',
+    not exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'teams') t
+                where not t ? 'color_index'
+                   or (t ->> 'color_index')::int <> (select count(*) from teams z where z.id < (t ->> 'id')::uuid)));
   -- 7.6: un talento firmato dopo lo scambio resta leggibile dai dati salvati, e dal giocatore collegato.
   perform rls_t.ok('annuncio senza i dati del talento',
     exists (select 1 from jsonb_array_elements(v) x, jsonb_array_elements(x -> 'moves') m
