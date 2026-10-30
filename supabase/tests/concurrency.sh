@@ -183,5 +183,24 @@ grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "4b: deadlock tra approva
 grep -q 'approved:' "$TMP/s1" && grep -q 'CONFLICT' "$TMP/s2" && ok "approvazione contro taglio: nessun deadlock, il taglio dà CONFLICT" \
   || fail "4b: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
 
+# ---------- 5. Firma e scambio dello stesso talento (7.6) ----------
+# Lo scambio blocca le squadre e poi il talento; la firma deve fare lo stesso (squadra, poi talento). La prima sessione prende
+# la squadra A come fa trade_apply, aspetta e poi scambia il talento: con la firma che blocca prima il talento era un deadlock.
+reset
+psqlq -c "delete from talents where id between 910001 and 910099;
+  insert into talents (id, team_id, display_name, draft_year) values (910021, '$TA', 'Conc talento', 2026);" >/dev/null
+RA=$(rev "$TA"); RB=$(rev "$TB")
+REVS="jsonb_build_object('$TA', $RA, '$TB', $RB)"
+session "$TMP/s1" "select roster_rev from teams where id = '$TA' for update;" "select pg_sleep(2);" \
+  "select 'traded:' || public.admin_execute_trade(array['$TA', '$TB']::uuid[], '[{\"kind\":\"talent\",\"id\":910021,\"version\":1,\"from\":\"$TA\",\"to\":\"$TB\"}]'::jsonb, 'conc-test', null, $REVS);" &
+sleep 0.5
+session "$TMP/s2" "select 'signed:' || public.admin_sign_talent(910021, '$TA', 910003, 'reserve', 1, false, 1, null, null, $RA);" &
+wait
+grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "5: deadlock tra firma e scambio di un talento"
+grep -q 'traded:' "$TMP/s1" && grep -q "CONFLICT: il talento è passato" "$TMP/s2" \
+  && [ "$(psqlq -c "select team_id from talents where id = 910021")" = "$TB" ] \
+  && ok "firma contro scambio di un talento: nessun deadlock, la firma dà CONFLICT" \
+  || fail "5: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
+
 if [ "$FAILS" -gt 0 ]; then echo "CONCORRENZA: $FAILS controlli falliti" >&2; exit 1; fi
 echo "CONCORRENZA: tutti i test passati"
