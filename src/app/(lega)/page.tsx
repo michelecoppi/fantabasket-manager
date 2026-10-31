@@ -4,7 +4,7 @@ import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
 import { CountUp } from "@/components/count-up";
 import { DunkestLogo } from "@/components/dunkest";
-import { LeagueSource, StandingsTable, fpt, teamIndex } from "@/components/dunkest-league";
+import { LeagueSource, StandingsTable, fpt, notStarted, teamIndex } from "@/components/dunkest-league";
 import { LeaderList, leaderOwners } from "@/components/leaders";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
@@ -93,36 +93,39 @@ export default async function Home(props: PageProps<"/">) {
   return (
     <>
       <section className="arena sweep -mx-4 sm:mx-0 sm:rounded-3xl lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(24rem,0.9fr)]" aria-labelledby="dashboard-title">
-        <div className="relative z-[2] flex flex-col px-5 py-8 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
+        {/* su telefono la testata è più bassa: la tua franchigia (il dato che si cerca aprendo l'app) arriva prima */}
+        <div className="relative z-[2] flex flex-col px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
           <p className="rise eyebrow flex items-center gap-2 text-white/60">
             <span className="h-2 w-2 rounded-full bg-gold shadow-[0_0_10px_var(--gold)]" />
             Front office · Stagione {league.seasonYear}
           </p>
-          <h1 id="dashboard-title" className="rise font-display mt-5 text-[clamp(3.6rem,8.5vw,7.25rem)] leading-[0.86] font-black tracking-[-0.01em]" style={stagger(1)}>
+          <h1 id="dashboard-title" className="rise font-display mt-4 text-[clamp(3rem,8.5vw,7.25rem)] leading-[0.86] font-black tracking-[-0.01em] sm:mt-5" style={stagger(1)}>
             <span className="block">Il cap detta</span>
-            <span className="outline-text mt-2 block text-highlight sm:mt-3">il gioco.</span>
+            <span className="outline-text mt-1 block text-highlight sm:mt-3">il gioco.</span>
           </h1>
-          <p className="rise mt-6 max-w-md text-sm leading-6 text-white/70 sm:text-base" style={stagger(2)}>
+          <p className="rise mt-6 hidden max-w-md text-sm leading-6 text-white/70 sm:block sm:text-base" style={stagger(2)}>
             Payroll, contratti e pick delle {league.teams.length} franchigie. Ogni mossa di mercato parte da qui.
           </p>
-          <div className="rise mt-7 flex flex-wrap gap-3" style={stagger(3)}>
+          <div className="rise mt-6 grid grid-cols-[1fr_auto] gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3" style={stagger(3)}>
             <Link
               href="/scambio"
-              className="group font-display inline-flex min-h-12 items-center gap-2 rounded-lg bg-gold px-5 text-lg font-extrabold text-nav shadow-[0_10px_30px_-12px_var(--gold)] transition-[filter,transform] hover:brightness-105 active:scale-[0.97]"
+              className="group font-display inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-gold px-4 text-base font-extrabold whitespace-nowrap sm:text-lg text-nav shadow-[0_10px_30px_-12px_var(--gold)] transition-[filter,transform] hover:brightness-105 active:scale-[0.97] sm:px-5"
             >
               <Icon name="swap" size={19} strokeWidth={2.2} />
               Simula uno scambio
-              <Icon name="arrow-right" size={18} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+              <Icon name="arrow-right" size={18} strokeWidth={2.2} className="hidden transition-transform group-hover:translate-x-0.5 sm:block" />
             </Link>
             <Link
               href="/giocatori"
-              className="font-display inline-flex min-h-12 items-center gap-2 rounded-lg border border-white/25 px-5 text-lg font-extrabold transition-colors hover:border-white hover:bg-white/8"
+              aria-label="Apri il listone"
+              className="font-display inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/25 px-3.5 text-base font-extrabold sm:text-lg transition-colors hover:border-white hover:bg-white/8 sm:px-5"
             >
               <Icon name="jersey" size={19} />
-              Apri il listone
+              <span className="hidden sm:inline">Apri il listone</span>
+              <span className="sm:hidden">Listone</span>
             </Link>
           </div>
-          <div className="rise mt-9" style={stagger(4)}>
+          <div className="rise mt-6 sm:mt-9" style={stagger(4)}>
             <Scoreboard
               items={[
                 { label: "Cap base", value: fmt(settings.cap) },
@@ -161,9 +164,12 @@ export default async function Home(props: PageProps<"/">) {
                   href={`/squadre/${myTeam.team.id}#formazione`}
                   className="group mb-2 -mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm transition-colors hover:border-white/25 hover:bg-white/8"
                 >
-                  <span className="font-display tnum grid h-[22px] min-w-[22px] place-items-center rounded-md bg-gold px-1 text-base leading-none font-black text-nav">{myStanding.position}</span>
+                  <span aria-hidden className="font-display tnum grid h-[22px] min-w-[22px] place-items-center rounded-md bg-gold px-1 text-base leading-none font-black text-nav">{myStanding.position}</span>
                   <span className="min-w-0 flex-1 truncate">
-                    <span className="font-bold text-white">{myStanding.position}° in classifica</span>
+                    {/* la posizione è già nel gettone oro accanto */}
+                    <span className="font-bold text-white">
+                      <span className="sr-only">{myStanding.position}° </span>in classifica
+                    </span>
                     <span className="text-white/60">
                       {" "}
                       · {myStanding.wins}–{myStanding.losses}
@@ -171,8 +177,14 @@ export default async function Home(props: PageProps<"/">) {
                         <>
                           {" "}
                           · G{myLatest.matchday}{" "}
-                          {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.homePts : myLatest.match.awayPts)}–
-                          {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.awayPts : myLatest.match.homePts)}
+                          {notStarted(myLatest.match) ? (
+                            <>vs {index.get(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.awayTeamId : myLatest.match.homeTeamId)?.name}</>
+                          ) : (
+                            <>
+                              {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.homePts : myLatest.match.awayPts)}–
+                              {fpt(myLatest.match.homeTeamId === myTeam.team.id ? myLatest.match.awayPts : myLatest.match.homePts)}
+                            </>
+                          )}
                         </>
                       )}
                     </span>
@@ -368,13 +380,22 @@ export default async function Home(props: PageProps<"/">) {
                                 )}
                               </div>
                               <p className="mt-1 truncate text-xs text-muted">
-                                {t.team.owner_name} · bonus {t.bonus > 0 ? "+" : ""}
+                                {t.team.owner_name}
+                                <span className="md:hidden">
+                                  {" "}
+                                  · cap <span className="tnum font-semibold text-foreground/80">{fmt(f.effectiveCap)}</span>
+                                </span>{" "}
+                                · bonus {t.bonus > 0 ? "+" : ""}
                                 {t.bonus}
                               </p>
                             </div>
                             <Icon name="chevron" size={18} className="ml-auto shrink-0 text-muted transition-transform group-hover:translate-x-1 md:hidden" />
                           </div>
-                          <div className="mt-4 max-w-md">
+                          {/* su telefono il meter è sottile e senza etichette: payroll e spazio sono già nei numeri sotto */}
+                          <div className="mt-3.5 md:hidden">
+                            <CapLine payroll={f.payroll} cap={f.effectiveCap} floor={f.floor} compact />
+                          </div>
+                          <div className="mt-4 hidden max-w-md md:block">
                             <CapLine payroll={f.payroll} cap={f.effectiveCap} floor={f.floor} />
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-1.5">

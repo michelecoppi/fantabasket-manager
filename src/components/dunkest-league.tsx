@@ -104,9 +104,11 @@ export function StandingsTable({ league, teams, myTeamId, compact = false }: { l
     <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="eyebrow flex items-center gap-3 border-b border-line bg-surface-subtle/60 px-3 py-2 text-muted sm:px-4">
         <span className="w-7 text-center">#</span>
-        <span className="flex-1">Squadra</span>
+        <span className="flex-1">
+          Squadra<span className="sm:hidden"> · V–P</span>
+        </span>
         {!compact && <span className="hidden w-[7.5rem] sm:block">Forma</span>}
-        <span className="w-12 text-center">V–P</span>
+        <span className="hidden w-12 text-center sm:block">V–P</span>
         <span className="w-[4.5rem] text-right">Punti</span>
       </div>
       <ol>
@@ -124,14 +126,29 @@ export function StandingsTable({ league, teams, myTeamId, compact = false }: { l
                 <TeamCrest name={t.name} color={t.color} size="sm" mine={mine} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold group-hover:underline">{t.name}</span>
-                  {!compact && <span className="block truncate text-xs text-muted">{t.owner}</span>}
+                  {/* su telefono il record scende sotto il nome: la colonna V–P toglierebbe spazio ai nomi lunghi */}
+                  <span className="block truncate text-xs text-muted">
+                    <span className="font-display tnum text-sm font-extrabold text-foreground sm:hidden">
+                      {record}
+                      <span className="sr-only"> vittorie e sconfitte</span>
+                    </span>
+                    {!compact && (
+                      <>
+                        <span aria-hidden className="sm:hidden">
+                          {" "}
+                          ·{" "}
+                        </span>
+                        {t.owner}
+                      </>
+                    )}
+                  </span>
                 </span>
                 {!compact && (
                   <span className="hidden w-[7.5rem] sm:block">
                     <FormPips form={teamForm(league, s.teamId)} />
                   </span>
                 )}
-                <span className="font-display tnum w-12 text-center text-xl leading-none font-extrabold">
+                <span className="font-display tnum hidden w-12 text-center text-xl leading-none font-extrabold sm:block">
                   {record}
                   <span className="sr-only"> vittorie e sconfitte</span>
                 </span>
@@ -165,17 +182,22 @@ function ScoreLine({ teams, teamId, pts, won, decided, myTeamId }: { teams: Team
   );
 }
 
+/** Scontro con 0–0: la giornata è cominciata su Dunkest ma non ci sono ancora punti. */
+export const notStarted = (m: LeagueMatch) => m.homePts === 0 && m.awayPts === 0;
+
 /**
  * Uno scontro come tabellone a due righe: casa sopra, trasferta sotto, chi è avanti in grassetto con la freccia.
  * `live`: l'ultima giornata con punti può essere ancora in corso, quindi si dice «in testa» e non «ha vinto».
  */
 export function MatchScore({ match, teams, myTeamId, live = false }: { match: LeagueMatch; teams: TeamIndex; myTeamId?: string | null; live?: boolean }) {
-  const decided = match.winnerTeamId !== null && match.homePts !== null;
+  // giornata appena cominciata: Dunkest scrive 0–0 prima che si giochi, e un tabellone di zeri sembrerebbe un risultato
+  const waiting = live && notStarted(match);
+  const decided = !waiting && match.winnerTeamId !== null && match.homePts !== null;
   const label = !decided ? null : `${live ? "In testa" : "Vince"} ${team(teams, match.winnerTeamId!).name}`;
   return (
     <div className="space-y-1.5" aria-label={label ?? undefined}>
-      <ScoreLine teams={teams} teamId={match.homeTeamId} pts={match.homePts} won={decided && match.winnerTeamId === match.homeTeamId} decided={decided} myTeamId={myTeamId} />
-      <ScoreLine teams={teams} teamId={match.awayTeamId} pts={match.awayPts} won={decided && match.winnerTeamId === match.awayTeamId} decided={decided} myTeamId={myTeamId} />
+      <ScoreLine teams={teams} teamId={match.homeTeamId} pts={waiting ? null : match.homePts} won={decided && match.winnerTeamId === match.homeTeamId} decided={decided} myTeamId={myTeamId} />
+      <ScoreLine teams={teams} teamId={match.awayTeamId} pts={waiting ? null : match.awayPts} won={decided && match.winnerTeamId === match.awayTeamId} decided={decided} myTeamId={myTeamId} />
     </div>
   );
 }

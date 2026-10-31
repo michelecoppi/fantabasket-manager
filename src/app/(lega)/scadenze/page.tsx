@@ -52,6 +52,7 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
     })
     .filter((g) => g.rows.length > 0);
   const thisYear = groups.find((g) => g.year === league.seasonYear);
+  const colors = teamColors(league.teams.map((t) => t.team.id));
 
   return (
     <>
@@ -143,9 +144,13 @@ export default async function ExpiringPage(props: PageProps<"/scadenze">) {
                     pos={r.player.pos}
                     name={r.player.name}
                     meta={
-                      <Link href={`/squadre/${r.teamId}`} className="hover:underline">
-                        {r.teamName} · {r.player.slot === "reserve" ? "riserva" : "titolare"}
-                        {r.optionSeason ? ` · option fino al ${r.optionSeason}` : ""}
+                      <Link href={`/squadre/${r.teamId}`} className="inline-flex min-w-0 items-center gap-1.5 hover:underline">
+                        {/* lo stemma fa riconoscere la squadra senza leggere: l'elenco mescola tutte le rose */}
+                        <TeamCrest name={r.teamName} color={colors.get(r.teamId) ?? "#555"} size="xs" className="-my-1" />
+                        <span className="min-w-0">
+                          {r.teamName} · {r.player.slot === "reserve" ? "riserva" : "titolare"}
+                          {r.optionSeason ? ` · option fino al ${r.optionSeason}` : ""}
+                        </span>
                       </Link>
                     }
                     badges={(r.player.rookie || r.player.restriction) && <RestrictionBadge rookie={r.player.rookie} restriction={r.player.restriction} />}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MvpStrip } from "@/components/awards";
-import { MatchScore, type TeamIndex } from "@/components/dunkest-league";
+import { MatchScore, notStarted, type TeamIndex } from "@/components/dunkest-league";
 import { Icon, type IconName } from "@/components/icons";
 import { stagger } from "@/components/ui";
 import type { Award } from "@/lib/awards";
@@ -32,10 +32,10 @@ export function MatchdayCard({
   return (
     <section aria-labelledby={`giornata-${day.matchday}`} className="min-w-0 rounded-2xl border border-line bg-surface p-3 sm:p-4">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h3 id={`giornata-${day.matchday}`} className="font-display text-3xl leading-none font-black">
+        <h3 id={`giornata-${day.matchday}`} className="font-display shrink-0 text-3xl leading-none font-black">
           Giornata {day.matchday}
         </h3>
-        <span className="text-xs font-semibold text-muted">{STATE[day.state]}</span>
+        <span className="text-right text-xs font-semibold text-muted">{day.state === "latest" && day.matches.every(notStarted) ? "appena cominciata" : STATE[day.state]}</span>
       </div>
       <ol className="grid gap-2 sm:grid-cols-2">
         {day.matches.map((m, i) => (

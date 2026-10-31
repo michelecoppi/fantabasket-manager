@@ -124,6 +124,11 @@ export function PlayerListing({
         </Empty>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          {/* su telefono le colonne non hanno intestazione: almeno le due cifre a destra dicono cosa sono */}
+          <div aria-hidden className="eyebrow flex justify-end gap-3 border-b border-line bg-surface-subtle/60 px-3 leading-7 text-muted sm:px-4 md:hidden">
+            {withPdk && <span className={`w-12 text-right ${v.sort === "pdk" ? "text-brand-blue" : ""}`}>PDK</span>}
+            <span className={`w-12 text-right ${v.sort === "credits" ? "text-brand-blue" : ""}`}>Crediti</span>
+          </div>
           <div className={`eyebrow hidden border-b border-line bg-surface-subtle/60 px-4 py-2 text-muted ${cols(withPdk)}`}>
             <span>#</span>
             <span>Giocatore</span>
@@ -188,7 +193,14 @@ export function PlayerListing({
                     <PdkCell stats={dunkest.stats.get(p.id)} role={p.pos ? dunkest.roles[p.pos] : dunkest.all} />
                   </span>
                 )}
-                <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black md:w-auto">{p.credits === null ? "–" : fmt(p.credits)}</span>
+                {p.credits === null ? (
+                  <span title="Crediti non indicati nel listone" className="font-display w-12 shrink-0 text-right text-xl leading-none font-extrabold text-muted/60 md:w-auto">
+                    <span aria-hidden>–</span>
+                    <span className="sr-only">Crediti non indicati</span>
+                  </span>
+                ) : (
+                  <span className="font-display tnum w-12 shrink-0 text-right text-2xl leading-none font-black md:w-auto">{fmt(p.credits)}</span>
+                )}
               </li>
             ))}
           </ul>

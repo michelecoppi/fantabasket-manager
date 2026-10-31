@@ -28,9 +28,9 @@ import { standingsByMatchday, teamPositions } from "@/lib/standings-history";
 import { teamColors } from "@/lib/team-colors";
 import { teamValue, valueBoard, valueContracts } from "@/lib/value";
 
-function Roster({ players, dunkest, offset = 0 }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number }) {
+function Roster({ players, dunkest, offset = 0, legend = false }: { players: RosterPlayer[]; dunkest: DunkestView; offset?: number; legend?: boolean }) {
   return (
-    <PlayerList>
+    <PlayerList legend={legend} score={dunkest.available}>
       {players.map((p, i) => {
         const injury = dunkest.injuries.get(p.playerId);
         return (
@@ -408,7 +408,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           label="Sezioni della squadra"
           options={[
             { href: `/squadre/${id}`, label: "Rosa", hint: "titolari, riserve, infortuni", icon: "jersey", active: tab === "rosa" },
-            { href: `/squadre/${id}?vista=dunkest`, label: "Su Dunkest", hint: "formazione, cambi, rivalità", icon: "ball", active: tab === "dunkest" },
+            { href: `/squadre/${id}?vista=dunkest`, label: "Su Dunkest", short: "Dunkest", hint: "formazione, cambi, rivalità", icon: "ball", active: tab === "dunkest" },
             { href: `/squadre/${id}?vista=vetrina`, label: "Vetrina", hint: "anelli e trofei", icon: "trophy", active: tab === "vetrina" },
             { href: `/squadre/${id}?vista=pick`, label: "Pick", hint: "pick, talenti e tagli", icon: "ticket", active: tab === "pick" },
           ]}
@@ -434,7 +434,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
                     return (
                       <div key={p}>
                         <h3 className="eyebrow mb-1.5 text-muted">{POS_LABEL[p]}</h3>
-                        <Roster players={group} dunkest={dunkest} offset={gi * 5} />
+                        <Roster players={group} dunkest={dunkest} offset={gi * 5} legend={p === positions.find((x) => t.starters.some((s) => s.pos === x))} />
                       </div>
                     );
                   })}
@@ -461,7 +461,7 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
           <div>
             <Infirmary players={roster} dunkest={dunkest} />
             <Section title="Riserve" icon="clipboard" aside={`${t.reserves.length} (min ${league.settings.reserveMin}, max ${league.settings.reserveMax})`}>
-              {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} dunkest={dunkest} />}
+              {t.reserves.length === 0 ? <Empty title="Nessuna riserva" icon="clipboard" /> : <Roster players={t.reserves} dunkest={dunkest} legend />}
             </Section>
 
           </div>
