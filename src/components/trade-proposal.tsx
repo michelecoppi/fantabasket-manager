@@ -253,14 +253,17 @@ function Answers({ p, name, color }: { p: Proposal; name: (id: string) => string
         const state = a ? (a.answer === "accept" ? "ha accettato" : "ha rifiutato") : p.status === "pending" ? "deve rispondere" : "non ha risposto";
         const tone = a?.answer === "accept" ? "text-success" : a?.answer === "reject" ? "text-danger" : "text-muted";
         return (
-          <li key={id} className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pr-3 pl-1 text-xs">
-            <TeamCrest name={name(id)} color={color(id)} size="xs" />
-            <span className="truncate font-semibold">{name(id)}</span>
-            <span className={`inline-flex shrink-0 items-center gap-0.5 font-bold ${tone}`}>
-              <Icon name={a?.answer === "accept" ? "check" : a?.answer === "reject" ? "x" : "clock"} size={13} strokeWidth={2.6} />
-              {state}
+          // la nota va sotto la pillola: sul telefono nome e stato riempiono la riga e in linea `truncate` la farebbe sparire
+          <li key={id} className={a?.note ? "flex w-full min-w-0 flex-col gap-1" : "contents"}>
+            <span className="inline-flex min-h-9 max-w-full items-center gap-1.5 self-start rounded-full border border-line bg-surface py-0.5 pr-3 pl-1 text-xs">
+              <TeamCrest name={name(id)} color={color(id)} size="xs" />
+              <span className="truncate font-semibold">{name(id)}</span>
+              <span className={`inline-flex shrink-0 items-center gap-0.5 font-bold ${tone}`}>
+                <Icon name={a?.answer === "accept" ? "check" : a?.answer === "reject" ? "x" : "clock"} size={13} strokeWidth={2.6} />
+                {state}
+              </span>
             </span>
-            {a?.note && <span className="truncate text-muted">· «{a.note}»</span>}
+            {a?.note && <blockquote className="ml-3 border-l-2 border-line pl-3 text-sm break-words whitespace-pre-line">{a.note}</blockquote>}
           </li>
         );
       })}
