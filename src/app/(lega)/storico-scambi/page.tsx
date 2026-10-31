@@ -73,7 +73,11 @@ export default async function TradeHistoryPage({ searchParams }: PageProps<"/sto
         <p className="text-sm text-muted">Storico non disponibile: {error.message}</p>
       ) : trades.length === 0 ? (
         <Empty title="Nessuno scambio registrato" icon="swap">
-          Gli scambi compariranno qui appena un admin li registra.
+          Gli scambi compariranno qui appena un admin li registra. Intanto puoi{" "}
+          <Link href="/scambio" className="font-semibold text-brand-blue underline underline-offset-4">
+            simularne uno o proporlo
+          </Link>
+          .
         </Empty>
       ) : (
         <Section title="Scambi" icon="swap" aside={`${count ?? trades.length} in archivio`}>

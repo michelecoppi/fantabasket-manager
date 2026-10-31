@@ -56,6 +56,20 @@ export function PlayerRow({
   );
 }
 
-export function PlayerList({ children }: { children: ReactNode }) {
-  return <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">{children}</ul>;
+/**
+ * Lista di `PlayerRow`. `legend`: intestazione delle due cifre a destra (PDK blu e crediti), che senza etichetta su telefono
+ * sembrano due numeri qualsiasi; `score` se c'è la colonna PDK.
+ */
+export function PlayerList({ children, legend = false, score = false }: { children: ReactNode; legend?: boolean; score?: boolean }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      {legend && (
+        <div className="eyebrow flex justify-end gap-3 border-b border-line bg-surface-subtle/60 px-3 leading-7 text-muted sm:px-4">
+          {score && <span className="w-12 text-right text-brand-blue">PDK</span>}
+          <span className="w-12 text-right">Crediti</span>
+        </div>
+      )}
+      <ul className="divide-y divide-line">{children}</ul>
+    </div>
+  );
 }

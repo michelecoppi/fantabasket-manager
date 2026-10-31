@@ -207,6 +207,16 @@ Prova su uno stack Supabase locale in Docker (Postgres, Auth, PostgREST, gateway
 - Non provato: annuncio Telegram (token vuoti di proposito), sync Dunkest, «Rimanda alle squadre», eccezione al cap (R-57) sulle proposte, chiusura con tagli `pending` o con tax non pagata, pagine di sola lettura dopo la chiusura oltre alla home. In locale i contratti senza durata erano 0 (il foglio ha già le durate), sul reale sono 5: vanno impostati prima di chiudere
 - Per rifare la prova: `supabase start` da una cartella con `supabase/migrations` e `seed.sql` copiati dal repo (CLI via `npx supabase@2.122.0`, escludendo realtime, storage, studio e simili), poi import con `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321` e la chiave locale. Per l'import serve togliere `safeupdate` al ruolo con `alter role authenticator set session_preload_libraries = supautils;` da `supabase_admin` (e rimetterlo scrivendo `supautils, safeupdate` senza apici, altrimenti PostgREST non parte)
 
+## Rifiniture grafiche e viste poco chiare (2026-10-31, branch `feat/arricchimento-grafico`)
+Giro di tutte le pagine a 375 px e 1440 px, chiaro e scuro, con login reale; solo presentazione (nessun dato, regola, action o RPC toccati).
+- [x] Giornata appena cominciata: Dunkest scrive 0–0 prima che si giochi e il tabellone mostrava quattro «0 0» come risultati. Ora `notStarted` mostra «–», niente vincitore e «appena cominciata» (home, classifica, calendario, pagina squadra); in home la riga della tua franchigia dice «G5 vs OKCC» invece di «G5 0–0»
+- [x] Classifica su telefono: il record V–P scende sotto il nome (con il proprietario), così i nomi lunghi non sono più tagliati a «Atlanto N…»
+- [x] Home su telefono: testata più bassa (titolo più piccolo, frase sotto il titolo solo da `sm`, pulsanti «Simula uno scambio» e «Listone» sulla stessa riga) per arrivare prima alla tua franchigia; nel board il payroll non compare più due volte (meter sottile senza etichette, cap effettivo accanto al proprietario)
+- [x] Pagina squadra: linguetta «Dunkest» su telefono (era «Su Dunk…», nuovo `short` di `ViewSwitch`); intestazione «PDK · Crediti» sopra titolari e riserve (`PlayerList legend`)
+- [x] Listone: stessa intestazione su telefono; i crediti mancanti sono un «–» grigio invece di un trattino nero grande; il tabellone a 7 numeri non lascia più una cella vuota (l'ultima cella dello `Scoreboard` occupa le colonne rimaste)
+- [x] Draft: la pagina è una pila di righe compatte (`DraftFold`). Gli anni di fila senza scambi né pick da confermare sono una riga sola che non si apre («Draft 2027–2029 · Nessuno scambio»); un anno con scambi è una riga chiusa con il numero di scelte scambiate, gli stemmi di chi le ha ricevute e le pick da confermare, e la griglia si apre al tocco; anche «Ordine del draft 2026» è chiuso, col numero di scelte e la prima scelta nel riassunto (richiesta dell'utente: navigazione più semplice)
+- [x] Scadenze: stemma della squadra accanto al nome in ogni riga; storico scambi vuoto: link al simulatore
+
 ## Fuori scope per ora
 Gestire punteggi e formazioni (restano su Dunkest: l'app legge punteggio medio, partite giocate, classifica, calendario e formazioni, Fase 5), staff fantasia, asta live in tempo reale (valutare in futuro).
 

@@ -118,14 +118,19 @@ export function PageTitle({ children, sub, eyebrow, icon, aside }: { children: R
   );
 }
 
+// Ultima cella del tabellone a griglia: occupa le colonne rimaste, così non resta un buco vuoto in fondo (7 numeri del listone).
+const SM_SPAN = ["", "sm:col-span-4", "sm:col-span-3", "sm:col-span-2"];
+
 /** Numeri chiave dentro una superficie scura (PageTitle aside, hero): stile tabellone. */
 export function Scoreboard({ items }: { items: { label: string; value: ReactNode; tone?: "bad" | "gold" }[] }) {
+  const grid = items.length > 3;
+  const lastSpan = grid ? `${items.length % 2 ? "col-span-2" : ""} ${SM_SPAN[items.length % 4]}` : "";
   return (
     <dl
-      className={`grid gap-px overflow-hidden rounded-xl border border-white/12 bg-white/12 ${items.length > 3 ? "grid-cols-2 sm:grid-cols-4" : "auto-cols-fr grid-flow-col"}`}
+      className={`grid gap-px overflow-hidden rounded-xl border border-white/12 bg-white/12 ${grid ? "grid-cols-2 sm:grid-cols-4" : "auto-cols-fr grid-flow-col"}`}
     >
-      {items.map((it) => (
-        <div key={it.label} className="flex min-w-0 flex-col justify-between gap-0.5 bg-board px-3.5 py-3 backdrop-blur-sm sm:px-5">
+      {items.map((it, i) => (
+        <div key={it.label} className={`flex min-w-0 flex-col justify-between gap-0.5 bg-board px-3.5 py-3 backdrop-blur-sm sm:px-5 ${i === items.length - 1 ? lastSpan : ""}`}>
           <dt className="eyebrow leading-tight text-white/55">{it.label}</dt>
           <dd className={`font-display tnum text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-arena-bad" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
         </div>

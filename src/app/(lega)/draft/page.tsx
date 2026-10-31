@@ -1,8 +1,56 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { TeamCrest } from "@/components/crest";
-import { Badge, PageTitle, Scoreboard, Section, stagger } from "@/components/ui";
+import { Icon, type IconName } from "@/components/icons";
+import { Badge, PageTitle, Scoreboard, stagger } from "@/components/ui";
 import { loadLeague } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
+
+/**
+ * Blocco della pagina come riga compatta: titolo e riassunto, la tabella si apre al tocco. Con `children` assente (anno senza
+ * movimenti) resta una riga tratteggiata che non si apre. Così la pagina si scorre in un colpo d'occhio anche su telefono.
+ */
+function DraftFold({ title, icon, summary, children }: { title: string; icon: IconName; summary: ReactNode; children?: ReactNode }) {
+  const head = (
+    <>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold">
+        <Icon name={icon} size={18} strokeWidth={2} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <h2 className="font-display text-2xl leading-none font-extrabold sm:text-3xl">{title}</h2>
+        <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">{summary}</span>
+      </span>
+    </>
+  );
+  if (!children)
+    return (
+      <section className="rise mt-4 flex items-center gap-3 rounded-2xl border border-dashed border-line bg-surface px-4 py-3.5">{head}</section>
+    );
+  return (
+    <details className="group rise mt-4">
+      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 transition-colors hover:border-foreground/25 group-open:border-brand-blue/40 [&::-webkit-details-marker]:hidden">
+        {head}
+        <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold text-brand-blue">
+          <span className="hidden sm:inline sm:group-open:hidden">Mostra</span>
+          <span className="hidden sm:group-open:inline">Chiudi</span>
+          <Icon name="chevron" size={18} strokeWidth={2.2} className="rotate-90 transition-transform group-open:-rotate-90" />
+        </span>
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
+
+/** Stemmi in fila, sovrapposti: chi ha ricevuto le pick di un anno. */
+function CrestStack({ ids, name, color }: { ids: string[]; name: (id: string) => string; color: (id: string) => string }) {
+  return (
+    <span className="flex -space-x-1.5" aria-hidden>
+      {ids.map((id) => (
+        <TeamCrest key={id} name={name(id)} color={color(id)} size="xs" />
+      ))}
+    </span>
+  );
+}
 
 export default async function DraftPage() {
   const league = await loadLeague();
@@ -14,6 +62,10 @@ export default async function DraftPage() {
   const color = (id: string | null) => (id ? colors.get(id) ?? "#555" : "#555");
   const hasPending = league.picks.some((p) => p.to_confirm);
   const traded = league.picks.filter((p) => p.current_team_id !== p.original_team_id).length;
+  const untouched = (y: number) => {
+    const picks = league.picks.filter((p) => p.year === y);
+    return picks.length === league.teams.length * roundCount && picks.every((p) => p.current_team_id === p.original_team_id && !p.to_confirm);
+  };
   // L'ordine del draft si registra alla chiusura: il proprietario di adesso si legge dalle pick, così gli scambi successivi si vedono.
   const slot = (r: (typeof league.rookieDraft)[number]) => {
     if (!r.original_team_id) return { teamId: r.team_id, note: r.note };
@@ -24,6 +76,8 @@ export default async function DraftPage() {
   };
   const perRound = Math.max(1, league.teams.length);
   const orderRounds = [...new Set(league.rookieDraft.map((r) => Math.ceil(r.pick_no / perRound)))];
+  const firstPick = league.rookieDraft.find((r) => r.pick_no === 1) ?? league.rookieDraft[0];
+  const first = firstPick ? slot(firstPick) : null;
 
   return (
     <>
@@ -49,11 +103,50 @@ export default async function DraftPage() {
         Draft
       </PageTitle>
 
-      {years.map((y) => {
+      {years.map((y, yi) => {
         const picks = league.picks.filter((p) => p.year === y);
         const moved = picks.filter((p) => p.current_team_id !== p.original_team_id).length;
+        // Anni di fila senza movimenti (nessuno scambio, niente da confermare, nessun buco): griglie di soli pallini grigi non
+        // dicono niente, basta una riga per tutto il blocco.
+        if (untouched(y)) {
+          if (yi > 0 && untouched(years[yi - 1])) return null;
+          const end = years.findIndex((x, i) => i > yi && !untouched(x));
+          const run = years.slice(yi, end === -1 ? undefined : end);
+          const last = run[run.length - 1];
+          return (
+            <DraftFold
+              key={y}
+              title={last === y ? `Draft ${y}` : `Draft ${y}–${last}`}
+              icon="ticket"
+              summary={
+                <span>
+                  <span className="font-semibold text-foreground">Nessuno scambio:</span> {run.length > 1 ? "ogni anno" : "tutte"} le {picks.length} scelte sono delle squadre di
+                  origine
+                </span>
+              }
+            />
+          );
+        }
+        const receivers = [...new Set(picks.filter((p) => p.current_team_id && p.current_team_id !== p.original_team_id).map((p) => p.current_team_id!))];
+        const pending = picks.filter((p) => p.to_confirm).length;
         return (
-          <Section key={y} title={`Draft ${y}`} icon="ticket" aside={`${moved} scelte scambiate`}>
+          <DraftFold
+            key={y}
+            title={`Draft ${y}`}
+            icon="ticket"
+            summary={
+              <>
+                <span>
+                  <span className="font-semibold text-foreground">
+                    {moved} {moved === 1 ? "scelta scambiata" : "scelte scambiate"}
+                  </span>
+                  {receivers.length > 0 && " · ora a"}
+                </span>
+                {receivers.length > 0 && <CrestStack ids={receivers} name={name} color={color} />}
+                {pending > 0 && <Badge tone="warn">{pending} da confermare</Badge>}
+              </>
+            }
+          >
             <div role="region" aria-label={`Pick del draft ${y} per squadra, scorri in orizzontale`} tabIndex={0} className="overflow-x-auto rounded-2xl border border-line bg-surface">
               <table className="w-full min-w-[21rem] border-collapse text-sm md:min-w-[40rem]">
                 <caption className="sr-only">Chi possiede ora ogni pick del draft {y}, per squadra di origine e giro</caption>
@@ -117,12 +210,26 @@ export default async function DraftPage() {
                 </tbody>
               </table>
             </div>
-          </Section>
+          </DraftFold>
         );
       })}
 
-      {league.rookieDraft.length > 0 && (
-        <Section title={`Ordine del draft ${league.seasonYear}`} icon="trophy" aside={`${league.rookieDraft.length} scelte`}>
+      {first && (
+        <DraftFold
+          title={`Ordine del draft ${league.seasonYear}`}
+          icon="trophy"
+          summary={
+            <>
+              <span>
+                <span className="font-semibold text-foreground">{league.rookieDraft.length} scelte</span> in {orderRounds.length} giri · 1ª a
+              </span>
+              <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+                <TeamCrest name={name(first.teamId)} color={color(first.teamId)} size="xs" />
+                <span className="truncate">{name(first.teamId)}</span>
+              </span>
+            </>
+          }
+        >
           <div className="space-y-6">
             {orderRounds.map((round) => (
               <div key={round}>
@@ -153,7 +260,7 @@ export default async function DraftPage() {
               </div>
             ))}
           </div>
-        </Section>
+        </DraftFold>
       )}
     </>
   );

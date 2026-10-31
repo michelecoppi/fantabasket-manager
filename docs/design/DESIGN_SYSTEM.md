@@ -130,6 +130,8 @@ Solo `Icon` di `src/components/icons.tsx`, con i tracciati di [Tabler Icons](htt
 
 ## Storia
 
+- 2026-10-31: rifiniture di viste poco chiare (PLAN.md, «Rifiniture grafiche»): scontri 0–0 di una giornata appena cominciata mostrati come «–» (`notStarted`), record sotto il nome nella classifica su telefono, testata della home più bassa su telefono, `ViewSwitch` con `short`, `PlayerList` con `legend` (PDK · Crediti), ultima cella dello `Scoreboard` che riempie la riga, pagina draft come righe che si aprono (`DraftFold` con `details`: griglia di un anno e ordine del draft chiusi, riassunto con stemmi; anni senza scambi in una riga sola che non si apre), stemma nelle righe delle scadenze. Nessuna icona nuova.
+
 - 2026-10-30: card da condividere (Fase 9): `card-parts.tsx`, `card-mvp.tsx`, `card-premi.tsx`, `card-scambio.tsx`, `share-card.tsx`, icona Tabler `share-3`, font OFL di Big Shoulders e Archivo copiati in `src/assets/card/`.
 - 2026-10-30: talenti negli scambi (7.6). `TalentChip` (corona su `bg-brand-blue/10`, oro nel tema scuro, stessa misura di `PosChip`) e `talentDetails()` in `trade-parts.tsx`, usati da trade machine, esito e carte delle proposte; storico scambi con «Diritti su …». Nessuna icona nuova (`crown` esistente).
 - 2026-10-29: albo d'oro (`history.tsx`, pagina `/storia`, anello del campione). Nessuna icona nuova (`medal`, `crown`, `shield`, `clipboard`, `clock` esistenti).
