@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
 import { loadLeague, loadProfile, loadProposals, loadTradeMarket, loadVersions } from "@/lib/league-server";
 import { createClient } from "@/lib/supabase/server";
+import { announceRumorsQuietly } from "@/lib/telegram";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
 
@@ -95,7 +97,10 @@ export async function answerProposal(input: { id: number; version: number; answe
   refresh();
   if (input.answer === "reject") return done("Proposta rifiutata.");
   const accepts = proposal.answers.filter((a) => a.answer === "accept").length + 1;
-  return done(accepts >= proposal.teams.length - 1 ? "Accettata da tutte le squadre: ora la approva un admin." : "Hai accettato: manca la risposta delle altre squadre.");
+  if (accepts < proposal.teams.length - 1) return done("Hai accettato: manca la risposta delle altre squadre.");
+  // Tutte d'accordo: sul canale esce il rumor (solo i nomi delle squadre), così gli admin vedono che c'è da approvare.
+  after(async () => announceRumorsQuietly(await createClient()));
+  return done("Accettata da tutte le squadre: ora la approva un admin.");
 }
 
 export async function withdrawProposal(input: { id: number; version: number }): Promise<ActionResult> {
