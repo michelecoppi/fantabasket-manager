@@ -860,6 +860,7 @@ declare
   p int;
   p2 int;
   v int;
+  v2 jsonb;
   n int;
   tr int;
   f text;
@@ -948,6 +949,26 @@ begin
     (select status from trade_proposals where id = p) = 'accepted'
     and exists (select 1 from trade_proposal_answers where proposal_id = p and team_id = t2 and user_id = rls_t.admin() and answer = 'accept')
     and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'accepted' and team_id = t2 and note = 'Va bene'));
+
+  -- Rumors di trade: la proposta accettata da tutti (in attesa dell'admin) esce una volta sola, con i soli nomi delle squadre.
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon prende i rumors', rls_t.try('select public.trade_rumor_claim(null, 24)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon libera un rumor', rls_t.try(format('select public.trade_rumor_done(null, %s, false)', p)), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.ok('rumor di una squadra estranea', public.trade_rumor_claim(null, 24) = '[]'::jsonb);
+  perform rls_t.chk('estraneo libera un rumor', rls_t.try(format('select public.trade_rumor_done(null, %s, false)', p)), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('età massima dei rumors non valida', rls_t.try('select public.trade_rumor_claim(null, 0)'), array['error: INVALID%']);
+  v2 := public.trade_rumor_claim(null, 24);
+  perform rls_t.ok('rumor non dato',
+    jsonb_array_length(v2) = 1 and (v2 -> 0 ->> 'id')::int = p and jsonb_array_length(v2 -> 0 -> 'teams') = 2
+    and not (v2 -> 0) ? 'moves');
+  perform rls_t.ok('rumor dato due volte', public.trade_rumor_claim(null, 24) = '[]'::jsonb);
+  perform public.trade_rumor_done(null, p, false);
+  perform rls_t.ok('rumor non riprovato dopo un invio fallito', jsonb_array_length(public.trade_rumor_claim(null, 24)) = 1);
+  perform public.trade_rumor_done(null, p, true);
+  perform rls_t.ok('rumor ridato dopo l''invio riuscito', public.trade_rumor_claim(null, 24) = '[]'::jsonb);
+  perform rls_t.become('postgres');
 
   -- Approvazione: esegue lo scambio, collega `trades`, supera le altre proposte con gli stessi giocatori.
   perform rls_t.become('authenticated', rls_t.viewer());

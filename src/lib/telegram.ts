@@ -1,12 +1,14 @@
 // Bot Telegram (Fase 7.5): l'unico punto dell'app che chiama Telegram. Annuncia sul canale della lega gli scambi eseguiti, come
 // foto (la card di `components/card-scambio.tsx`) con una didascalia breve; se la foto non si può disegnare o Telegram la rifiuta,
 // come messaggio di testo con l'elenco completo.
+// Prima dell'approvazione manda anche un «rumor» (solo i nomi delle squadre) quando tutte hanno accettato una proposta (`announceRumors`).
 // Lo usano le action admin subito dopo uno scambio (sessione admin, segreto null, dentro `after`) e il cron giornaliero
 // (`/api/dunkest`, con il segreto) come rete per gli invii falliti. Senza TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID non fa nulla:
 // gli scambi restano in coda (`trades.announced_at` vuoto) fino a ANNOUNCE_MAX_AGE_HOURS.
 import type { createClient } from "@/lib/supabase/server";
 import { announcedTeamColor, cardFromAnnounced, type TradeCardModel } from "./trade-card";
 import { ANNOUNCE_MAX_AGE_HOURS, announcementCaption, announcementText, parseAnnouncements, type AnnouncedTrade } from "./trade-announce";
+import { RUMOR_MAX_AGE_HOURS, parseRumors, rumorText } from "./trade-rumor";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -121,6 +123,40 @@ export async function announceTrades(db: Db, secret: string | null, render: Card
     if (done.error) errors.push(`scambio n. ${trade.id}: esito non salvato (${done.error.message})`);
   }
   return { skipped: false, sent, errors };
+}
+
+/**
+ * Rumors di trade: per ogni proposta accettata da tutte le squadre e in attesa dell'admin, un messaggio con i soli nomi delle
+ * squadre. La presa segna subito l'ora (niente doppi messaggi); se l'invio fallisce si libera e si riprova al giro dopo.
+ * `secret` null: sessione di un admin o di un proprietario (vede solo le proposte della sua squadra).
+ */
+export async function announceRumors(db: Db, secret: string | null): Promise<AnnounceResult> {
+  const cfg = telegramConfig();
+  if (!cfg) return { skipped: true };
+  const claim = await db.rpc("trade_rumor_claim", { p_secret: secret, p_max_age_hours: RUMOR_MAX_AGE_HOURS });
+  if (claim.error) return { skipped: false, sent: 0, errors: [claim.error.message] };
+  let sent = 0;
+  const errors: string[] = [];
+  for (const rumor of parseRumors(claim.data)) {
+    const res = await sendTelegram(cfg, rumorText(rumor));
+    if (res.ok) sent++;
+    else {
+      errors.push(`rumor della proposta n. ${rumor.id}: ${res.error}`);
+      const done = await db.rpc("trade_rumor_done", { p_secret: secret, p_id: rumor.id, p_ok: false });
+      if (done.error) errors.push(`rumor della proposta n. ${rumor.id}: presa non liberata (${done.error.message})`);
+    }
+  }
+  return { skipped: false, sent, errors };
+}
+
+/** Per le action dei proprietari: fa uscire il rumore senza mai far fallire chi risponde. */
+export async function announceRumorsQuietly(db: Db): Promise<void> {
+  try {
+    const res = await announceRumors(db, null);
+    if (!res.skipped && res.errors.length) console.error(`[telegram] ${res.errors.join("; ")}`);
+  } catch (e) {
+    console.error(`[telegram] rumor non riuscito: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 /** Per le action: annuncia senza mai far fallire chi la chiama. */

@@ -2,7 +2,7 @@ import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
-import { announceTrades } from "@/lib/telegram";
+import { announceRumors, announceTrades } from "@/lib/telegram";
 
 /**
  * Cron giornaliero di Vercel (vercel.json, `0 8 * * *` UTC = 9:00 italiane in ora solare): aggiorna punteggio, partite giocate e
@@ -37,6 +37,12 @@ export async function GET(request: Request) {
   if (!announced.skipped) {
     if (announced.sent) console.log(`[telegram] ${announced.sent} scambi annunciati`);
     if (announced.errors.length) console.error(`[telegram] ${announced.errors.join("; ")}`);
+  }
+  // Rumors di trade mancati (proposte accettate da tutte le squadre e ancora da approvare), come rete per l'action dei proprietari.
+  const rumors = await announceRumors(db, secret);
+  if (!rumors.skipped) {
+    if (rumors.sent) console.log(`[telegram] ${rumors.sent} rumors`);
+    if (rumors.errors.length) console.error(`[telegram] ${rumors.errors.join("; ")}`);
   }
   // Partite NBA per giorno e giornate fantasy: per ultime, perché il primo recupero è il giro più lungo e, se sfora i 60 secondi, deve
   // saltare solo questo passo (scadenze e Telegram sono già fatte). Dopo statistiche (giocatori collegati) e lega (giornata in corso).
