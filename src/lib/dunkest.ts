@@ -260,7 +260,7 @@ export function findNewPlayers(players: DbPlayer[], stats: SourceStat[]): NewPla
 export interface SyncPayload {
   season_id: number;
   links: { player_id: number; dunkest_id: number }[];
-  stats: { player_id: number; gp: number; pdk: number; min: number; pts: number; reb: number; ast: number }[];
+  stats: { player_id: number; credits: number | null; gp: number; pdk: number; min: number; pts: number; reb: number; ast: number }[];
   injuries: { player_id: number; injured_on: string | null; injury: string; description: string }[];
   source_updated_at: string | null;
   report: LinkReport;
@@ -286,7 +286,7 @@ export function buildSyncPayload(
     const pid = links.get(s.dunkestId);
     if (pid === undefined || statPlayers.has(pid)) continue;
     statPlayers.add(pid);
-    statRows.push({ player_id: pid, gp: s.gp, pdk: s.pdk, min: s.min, pts: s.pts, reb: s.reb, ast: s.ast });
+    statRows.push({ player_id: pid, credits: s.credits, gp: s.gp, pdk: s.pdk, min: s.min, pts: s.pts, reb: s.reb, ast: s.ast });
   }
   const injuryPlayers = new Set<number>();
   const injuryRows: SyncPayload["injuries"] = [];

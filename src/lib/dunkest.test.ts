@@ -180,6 +180,16 @@ describe("buildSyncPayload", () => {
     expect(p.source_updated_at).toBe("2026-10-27T02:30:05Z");
   });
 
+  it("porta i crediti di oggi (null se Dunkest non ne dà uno) perché il job li riscriva", () => {
+    const priced = parseStats([
+      { id: "248", gp: "4", first_name: "Nikola", last_name: "Jokic", team_name: "Denver Nuggets", position: "C", cr: "29.5", pdk: "27.5" },
+      { id: "9", gp: "1", first_name: "Jalen", last_name: "Williams", team_name: "Oklahoma City Thunder", position: "A", cr: "0", pdk: "5.0" },
+    ]);
+    const out = buildSyncPayload(7, players, priced, { updatedAt: null, injuries: [] });
+    expect(out.stats.find((s) => s.player_id === 1)?.credits).toBe(29.5);
+    expect(out.stats.find((s) => s.player_id === 3)?.credits).toBeNull();
+  });
+
   it("report: provvisori, giocatori in rosa senza statistiche, infortunati non collegati", () => {
     expect(p.report.provisional).toEqual(["A.Walker"]);
     expect(p.report.rosteredWithoutStats).toEqual(["Cooper Flagg"]);
