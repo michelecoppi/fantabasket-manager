@@ -2,6 +2,7 @@
 // Pura e testata: la server action calcola il piano qui e la RPC `admin_close_season` lo applica in una transazione,
 // senza ricalcolare nulla (regole solo in TypeScript, come per `cap.ts`).
 import type { LeagueSettings } from "./cap";
+import { draftRoundOrder, type LotteryRecord } from "./draft-lottery";
 import { fmtEuro } from "./format";
 
 /**
@@ -78,7 +79,13 @@ export interface ClosePlan {
   summary: string;
 }
 
-const isPermutation = (a: string[], b: string[]) => a.length === b.length && new Set(a).size === a.length && a.every((x) => b.includes(x));
+/** Classifica e prime scelte del draft dal sorteggio salvato (R-32, issue #103): alla chiusura l'admin non le sceglie più. */
+export const lotteryChoices = (r: Pick<LotteryRecord, "ranking" | "draws">): Pick<CloseChoices, "ranking" | "lottery"> => ({
+  ranking: r.ranking,
+  lottery: [...r.draws].sort((a, b) => a.pick - b.pick).map((d) => d.teamId),
+});
+
+const isPermutation =(a: string[], b: string[]) => a.length === b.length && new Set(a).size === a.length && a.every((x) => b.includes(x));
 
 /**
  * R-23 / R-24: a fine contratto il vecchio proprietario può pareggiare (restricted), salvo mezza stagione
@@ -112,7 +119,7 @@ export function planSeasonClose(input: CloseInput, choices: CloseChoices, s: Lea
   else if (rankingOk) {
     const bottom = choices.ranking.slice(n - lotteryN);
     if (!isPermutation(choices.lottery, bottom)) errors.push(`Lottery: indica le ${lotteryN} squadre dal ${n - lotteryN + 1}° al ${n}° posto, ognuna una volta.`);
-    else order = [...choices.lottery, ...choices.ranking.slice(0, n - lotteryN).reverse()];
+    else order = draftRoundOrder(choices.ranking, choices.lottery);
   }
   if (order.length > 0) {
     const draftPicks = input.picks.filter((p) => p.year === newYear);

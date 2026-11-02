@@ -186,6 +186,12 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     for (let i = 1; m.has(`rank_bonus_${i}`); i++) out.push(get(`rank_bonus_${i}`));
     return out.length ? out : [get("rank_bonus_1")];
   };
+  // R-32: lottery_weight_1..N, biglietti della lottery dall'ultima della classifica in su; almeno il primo è obbligatorio.
+  const lotteryWeights = () => {
+    const out: number[] = [];
+    for (let i = 1; m.has(`lottery_weight_${i}`); i++) out.push(get(`lottery_weight_${i}`));
+    return out.length ? out : [get("lottery_weight_1")];
+  };
   return {
     cap: get("cap"),
     reserveBudget: get("reserve_budget"),
@@ -207,6 +213,7 @@ export function settingsFromRows(rows: SettingRow[]): LeagueSettings {
     draftRounds: get("draft_rounds"),
     rankBonus: rankBonus(),
     lotteryTeams: get("lottery_teams"),
+    lotteryWeights: lotteryWeights(),
   };
 }
 

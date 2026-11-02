@@ -9,6 +9,7 @@ import { buildHistory, closedSeasonRows, type LeagueHistory } from "./league-his
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
 import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
+import type { LotteryRecord } from "./draft-lottery";
 import type { RosterMove } from "./roster-moves";
 import { toProposal, type Proposal, type ProposalRow } from "./trade-proposals";
 
@@ -170,6 +171,42 @@ export const loadCloseInput = cache(async (): Promise<CloseInput> => {
     })),
     cuts: rows<Row & { status: "pending" | "cut" }>(cuts).map((c) => ({ id: c.id, version: c.version, teamId: c.team_id, name: playerName(c.players), status: c.status, years: years(c.years_left) })),
     picks: league.picks.map((p) => ({ year: p.year, round: p.round, originalTeamId: p.original_team_id, currentTeamId: p.current_team_id, toConfirm: p.to_confirm })),
+  };
+});
+
+/**
+ * Sorteggio del draft (issue #103) del draft in arrivo o di quello appena aperto dalla chiusura, e se l'utente ha già visto la
+ * rivelazione. Tollerante: null = nessun sorteggio o tabelle non leggibili (migrazione non ancora applicata), le pagine restano su.
+ */
+export const loadLottery = cache(async (): Promise<{ record: LotteryRecord; seen: boolean } | null> => {
+  const db = await createClient();
+  const [season, claims] = await Promise.all([loadSeason(), db.auth.getClaims()]);
+  type Row = { season_id: number; draft_year: number; ranking: string[]; entrants: string[]; weights: number[]; seed: string; draws: { pick: number; team_id: string; roll: number | null; total: number }[]; drawn_at: string; drawn_by: string };
+  const r = await db
+    .from("draft_lotteries")
+    .select("season_id,draft_year,ranking,entrants,weights,seed,draws,drawn_at,drawn_by")
+    .in("draft_year", [season.year, season.year + 1])
+    .order("draft_year", { ascending: false })
+    .limit(1)
+    .maybeSingle<Row>();
+  if (r.error || !r.data) return null;
+  const row = r.data;
+  const uid = claims.data?.claims.sub;
+  const seen = uid ? await db.from("draft_lottery_views").select("season_id").eq("season_id", row.season_id).eq("user_id", uid).maybeSingle() : null;
+  return {
+    record: {
+      seasonId: row.season_id,
+      draftYear: row.draft_year,
+      ranking: row.ranking,
+      entrants: row.entrants,
+      weights: row.weights,
+      seed: row.seed,
+      draws: row.draws.map((d) => ({ pick: d.pick, teamId: d.team_id, roll: d.roll, total: d.total })),
+      drawnAt: row.drawn_at,
+      drawnBy: row.drawn_by,
+    },
+    // Se la lettura non riesce si dà per vista: meglio una rivelazione persa che una che riparte a ogni pagina.
+    seen: !seen || !!seen.error || !!seen.data,
   };
 });
 

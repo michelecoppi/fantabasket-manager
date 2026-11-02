@@ -34,7 +34,7 @@ Tutti i valori numerici sono **parametri di lega** (tabella `league_settings`), 
 ## Draft e squadra talenti
 - R-30 Draft annuale (non il primo anno), dopo la summer league NBA, seguito dalla firma dei rookie.
 - R-31 **5 turni**, 1 scelta per squadra per turno, stesso ordine in tutti i turni.
-- R-32 Ordine: le prime 4 posizioni = lottery tra le ultime 4 della regular season (8ª: 4 chance, 7ª: 3, 6ª: 2, 5ª: 1); posizioni 5-8 in ordine inverso di classifica delle prime 4.
+- R-32 Ordine: le prime 4 posizioni = lottery tra le ultime 4 della regular season (8ª: 4 chance, 7ª: 3, 6ª: 2, 5ª: 1); posizioni 5-8 in ordine inverso di classifica delle prime 4. Estrazione (dettaglio dell'utente, 2026-11-02): si estrae la 1ª scelta, le altre tre restano in gara con le stesse chance per la 2ª, e così via; la 4ª va a chi perde anche l'ultima estrazione. Non ci sono playoff: la classifica è quella della regular season.
 - R-33 Le pick sono scambiabili prima/durante/dopo; **max 2 pick per giro** per squadra.
 - R-34 Le pick future diventano di proprietà solo **3 anni prima** del draft (nel foglio: i 3 draft successivi, a ottobre 2026 sono 2027-2029).
 - R-35 I draftati vanno di default in **squadra talenti** (nessuno stipendio). Prelazione solo per la stagione d'esordio NBA e la successiva (chi gioca in leghe minori/estere resta congelato più a lungo). Dopo l'esordio, fino all'apertura della FA estiva dell'anno dopo per firmarlo o liberarlo. Max 2 stagioni in squadra talenti prima dell'obbligo di decisione.

@@ -42,6 +42,8 @@ export interface LeagueSettings {
   rankBonus: number[];
   /** R-32: le prime scelte del draft si estraggono tra le ultime N squadre della classifica */
   lotteryTeams: number;
+  /** R-32: biglietti di ogni squadra della lottery, dall'ultima della classifica in su (8ª: 4, 7ª: 3, 6ª: 2, 5ª: 1) */
+  lotteryWeights: number[];
 }
 
 export interface RosterEntry {
@@ -495,4 +497,5 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   draftRounds: 5,
   rankBonus: [5, 4, 3, 2, 0, -1, -2, -3],
   lotteryTeams: 4,
+  lotteryWeights: [4, 3, 2, 1],
 };

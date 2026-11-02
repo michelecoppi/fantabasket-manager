@@ -18,8 +18,9 @@ import { teamAlignment } from "@/lib/dunkest-align";
 import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
-import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadProfile, loadProposals, loadVersions } from "@/lib/league-server";
-import { planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
+import { lotteryEntrants } from "@/lib/draft-lottery";
+import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadLottery, loadProfile, loadProposals, loadVersions } from "@/lib/league-server";
+import { lotteryChoices, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
 import { announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
@@ -422,17 +423,51 @@ export async function openPickYear(input: { year: number }): Promise<ActionResul
   return done(`Pick del draft ${input.year} aperte: ${league.settings.draftRounds} giri per squadra, ognuna alla sua squadra.`);
 }
 
+// ---------- Sorteggio del draft (R-32, issue #103) ----------
+const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((v) => typeof v === "string");
+
+/**
+ * Estrae il sorteggio con la classifica finale scelta dall'admin. Chi partecipa e con quanti biglietti si calcola qui dai
+ * parametri di lega; seme ed estrazione li fa il database, una volta sola per stagione (non si rifà). Fa parte della chiusura,
+ * quindi è bloccato dallo stesso interruttore.
+ */
+export async function drawDraftLottery(input: { ranking: string[] }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!SEASON_CLOSE_ENABLED) return fail("Il sorteggio del draft non è ancora abilitato.");
+  if (!input || !isStrings(input.ranking)) return fail("Dati non validi.");
+  const [league, close] = await Promise.all([loadLeague(), loadCloseInput()]);
+  const ids = league.teams.map((t) => t.team.id);
+  if (input.ranking.length !== ids.length || !ids.every((id) => input.ranking.includes(id))) return fail("Completa la classifica: ogni squadra in una sola posizione.");
+  const { entrants, errors } = lotteryEntrants(input.ranking, league.settings);
+  if (errors.length) return fail(errors.join(" "));
+
+  const db = await createClient();
+  const { error } = await db.rpc("admin_draw_lottery", {
+    p_season_id: close.seasonId,
+    p_ranking: input.ranking,
+    p_entrants: entrants.map((e) => e.teamId),
+    p_weights: entrants.map((e) => e.weight),
+  });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(`Sorteggio del draft ${league.seasonYear + 1} estratto: ognuno lo scopre al prossimo accesso.`);
+}
+
 // ---------- Chiusura stagione (R-60, R-32, R-23, R-24) ----------
-/** Rilegge i dati dal database e ricalcola il piano: della pagina si fidano solo le scelte dell'admin. */
+/**
+ * Rilegge i dati dal database e ricalcola il piano: della pagina si fidano solo le team option scelte dall'admin. Classifica e
+ * prime scelte del draft vengono dal sorteggio salvato (R-32, issue #103), che deve essere già stato estratto.
+ */
 export async function closeSeason(choices: CloseChoices): Promise<ActionResult> {
   const denied = await requireAdmin();
   if (denied) return fail(denied);
   if (!SEASON_CLOSE_ENABLED) return fail("La chiusura di stagione non è ancora abilitata.");
-  const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((v) => typeof v === "string");
-  if (!choices || !isStrings(choices.ranking) || !isStrings(choices.lottery) || !Array.isArray(choices.exercised) || !choices.exercised.every(isNum)) return fail("Dati non validi.");
+  if (!choices || !Array.isArray(choices.exercised) || !choices.exercised.every(isNum)) return fail("Dati non validi.");
 
-  const [league, input] = await Promise.all([loadLeague(), loadCloseInput()]);
-  const plan = planSeasonClose(input, choices, league.settings);
+  const [league, input, lottery] = await Promise.all([loadLeague(), loadCloseInput(), loadLottery()]);
+  if (!lottery || lottery.record.seasonId !== input.seasonId) return fail(`Prima estrai il sorteggio del draft ${input.seasonYear + 1}.`);
+  const plan = planSeasonClose(input, { ...choices, ...lotteryChoices(lottery.record) }, league.settings);
   if (plan.errors.length) return fail(plan.errors.join(" "));
 
   const db = await createClient();

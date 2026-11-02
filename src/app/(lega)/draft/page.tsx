@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { TeamCrest } from "@/components/crest";
 import { Icon, type IconName } from "@/components/icons";
+import { LotteryOrder, LotteryProof, LotteryReveal, type LotteryData } from "@/components/draft-lottery";
+import { loadLotteryData } from "@/components/lottery-gate";
 import { Badge, PageTitle, Scoreboard, stagger } from "@/components/ui";
+import { fmtDateTime } from "@/lib/format";
 import { loadLeague } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 
@@ -52,8 +55,55 @@ function CrestStack({ ids, name, color }: { ids: string[]; name: (id: string) =>
   );
 }
 
+/** Sorteggio del draft in arrivo (issue #103): ordine con i numeri di ogni giro, «Rivedi la lottery» e come è stato estratto. */
+function LotteryFold({ data }: { data: LotteryData }) {
+  const { record, board } = data;
+  const top = board.slots[0];
+  const team = top ? data.teams.find((t) => t.id === top.teamId) : undefined;
+  return (
+    <DraftFold
+      title={`Sorteggio del draft ${record.draftYear}`}
+      icon="ticket"
+      summary={
+        <>
+          <span>
+            <span className="font-semibold text-foreground">Lottery estratta</span> il {fmtDateTime(record.drawnAt)} · 1ª a
+          </span>
+          {team && (
+            <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+              <TeamCrest name={team.name} color={team.color} size="xs" />
+              <span className="truncate">{team.name}</span>
+            </span>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-xl text-sm text-muted">
+            Le prime {board.entrants.length} scelte sono estratte tra le ultime {board.entrants.length} della classifica (R-32), le altre vanno in ordine inverso di classifica. Lo
+            stesso ordine vale per tutti i {data.rounds} giri.
+          </p>
+          <LotteryReveal data={data} />
+        </div>
+        <LotteryOrder data={data} />
+        <details className="group rounded-2xl border border-line bg-surface">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 font-semibold text-brand-blue [&::-webkit-details-marker]:hidden">
+            <Icon name="info" size={18} />
+            Come è stato estratto
+            <Icon name="chevron" size={18} className="ml-auto rotate-90 transition-transform group-open:-rotate-90" />
+          </summary>
+          <div className="border-t border-line px-4 py-4">
+            <LotteryProof data={data} />
+          </div>
+        </details>
+      </div>
+    </DraftFold>
+  );
+}
+
 export default async function DraftPage() {
-  const league = await loadLeague();
+  const [league, lottery] = await Promise.all([loadLeague(), loadLotteryData()]);
   const { draftRounds: roundCount, pickHorizonYears } = league.settings;
   const ROUNDS = Array.from({ length: roundCount }, (_, i) => i + 1);
   const years = [...new Set(league.picks.map((p) => p.year))].sort();
@@ -102,6 +152,8 @@ export default async function DraftPage() {
       >
         Draft
       </PageTitle>
+
+      {lottery && <LotteryFold data={lottery.data} />}
 
       {years.map((y, yi) => {
         const picks = league.picks.filter((p) => p.year === y);

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Icon } from "@/components/icons";
 import { InstallHint } from "@/components/install";
 import { LeagueTicker, LeagueTickerFallback } from "@/components/league-ticker";
+import { LotteryGate } from "@/components/lottery-gate";
 import { MainNav, TabBar } from "@/components/nav";
 import { RefreshButton } from "@/components/refresh-button";
 import { loadProfile, loadProposals } from "@/lib/league-server";
@@ -88,6 +89,10 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"><InstallHint />{children}</main>
       <Suspense fallback={<TabBar />}>
         <Navs bar="bottom" />
+      </Suspense>
+      {/* Sorteggio del draft appena estratto: rivelazione a tutto schermo, una volta per utente (issue #103). */}
+      <Suspense>
+        <LotteryGate />
       </Suspense>
     </>
   );

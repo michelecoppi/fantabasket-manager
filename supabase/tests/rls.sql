@@ -164,6 +164,11 @@ insert into trade_proposals (id, season_id, proposer_team_id, teams, moves, rost
   from seasons s, (select id from teams order by name limit 1) a, (select id from teams order by name offset 1 limit 1) b where s.is_current;
 insert into trade_proposal_answers (proposal_id, team_id, answer) select 900001, id, 'reject' from teams order by name limit 1;
 insert into trade_proposal_events (id, proposal_id, kind) values (900001, 900001, 'sent');
+-- Sorteggio del draft (issue #103): la riga di prova occupa la stagione corrente, il giro del sorteggio la toglie e rifà la RPC.
+insert into draft_lotteries (season_id, draft_year, ranking, entrants, weights, seed, draws, drawn_by)
+  select s.id, s.year + 1, array(select id from teams order by name), array[(select id from teams order by name desc limit 1)], array[1], 'rls', '[]', 'RLS'
+  from seasons s where s.is_current;
+insert into draft_lottery_views (season_id, user_id) select id, rls_t.viewer() from seasons where is_current;
 
 -- Elenco delle tabelle (con una riga di esempio, copiata per provare gli INSERT) e delle RPC admin_*, letto dal catalogo.
 -- `call` chiama la RPC con tutti gli argomenti null: la guardia è la prima istruzione, quindi chi non è admin si ferma lì,
@@ -192,7 +197,7 @@ begin
   -- Elenco esplicito: una tabella nuova senza la policy "admin write" per dimenticanza non passa come "solo RPC".
   perform rls_t.ok('tabelle scritte solo dalle RPC diverse dall''atteso',
     (select array_agg(name order by name) from rls_t.tbl where rpc_only)
-      = array['trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
+      = array['draft_lotteries', 'draft_lottery_views', 'trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
 
   insert into rls_t.rpc
   select p.proname,
@@ -1230,6 +1235,80 @@ begin
   perform rls_t.ok('annuncio segnato due volte', not public.trade_announce_done('rls-segreto-del-job-0123', tr, true));
   perform rls_t.become('postgres');
   perform rls_t.ok('scambio annunciato senza ora', exists (select 1 from trades where id = tr and announced_at is not null and announce_claimed_at is null));
+end $$;
+
+-- ---------- Sorteggio del draft (issue #103, R-32): una volta per stagione, seme del server, visto da ognuno per sé ----------
+do $$
+declare
+  v_season int := (select id from seasons where is_current);
+  v_rank uuid[] := array(select id from teams order by name);
+  v_n int := cardinality(v_rank);
+  v_ent uuid[];
+  v jsonb;
+  n_audit bigint;
+  draw text := 'select public.admin_draw_lottery(%s, %L::uuid[], %L::uuid[], %L::int[])';
+begin
+  v_ent := array[v_rank[v_n], v_rank[v_n - 1], v_rank[v_n - 2], v_rank[v_n - 3]];
+  -- Stessa procedura di `drawLottery` (vettore di src/lib/draft-lottery.test.ts: t6, t8, t5, t7).
+  v := public.lottery_draw('00112233445566778899aabbccddeeff', v_ent, array[4, 3, 2, 1]);
+  perform rls_t.ok('lottery_draw diverso da drawLottery in TypeScript', v = jsonb_build_array(
+    jsonb_build_object('pick', 1, 'team_id', v_ent[3], 'roll', 8, 'total', 10),
+    jsonb_build_object('pick', 2, 'team_id', v_ent[1], 'roll', 2, 'total', 8),
+    jsonb_build_object('pick', 3, 'team_id', v_ent[4], 'roll', 3, 'total', 4),
+    jsonb_build_object('pick', 4, 'team_id', v_ent[2], 'roll', null, 'total', 3)));
+  perform rls_t.ok('lottery_draw chiamabile dai client',
+    not has_function_privilege('anon', 'public.lottery_draw(text,uuid[],int[])', 'execute')
+    and not has_function_privilege('authenticated', 'public.lottery_draw(text,uuid[],int[])', 'execute'));
+  perform rls_t.ok('anon segna la rivelazione vista', not has_function_privilege('anon', 'public.draft_lottery_seen(int)', 'execute'));
+
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('secondo sorteggio della stagione', rls_t.try(format(draw, v_season, v_rank, v_ent, array[4, 3, 2, 1])), array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  delete from draft_lotteries where season_id = v_season;
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('viewer estrae il sorteggio', rls_t.try(format(draw, v_season, v_rank, v_ent, array[4, 3, 2, 1])), array['error: FORBIDDEN%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.chk('sorteggio di un''altra stagione', rls_t.try(format(draw, v_season + 1000, v_rank, v_ent, array[4, 3, 2, 1])), array['error: CONFLICT%']);
+  perform rls_t.chk('classifica senza una squadra', rls_t.try(format(draw, v_season, v_rank[1:v_n - 1], v_ent, array[4, 3, 2, 1])), array['error: INVALID%']);
+  perform rls_t.chk('classifica con una squadra due volte',
+    rls_t.try(format(draw, v_season, array[v_rank[2]] || v_rank[2:v_n], v_ent, array[4, 3, 2, 1])), array['error: INVALID%']);
+  perform rls_t.chk('lottery non tra le ultime', rls_t.try(format(draw, v_season, v_rank, v_rank[1:4], array[4, 3, 2, 1])), array['error: INVALID%']);
+  perform rls_t.chk('lottery non dalla peggiore', rls_t.try(format(draw, v_season, v_rank, array[v_ent[2], v_ent[1], v_ent[3], v_ent[4]], array[4, 3, 2, 1])), array['error: INVALID%']);
+  perform rls_t.chk('biglietti a zero', rls_t.try(format(draw, v_season, v_rank, v_ent, array[4, 3, 2, 0])), array['error: INVALID%']);
+  perform rls_t.chk('biglietti di meno', rls_t.try(format(draw, v_season, v_rank, v_ent, array[4, 3])), array['error: INVALID%']);
+
+  perform rls_t.become('postgres');
+  n_audit := (select count(*) from audit_log where action = 'draw_lottery');
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := public.admin_draw_lottery(v_season, v_rank, v_ent, array[4, 3, 2, 1]);
+  perform rls_t.chk('secondo sorteggio subito dopo', rls_t.try(format(draw, v_season, v_rank, v_ent, array[4, 3, 2, 1])), array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('sorteggio non salvato come atteso', exists (
+    select 1 from draft_lotteries l join seasons s on s.id = l.season_id
+    where l.season_id = v_season and l.draft_year = s.year + 1 and l.ranking = v_rank and l.entrants = v_ent
+      and l.seed ~ '^[0-9a-f]{32}$' and l.drawn_by = 'RLS admin' and v ->> 'seed' = l.seed));
+  perform rls_t.ok('il sorteggio salvato non torna dal suo seme',
+    (select draws = lottery_draw(seed, entrants, weights) from draft_lotteries where season_id = v_season));
+  perform rls_t.ok('non tutte le squadre della lottery hanno una scelta', (
+    select array_agg((d ->> 'team_id')::uuid order by (d ->> 'team_id')::uuid) = array(select unnest(v_ent) order by 1)
+      and array_agg((d ->> 'pick')::int order by (d ->> 'pick')::int) = array[1, 2, 3, 4]
+    from draft_lotteries, jsonb_array_elements(draws) d where season_id = v_season));
+  perform rls_t.ok('sorteggio senza riga di audit', (select count(*) from audit_log where action = 'draw_lottery') = n_audit + 1);
+
+  -- Rivelazione vista: ognuno segna solo sé stesso, una volta.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.ok('rivelazione non segnata', public.draft_lottery_seen(v_season));
+  perform rls_t.ok('rivelazione segnata due volte', not public.draft_lottery_seen(v_season));
+  perform rls_t.chk('rivelazione di un sorteggio che non c''è', rls_t.try('select public.draft_lottery_seen(-1)'), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+  insert into draft_lottery_views (season_id, user_id) values (v_season, rls_t.admin());
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.ok('il viewer legge chi altro ha visto la rivelazione', rls_t.seen('draft_lottery_views') = 1);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.ok('l''admin non legge chi ha visto la rivelazione', rls_t.seen('draft_lottery_views') = 2);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('viste segnate male', (select count(*) from draft_lottery_views where season_id = v_season) = 2);
 end $$;
 
 do $$ begin
