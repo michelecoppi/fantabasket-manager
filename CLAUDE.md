@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Gestionale web per una lega privata di fantabasket NBA (8 squadre). Lingua di UI, commenti utente e documenti: **italiano**. Codice e nomi di variabili/tabelle: **inglese**.
 
 ## Stato del progetto
-Sito online: lettura per tutti, pannello admin (firma, contratti, tagli, scambi, pick, quote), dati Dunkest dal cron giornaliero (infortuni, punteggi, classifica, formazioni, leader), proposte di scambio dei proprietari, bot Telegram e card da condividere (Fasi 0-9 in PLAN.md). Aperti: prelazione dei talenti (domanda 4), chiusura stagione (provata in locale il 2026-10-30, `SEASON_CLOSE_ENABLED` resta `false`) e le voci di «Controllo dello stato» in PLAN.md (backup mai ripristinato, import del foglio da correggere per `safeupdate`). Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
+Sito online: lettura per tutti, pannello admin (firma, contratti, tagli, scambi, pick, quote), dati Dunkest dal cron giornaliero (infortuni, punteggi, classifica, formazioni, leader), proposte di scambio dei proprietari, bot Telegram e card da condividere (Fasi 0-9 in PLAN.md). Sorteggio del draft nell'app con rivelazione animata (issue #103). Aperti: prelazione dei talenti (domanda 4), chiusura stagione (provata in locale il 2026-10-30, `SEASON_CLOSE_ENABLED` resta `false`) e le voci di «Controllo dello stato» in PLAN.md (backup mai ripristinato, import del foglio da correggere per `safeupdate`). Leggi prima [PLAN.md](PLAN.md) per sapere cosa è fatto e cosa è il prossimo passo, e aggiornalo a fine lavoro (spunta le caselle, aggiungi note e voci al registro decisioni).
 
 ## Regole di lega
 Sintesi con ID (R-xx) in [docs/REGOLAMENTO.md](docs/REGOLAMENTO.md); cita gli ID nei commenti/test. Il regolamento è datato 28/09/2024 ed è stato confermato ancora valido (2026-10-21). Dubbi aperti in [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md).
@@ -31,7 +31,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 
 **Percorso di scrittura (admin).** Componente client `admin/*/desk.tsx` → server action in `src/app/(lega)/admin/actions.ts` (`requireAdmin()`, validazione con `cap.ts`, poi `db.rpc(...)`) → funzione Postgres in `supabase/migrations/20261021220000_admin_rpc.sql` (`security definer`, `admin_guard()`/`is_admin()`, una transazione, scrive `audit_log`). Le RPC garantiscono solo coerenza dei dati (esistenza, proprietà, concorrenza), non le regole di lega. Concorrenza ottimistica: `contracts`, `cuts`, `draft_picks` hanno `version` (trigger `bump_version`); la UI la legge con `loadVersions()` e la rimanda, la RPC fallisce con `CONFLICT:` se è cambiata. Gli errori RPC hanno prefisso `FORBIDDEN|CONFLICT|INVALID` e `rpcError()` li traduce. Ogni nuova operazione admin segue questo schema e chiama `revalidatePath("/", "layout")`.
 
-**Scritture dei proprietari.** I viewer scrivono solo proponendo, rispondendo o ritirando scambi: action in `src/app/(lega)/scambio/actions.ts` → RPC `trade_propose` / `trade_answer` / `trade_withdraw` (controllano la squadra con `my_team_id()` e il mercato aperto; nessuna policy di scrittura sulle tabelle). L'approvazione resta a un admin (`admin_approve_trade_proposal` esegue lo scambio nella stessa transazione, via `trade_apply`). Le regole passano sempre da `evaluateMoves` → `evaluateTrade`.
+**Scritture dei proprietari.** I viewer scrivono solo proponendo, rispondendo o ritirando scambi: action in `src/app/(lega)/scambio/actions.ts` → RPC `trade_propose` / `trade_answer` / `trade_withdraw` (controllano la squadra con `my_team_id()` e il mercato aperto; nessuna policy di scrittura sulle tabelle). L'approvazione resta a un admin (`admin_approve_trade_proposal` esegue lo scambio nella stessa transazione, via `trade_apply`). Le regole passano sempre da `evaluateMoves` → `evaluateTrade`. Unica altra scrittura: ognuno segna di aver visto la rivelazione del sorteggio del draft (`draft_lottery_seen`, solo il proprio flag).
 
 **Job giornaliero e canali esterni.** Il cron Vercel `/api/dunkest` (`vercel.json`, Bearer `CRON_SECRET`, 9:00 italiane) aggiorna da Dunkest statistiche, infortuni, lega e partite (`runDunkest*Sync`), poi marca le proposte scadute e manda gli annunci su Telegram (`src/lib/telegram.ts`; senza token il bot tace). Scrive con la chiave anon e le RPC `dunkest_*` / `trade_announce_*`, che accettano un admin oppure il segreto del job (hash in `private.job_secrets`). Le pagine leggono solo dal database, mai da Dunkest. Le card 1200×630 sono route in `src/app/card/*`, dietro il login.
 
@@ -50,7 +50,7 @@ Tutti i valori del regolamento (cap 250, floor, budget riserve 80, tasso luxury 
 - Il monte ingaggi include le quote dei tagliati.
 
 ## Ruoli e permessi
-- `admin`: scrive su tutto (Amedeo, Gabby, Scuti e Serde: confermati dall'utente il 2026-10-30). `viewer`: sola lettura sulle tabelle; l'unica scrittura è proporre, rispondere o ritirare scambi della propria squadra, solo via RPC `trade_*`.
+- `admin`: scrive su tutto (Amedeo, Gabby, Scuti e Serde: confermati dall'utente il 2026-10-30). `viewer`: sola lettura sulle tabelle; le uniche scritture sono proporre, rispondere o ritirare scambi della propria squadra (RPC `trade_*`) e segnare di aver visto il sorteggio del draft (RPC `draft_lottery_seen`, solo il proprio flag).
 - I permessi vanno applicati **nel database con Row Level Security**, non solo nascondendo bottoni nella UI. Ogni tabella: SELECT per utenti autenticati (eccezioni: `audit_log` solo admin, le proposte di scambio solo squadre coinvolte e admin), INSERT/UPDATE/DELETE solo se `is_admin()`.
 - Ogni modifica admin a contratti/pick/budget scrive una riga in `audit_log` (oggi lo fanno le RPC).
 
@@ -79,5 +79,5 @@ Attenzione: il file ha encoding sporco (`1°` appare come `1�`, `Traoré` come
 ## Cosa NON fare
 - Non aggiungere servizi a pagamento o che richiedano carta di credito.
 - Non scrivere regole di lega nel codice senza averle messe in OPEN-QUESTIONS/PLAN.
-- Non dare permessi di scrittura ai viewer "per comodità" (l'unica eccezione sono le RPC `trade_*`, decise il 2026-10-29).
+- Non dare permessi di scrittura ai viewer "per comodità" (le eccezioni sono le RPC `trade_*`, decise il 2026-10-29, e `draft_lottery_seen` per il proprio flag, issue #103).
 - Non pushare/pubblicare senza che l'utente abbia confermato.

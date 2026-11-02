@@ -443,6 +443,136 @@ select {
   }
 }
 
+/* ---------- Sorteggio del draft (components/draft-lottery.tsx, issue #103) ---------- */
+/*
+ * Rivelazione a tutto schermo: <dialog> modale che entra sfumando, come la scheda giocatore. Le carte delle scelte si girano in
+ * 3D (rotateY), il riflettore passa tra le squadre in gara, la 1ª scelta ha l'anello d'oro e i coriandoli. Solo transform e
+ * opacity; con prefers-reduced-motion la regola globale in fondo spegne tutto (e il componente salta riflettore e coriandoli).
+ */
+.lottery-dialog {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  opacity: 0;
+  transition:
+    opacity 320ms var(--ease-out),
+    overlay 320ms allow-discrete,
+    display 320ms allow-discrete;
+}
+.lottery-dialog[open] {
+  opacity: 1;
+}
+@starting-style {
+  .lottery-dialog[open] {
+    opacity: 0;
+  }
+}
+.lottery-dialog::backdrop {
+  background: rgb(3 6 13 / 0.7);
+}
+
+/* Carta di una scelta: coperta (numero a contorno) e scoperta (squadra), girata a metà corsa con un filo di rimbalzo. */
+.flip {
+  perspective: 1400px;
+}
+.flip-inner {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 760ms cubic-bezier(0.3, 1.25, 0.45, 1);
+}
+.flip-inner[data-flipped="true"] {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Attesa prima di girare la carta: due respiri, poi ferma (niente loop). */
+@keyframes breathe {
+  50% {
+    transform: scale(1.03);
+  }
+}
+.breathe {
+  animation: breathe 900ms ease-in-out 2;
+}
+
+/* Riflettore: la squadra illuminata si alza, le altre restano in penombra (le utility `scale-*` di Tailwind 4 usano `scale`). */
+.spot {
+  transition:
+    scale 160ms var(--ease-out),
+    opacity 220ms ease;
+}
+.spot-ring {
+  opacity: 0;
+  transform: scale(0.82);
+  transition:
+    opacity 120ms ease,
+    transform 160ms var(--ease-out);
+}
+[data-lit="true"] > .spot-ring {
+  opacity: 1;
+  transform: none;
+}
+
+/* La 1ª scelta: anelli d'oro che si allargano e coriandoli nei colori della squadra, una volta sola. */
+@keyframes ring-burst {
+  from {
+    opacity: 0.9;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+.ring-burst {
+  animation: ring-burst 1100ms var(--ease-out) both;
+}
+@keyframes confetti {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
+.confetti {
+  animation: confetti 1500ms cubic-bezier(0.15, 0.7, 0.35, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Posto del tabellone che si riempie. */
+@keyframes slot-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+}
+.slot-in {
+  animation: slot-in 420ms var(--ease-spring) both;
+}
+
 /* ---------- Transizioni di pagina (<ViewTransition> in template.tsx) ---------- */
 ::view-transition {
   pointer-events: none;

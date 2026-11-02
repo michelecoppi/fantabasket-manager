@@ -1,31 +1,47 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Callout, Check, inputClass } from "@/components/controls";
+import { LotteryOrder, type LotteryData } from "@/components/draft-lottery";
 import { Badge, Card, Section } from "@/components/ui";
 import type { LeagueSettings } from "@/lib/cap";
-import { fmt } from "@/lib/format";
-import { optionContracts, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseInput } from "@/lib/season-close";
+import { fmtChance, lotteryEntrants, lotteryOdds } from "@/lib/draft-lottery";
+import { fmt, fmtDateTime } from "@/lib/format";
+import { lotteryChoices, optionContracts, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseInput } from "@/lib/season-close";
 import type { ActionResult } from "@/lib/action-result";
-import { closeSeason } from "../actions";
+import { closeSeason, drawDraftLottery } from "../actions";
 
-export function ClosingDesk({ input, settings }: { input: CloseInput; settings: LeagueSettings }) {
+/**
+ * `lottery`: sorteggio del draft già estratto per questa stagione (issue #103). Da lì in poi classifica e prime scelte sono
+ * fissate e si vedono in sola lettura; prima, la classifica si compila qui e il sorteggio si estrae una volta sola.
+ */
+export function ClosingDesk({ input, settings, lottery }: { input: CloseInput; settings: LeagueSettings; lottery: LotteryData | null }) {
   const n = input.teams.length;
-  const lotteryN = settings.lotteryTeams;
-  const [ranking, setRanking] = useState<string[]>(() => Array(n).fill(""));
-  const [lottery, setLottery] = useState<string[]>(() => Array(lotteryN).fill(""));
+  const [rankingDraft, setRanking] = useState<string[]>(() => Array(n).fill(""));
   const [exercised, setExercised] = useState<number[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [drawConfirmed, setDrawConfirmed] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [pending, start] = useTransition();
 
   const name = (id: string) => input.teams.find((t) => t.id === id)?.name ?? "?";
+  const drawn = lottery ? lotteryChoices(lottery.record) : null;
+  const ranking = drawn?.ranking ?? rankingDraft;
   const rankingDone = ranking.every(Boolean);
-  const bottom = rankingDone ? ranking.slice(n - lotteryN) : [];
-  // Se la classifica cambia, le squadre della lottery che non sono più tra le ultime si azzerano.
-  const lotteryNow = lottery.map((t) => (bottom.includes(t) ? t : ""));
-  const choices = { ranking, lottery: lotteryNow, exercised };
+  const { entrants, errors: entrantErrors } = lotteryEntrants(ranking, settings);
+  const odds = lotteryOdds(entrants);
+  const choices = { ranking, lottery: drawn?.lottery ?? [], exercised };
   const plan = planSeasonClose(input, choices, settings);
+  // Senza sorteggio l'anteprima non ha l'ordine del draft: l'errore di planSeasonClose sulla lottery diventa un passo da fare.
+  const errors = drawn ? plan.errors : plan.errors.filter((e) => !e.startsWith("Lottery:")).concat(rankingDone ? ["Estrai il sorteggio del draft (passo 2)."] : []);
+
+  const draw = () =>
+    start(async () => {
+      const r = await drawDraftLottery({ ranking });
+      setResult(r);
+      if (r.ok) setDrawConfirmed(false);
+    });
 
   const setAt = (list: string[], set: (v: string[]) => void, i: number, v: string) => set(list.map((x, j) => (j === i ? v : x)));
   const options = optionContracts(input.contracts);
@@ -39,7 +55,6 @@ export function ClosingDesk({ input, settings }: { input: CloseInput; settings: 
       setResult(r);
       if (r.ok) {
         setRanking(Array(n).fill(""));
-        setLottery(Array(lotteryN).fill(""));
         setExercised([]);
         setConfirmed(false);
       }
@@ -59,12 +74,13 @@ export function ClosingDesk({ input, settings }: { input: CloseInput; settings: 
       )}
       {result && !result.ok && <Callout tone="bad" title="Non chiusa">{result.error}</Callout>}
 
-      <Section title="1. Classifica finale" aside="dal 1° all'ultimo">
+      <Section title="1. Classifica finale" aside={drawn ? "fissata dal sorteggio" : "regular season, dal 1° all'ultimo"}>
+        {drawn && <p className="mb-2 text-sm text-muted">Il sorteggio è stato estratto con questa classifica: non si cambia più.</p>}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {ranking.map((teamId, i) => (
             <label key={i} className="block">
               <span className="mb-1 block text-xs font-semibold tracking-wide text-muted uppercase">{i + 1}° posto</span>
-              <select className={inputClass} value={teamId} onChange={(e) => setAt(ranking, setRanking, i, e.target.value)}>
+              <select className={inputClass} value={teamId} disabled={!!drawn} onChange={(e) => setAt(ranking, setRanking, i, e.target.value)}>
                 <option value="">Scegli…</option>
                 {input.teams.filter((t) => t.id === teamId || !ranking.includes(t.id)).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -73,24 +89,43 @@ export function ClosingDesk({ input, settings }: { input: CloseInput; settings: 
         </div>
       </Section>
 
-      <Section title="2. Lottery del draft" aside={`ultime ${lotteryN} della classifica`}>
-        {rankingDone ? (
-          <>
-            <p className="mb-2 text-sm text-muted">Estrazione fatta dal vivo: scegli chi ha avuto la 1ª, la 2ª… scelta. Le altre {n - lotteryN} squadre vanno in ordine inverso di classifica.</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {lotteryNow.map((teamId, i) => (
-                <label key={i} className="block">
-                  <span className="mb-1 block text-xs font-semibold tracking-wide text-muted uppercase">{i + 1}ª scelta</span>
-                  <select className={inputClass} value={teamId} onChange={(e) => setAt(lotteryNow, setLottery, i, e.target.value)}>
-                    <option value="">Scegli…</option>
-                    {bottom.filter((t) => t === teamId || !lotteryNow.includes(t)).map((t) => <option key={t} value={t}>{name(t)}</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </>
-        ) : (
+      <Section title="2. Sorteggio del draft" aside={`ultime ${settings.lotteryTeams} della classifica (R-32)`}>
+        {lottery ? (
+          <div className="space-y-3">
+            <Callout tone="good" title={`Estratto da ${lottery.record.drawnBy} il ${fmtDateTime(lottery.record.drawnAt)}`}>
+              Ognuno vede la rivelazione al primo accesso; l&apos;ordine resta in <Link href="/draft" className="font-semibold underline">Draft</Link>. Vale per tutti i {lottery.rounds} giri.
+            </Callout>
+            <LotteryOrder data={lottery} />
+          </div>
+        ) : !rankingDone ? (
           <p className="text-sm text-muted">Prima completa la classifica.</p>
+        ) : entrantErrors.length > 0 ? (
+          <Callout tone="bad" title="Non si può estrarre">{entrantErrors.join(" ")}</Callout>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">
+              Si estrae la 1ª scelta tra queste squadre con i loro biglietti, poi la 2ª tra le rimaste con gli stessi biglietti, e così via: l&apos;ultima rimasta prende la{" "}
+              {settings.lotteryTeams}ª. Le altre {n - settings.lotteryTeams} vanno in ordine inverso di classifica. Il seme casuale lo genera il database e il risultato non si rifà.
+            </p>
+            <Card className="divide-y divide-line">
+              {entrants.map((e, i) => (
+                <div key={e.teamId} className="flex items-center gap-3 px-3 py-2 text-sm">
+                  <span className="font-display w-8 text-xl font-bold text-muted">{e.rank}°</span>
+                  <span className="min-w-0 flex-1 truncate font-medium">{name(e.teamId)}</span>
+                  <span className="tnum text-xs text-muted">{e.weight} {e.weight === 1 ? "biglietto" : "biglietti"}</span>
+                  <Badge tone="accent">{fmtChance(odds[i]?.[0] ?? 0)} per la 1ª</Badge>
+                </div>
+              ))}
+            </Card>
+            <Card className="space-y-2 border-t-4 border-t-brand-red p-4">
+              <Check checked={drawConfirmed} onChange={setDrawConfirmed}>
+                La classifica è quella finale: il sorteggio si estrae una volta sola e lo vedono subito tutti
+              </Check>
+              <Button variant="danger" icon="ticket" pending={pending} disabled={!SEASON_CLOSE_ENABLED || !drawConfirmed} onClick={draw}>
+                Estrai il sorteggio
+              </Button>
+            </Card>
+          </div>
         )}
       </Section>
 
@@ -115,10 +150,10 @@ export function ClosingDesk({ input, settings }: { input: CloseInput; settings: 
       </Section>
 
       <Section title="Anteprima">
-        {plan.errors.length > 0 && (
+        {errors.length > 0 && (
           <div className="mb-3">
             <Callout tone="warn" title="Per chiudere">
-              <ul className="list-disc pl-5">{plan.errors.map((e) => <li key={e}>{e}</li>)}</ul>
+              <ul className="list-disc pl-5">{errors.map((e) => <li key={e}>{e}</li>)}</ul>
             </Callout>
           </div>
         )}
@@ -178,7 +213,7 @@ export function ClosingDesk({ input, settings }: { input: CloseInput; settings: 
 
       <Card className="space-y-2 border-t-4 border-t-brand-red p-4">
         <Check checked={confirmed} onChange={setConfirmed}>Ho controllato: la chiusura non si annulla</Check>
-        <Button variant="danger" pending={pending} disabled={!SEASON_CLOSE_ENABLED || !confirmed || plan.errors.length > 0} onClick={submit}>
+        <Button variant="danger" pending={pending} disabled={!SEASON_CLOSE_ENABLED || !confirmed || errors.length > 0} onClick={submit}>
           Chiudi la stagione {input.seasonYear}
         </Button>
       </Card>

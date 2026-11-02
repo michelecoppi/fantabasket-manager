@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS as S } from "./cap";
-import { planSeasonClose, type CloseContract, type CloseInput, type ClosePick } from "./season-close";
+import { lotteryChoices, planSeasonClose, type CloseContract, type CloseInput, type ClosePick } from "./season-close";
 
 const ids = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
 const ranking = ids; // t1 primo … t8 ultimo
@@ -54,6 +54,19 @@ describe("chiusura stagione: ordine del draft (R-32)", () => {
     expect(p.draftOrder).toHaveLength(40);
     expect(p.draftOrder.find((d) => d.round === 2 && d.originalTeamId === "t7")?.pickNo).toBe(9);
     expect(p.draftOrder.at(-1)?.pickNo).toBe(40);
+  });
+
+  it("classifica e prime scelte vengono dal sorteggio salvato (issue #103), in ordine di scelta", () => {
+    const draws = [
+      { pick: 3, teamId: "t8", roll: 1, total: 6 },
+      { pick: 1, teamId: "t7", roll: 5, total: 10 },
+      { pick: 4, teamId: "t6", roll: null, total: 2 },
+      { pick: 2, teamId: "t5", roll: 6, total: 7 },
+    ];
+    const fromDraw = lotteryChoices({ ranking, draws });
+    expect(fromDraw).toEqual({ ranking, lottery });
+    const p = planSeasonClose(input(), { ...fromDraw, exercised: [] }, S);
+    expect(p.draftOrder.filter((d) => d.round === 1).map((d) => d.teamId)).toEqual(["t7", "t5", "t8", "t6", "t4", "t3", "t2", "t1"]);
   });
 
   it("la lottery deve riguardare proprio le ultime 4", () => {

@@ -12,7 +12,8 @@ select s.id, v.key, v.value from seasons s, (values
   ('pick_horizon_years', 3), ('draft_rounds', 5),
   ('rank_bonus_1', 5), ('rank_bonus_2', 4), ('rank_bonus_3', 3), ('rank_bonus_4', 2),
   ('rank_bonus_5', 0), ('rank_bonus_6', -1), ('rank_bonus_7', -2), ('rank_bonus_8', -3),
-  ('lottery_teams', 4)
+  ('lottery_teams', 4),
+  ('lottery_weight_1', 4), ('lottery_weight_2', 3), ('lottery_weight_3', 2), ('lottery_weight_4', 1)
 ) as v(key, value) where s.year = 2026;
 
 insert into teams (name, owner_name) values
