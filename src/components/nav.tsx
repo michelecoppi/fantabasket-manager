@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import type { MouseEvent, ReactNode } from "react";
+import { useEffect, useRef, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { Icon, type IconName } from "@/components/icons";
 
 type NavLink = { href: string; label: string; icon: IconName; hint?: string };
@@ -131,10 +131,14 @@ export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badge
  * Barra in basso su telefono e tablet (sotto lg): le cinque pagine che si aprono di più, a portata di pollice, più «Altro».
  * «Squadra» porta alla propria squadra (se il profilo ne ha una). La voce attiva ha l'icona disegnata a 24 px invece che
  * ingrandita con `scale`: un SVG scalato (e in transizione) su iPhone viene rasterizzato e stirato, e sembra sfocato. Le voci partono dalla larghezza della loro etichetta e si
- * dividono lo spazio che avanza (`flex-auto`, non `flex-1`).
+ * dividono lo spazio che avanza (`flex-auto`, non `flex-1`): le larghezze sono frazionarie, quindi le icone si agganciano ai
+ * pixel interi con `useSnapToPixels` (a mezzo pixel i tratti sottili si sfumano, si vedeva su pallone e coppa al buio).
+ * L'etichetta ha `leading-4` perché il contenuto della voce (24 + 4 + 16) sia pari e il centraggio verticale non cada a metà.
  */
 export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boolean; badges?: NavBadges; myTeamId?: string | null }) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  useSnapToPixels(navRef, pathname);
   const myTeamHref = myTeamId ? `/squadre/${myTeamId}` : null;
   // `undefined` = profilo non ancora arrivato: la voce resta al suo posto (porta alla home), così la barra non salta.
   const team: NavLink[] = myTeamHref ? [{ href: myTeamHref, label: "Squadra", icon: "shield" }] : myTeamId === undefined ? [{ href: "/", label: "Squadra", icon: "shield" }] : [];
@@ -142,7 +146,7 @@ export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boole
   const moreActive = !items.some((l) => isActive(pathname, l.href, myTeamHref));
   const moreCount = admin ? badges[ADMIN.href] : undefined;
   const cell = (active: boolean) =>
-    `relative flex min-h-[3.75rem] min-w-0 flex-auto flex-col items-center justify-center gap-1 text-[0.625rem] font-bold tracking-wide whitespace-nowrap uppercase transition-colors ${
+    `relative flex min-h-[3.75rem] min-w-0 flex-auto flex-col items-center justify-center gap-1 text-[0.625rem] leading-4 font-bold tracking-wide whitespace-nowrap uppercase transition-colors ${
       active ? "text-brand-blue dark:text-gold" : "text-white/55 active:text-white"
     }`;
   const bar = (active: boolean) => (
@@ -150,6 +154,7 @@ export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boole
   );
   return (
     <nav
+      ref={navRef}
       aria-label="Navigazione principale"
       style={{ viewTransitionName: "tab-bar" }}
       className="chrome safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-white/10 backdrop-blur-md lg:hidden"
@@ -179,6 +184,36 @@ export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boole
       </div>
     </nav>
   );
+}
+
+/**
+ * Sposta ogni icona SVG dentro `ref` della frazione di pixel che la separa dalla griglia dei pixel del dispositivo, così i tratti
+ * da 2 px non cadono a cavallo di due pixel. Si rifà quando cambia la larghezza (ResizeObserver), quando cambia `key` (la voce
+ * attiva ha l'icona più grande) e dopo la transizione della voce attiva (300 ms).
+ */
+function useSnapToPixels(ref: RefObject<HTMLElement | null>, key: string) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const snap = () => {
+      const dpr = window.devicePixelRatio || 1;
+      root.querySelectorAll<SVGSVGElement>("svg").forEach((svg) => {
+        svg.style.translate = "";
+        const r = svg.getBoundingClientRect();
+        const dx = (Math.round(r.left * dpr) - r.left * dpr) / dpr;
+        const dy = (Math.round(r.top * dpr) - r.top * dpr) / dpr;
+        if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) svg.style.translate = `${dx}px ${dy}px`;
+      });
+    };
+    snap();
+    const late = window.setTimeout(snap, 350);
+    const ro = new ResizeObserver(snap);
+    ro.observe(root);
+    return () => {
+      window.clearTimeout(late);
+      ro.disconnect();
+    };
+  }, [ref, key]);
 }
 
 /** Chiude il foglio quando si sceglie una voce: la navigazione è lato client e il popover resterebbe aperto. */
