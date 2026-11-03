@@ -7,7 +7,8 @@ import { LeagueTicker, LeagueTickerFallback } from "@/components/league-ticker";
 import { LotteryGate } from "@/components/lottery-gate";
 import { MainNav, TabBar } from "@/components/nav";
 import { RefreshButton } from "@/components/refresh-button";
-import { loadProfile, loadProposals } from "@/lib/league-server";
+import { loadProfile, loadProposals, loadSlotSwaps } from "@/lib/league-server";
+import { pendingSwaps } from "@/lib/slot-swap";
 import { proposalBadges } from "@/lib/trade-proposals";
 
 async function UserBadge() {
@@ -31,14 +32,14 @@ async function UserBadge() {
 /**
  * Le voci di navigazione dipendono dal ruolo (Admin solo per gli admin): finché il profilo non arriva si mostrano quelle comuni.
  * Badge (Fase 7.3): su «Scambio» le proposte che aspettano la risposta della tua squadra, su «Admin» quelle da approvare o da
- * rifare su Dunkest. Se le proposte non si leggono, niente badge.
+ * rifare su Dunkest, più i cambi titolari/riserve in attesa (R-04). Se le proposte non si leggono, niente badge.
  */
 async function Navs({ bar }: { bar: "top" | "bottom" }) {
   const profile = await loadProfile();
   const admin = profile?.role === "admin";
-  const proposals = await loadProposals().catch(() => null);
+  const [proposals, swaps] = await Promise.all([loadProposals().catch(() => null), admin ? loadSlotSwaps().catch(() => null) : null]);
   const counts = proposalBadges(proposals ?? [], profile?.team_id, admin);
-  const badges = { "/scambio": counts.answer, "/admin": counts.admin };
+  const badges = { "/scambio": counts.answer, "/admin": counts.admin + pendingSwaps(swaps ?? []).length };
   return bar === "top" ? <MainNav admin={admin} badges={badges} /> : <TabBar admin={admin} badges={badges} />;
 }
 

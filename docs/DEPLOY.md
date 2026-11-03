@@ -52,6 +52,13 @@ L'annuncio è una foto (la card dello scambio, la stessa di `/card/scambio/<id>`
 
 L'annuncio parte subito dopo l'esecuzione dello scambio. Se Telegram non risponde, lo riprova il cron delle 9 (serve `CRON_SECRET`, vedi Fase 5 in PLAN.md). Gli scambi più vecchi di 72 ore non si annunciano più, così un canale configurato tardi non riceve l'arretrato; quelli registrati prima del bot non si annunciano mai.
 
+**Avvisi privati agli admin.** Quando una squadra chiede un cambio titolari/riserve (R-04), il bot scrive in privato agli admin elencati in `TELEGRAM_ADMIN_ALERT` (squadra, chi sale, chi passa alle riserve, luxury tax e link a `/admin/rose`). Sul canale va solo il cambio approvato.
+1. Ogni admin apre il bot su Telegram e preme **Avvia** (`/start`): senza, Telegram non lascia scrivere il bot a quella persona.
+2. Ogni admin trova il suo id numerico, per esempio scrivendo a **@userinfobot** (risponde con «Id: 123456789»).
+3. Su Vercel → Project → Settings → Environment Variables aggiungi `TELEGRAM_ADMIN_ALERT` (Production) con gli id separati da virgola, es. `123456789,987654321`, e rifai il deploy. Serve anche `TELEGRAM_BOT_TOKEN`.
+
+Un id sbagliato o di chi non ha premuto Avvia finisce nei log di Vercel («avviso all'admin …»), gli altri ricevono comunque il messaggio. L'avviso non si riprova: la richiesta resta comunque nel badge su «Admin».
+
 ## 4. Aggiornamenti
 Ogni push su `main` ripubblica il sito da solo. Le variabili si cambiano da Vercel → Project → Settings → Environment Variables (poi serve un nuovo deploy).
 

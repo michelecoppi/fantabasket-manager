@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
-import { loadLeague, loadProfile, loadProposals, loadTradeMarket, loadVersions } from "@/lib/league-server";
+import { loadLeague, loadProposals, loadTradeMarket, loadVersions } from "@/lib/league-server";
+import { myTeam } from "@/lib/my-team";
 import { createClient } from "@/lib/supabase/server";
 import { announceRumorsQuietly } from "@/lib/telegram";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
@@ -16,16 +17,6 @@ import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
 
 const MAX_TEXT = 1000;
 const refresh = () => revalidatePath("/", "layout");
-
-/** Squadra dell'utente loggato, o il motivo per cui non può agire. */
-async function myTeam(): Promise<{ teamId: string } | { error: string }> {
-  try {
-    const profile = await loadProfile();
-    return profile?.team_id ? { teamId: profile.team_id } : { error: "Serve un account collegato a una squadra: chiedi a un admin." };
-  } catch {
-    return { error: "Profilo non disponibile al momento: riprova tra poco. Non è stato salvato nulla." };
-  }
-}
 
 export interface ProposeInput {
   teams: string[];

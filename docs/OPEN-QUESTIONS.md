@@ -131,6 +131,13 @@ Piano in [product/PIANO-SCAMBIO-TALENTI.md](product/PIANO-SCAMBIO-TALENTI.md). R
 - L'import dal foglio non deve annullare gli scambi di talenti fatti nell'app: si ferma se un talento ha nel database una squadra diversa da quella del foglio (salvo `--force`).
 - **ASSUNZIONE** (Fase 8): la «giornata» dei leader NBA è la settimana Dunkest (`weeks[]`, «M4») con lo stesso numero della giornata della lega. Verificata il 2026-10-30 sulle giornate 1-4; se Dunkest o la lega numerassero diversamente (giornate saltate, stagione nuova) i leader della giornata andrebbero ricollegati.
 
+## Cambi titolari ↔ riserve richiesti dai proprietari (R-04)
+Piano in [product/PIANO-CAMBI-RISERVE.md](product/PIANO-CAMBI-RISERVE.md).
+- **Decisioni dell'utente (2026-11-03)**: chiede solo il proprietario, dalla pagina della sua squadra, anche più giocatori insieme; l'admin fa il cambio su Dunkest e poi lo approva nell'app, che lo annuncia col bot. Gli admin lo vedono solo dal badge in app. La data prestabilita di R-04 è una finestra aperta e chiusa da un admin. Budget riserve sforato = blocco; cap sforato = alert fino al cap effettivo + massimo tassabile (R-12), oltre blocco.
+- R-04 «ruolo per ruolo»: per ogni ruolo salgono quanti scendono; un giocatore senza ruolo noto non si sposta.
+- **ASSUNZIONE**: se la rosa è già oltre il budget riserve o il limite del cap (dati importati), un cambio che migliora la situazione è ammesso.
+- **Decisione dell'utente (2026-11-03, aggiorna «solo badge»)**: alla richiesta il bot avvisa anche in privato gli admin elencati in `TELEGRAM_ADMIN_ALERT` (id Telegram separati da virgola). Nei testi si dice «passa alle riserve», mai «panchina»: su Dunkest la panchina è dei titolari.
+
 ## Asta nell'app (issue #104, playground `/asta`)
 Piano completo in [product/PIANO-ASTA.md](product/PIANO-ASTA.md). Il playground non salva niente: le regole sotto sono quelle da far provare alla lega.
 - **Decisioni dell'utente (2026-11-02)**: all'asta di riparazione partecipano tutti (8-9 persone collegate insieme), all'asta tutti i giocatori senza contratto, base d'asta **metà del valore Dunkest** come all'asta di inizio stagione, limiti di cap e di rosa i soliti. A turno si chiama un giocatore, **rilancio minimo 0,5**, in asta sta chi vuole, **la chiude un admin**. La durata dei contratti si sceglie dopo (R-51). La data della riparazione è da stabilire (l'anno scorso circa alla pausa dell'All-Star Game).

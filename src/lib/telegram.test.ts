@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { announceOne, announceTrades, sendTelegramPhoto, type CardRenderer } from "./telegram";
+import { adminAlertChats, alertAdmins, announceOne, announceTrades, sendTelegramPhoto, type CardRenderer } from "./telegram";
 import { parseAnnouncements } from "./trade-announce";
 
 const CFG = { token: "123:SECRET", chatId: "-100200" };
@@ -134,5 +134,33 @@ describe("announceTrades", () => {
       { p_secret: "segreto", p_id: 7, p_ok: true },
       { p_secret: "segreto", p_id: 8, p_ok: false },
     ]);
+  });
+});
+
+describe("avvisi privati agli admin (TELEGRAM_ADMIN_ALERT)", () => {
+  it("legge gli id separati da virgola e scarta quelli non numerici o ripetuti", () => {
+    expect(adminAlertChats(" 111, 222 ,abc,,222, -100333 ")).toEqual(["111", "222", "-100333"]);
+    expect(adminAlertChats(undefined)).toEqual([]);
+  });
+
+  it("senza token o senza id non manda niente", async () => {
+    stubFetch();
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "123:SECRET");
+    vi.stubEnv("TELEGRAM_ADMIN_ALERT", "");
+    expect(await alertAdmins("x")).toEqual({ skipped: true });
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
+    vi.stubEnv("TELEGRAM_ADMIN_ALERT", "111");
+    expect(await alertAdmins("x")).toEqual({ skipped: true });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("un messaggio per admin; chi non ha avviato il bot finisce negli errori, gli altri lo ricevono", async () => {
+    stubFetch(rejected("Forbidden: bot can't initiate conversation with a user"), okResponse());
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "123:SECRET");
+    vi.stubEnv("TELEGRAM_ADMIN_ALERT", "111,222");
+    const res = await alertAdmins("<b>Ciao</b>");
+    expect(res).toEqual({ skipped: false, sent: 1, errors: ["avviso all'admin 111: Telegram ha risposto HTTP 400: Forbidden: bot can't initiate conversation with a user"] });
+    expect(calls.map((c) => JSON.parse(c.body as string).chat_id)).toEqual(["111", "222"]);
+    expect(calls.every((c) => method(c) === "sendMessage")).toBe(true);
   });
 });

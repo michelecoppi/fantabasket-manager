@@ -11,7 +11,8 @@
 #     chiusura in corso non finisce nella stagione chiusa;
 #  3. scambi in versi opposti e taglio contro scambio: nessun deadlock (40P01), il perdente risponde CONFLICT;
 #  4. proposte di scambio (Fase 7.2): due approvazioni con gli stessi giocatori e approvazione contro taglio, stesso esito;
-#     la proposta perdente risulta superata.
+#     la proposta perdente risulta superata;
+#  6. cambio titolari/riserve approvato contro taglio dello stesso giocatore: nessun deadlock, il taglio risponde CONFLICT.
 set -uo pipefail
 
 export PGOPTIONS="${PGOPTIONS:-} -c lock_timeout=20s"
@@ -32,6 +33,7 @@ cleanup() {
   psqlq -c "
     delete from audit_log where user_id = '$ADMIN';
     delete from trade_proposals where id between 910001 and 910099;
+    delete from slot_swap_requests where id between 910001 and 910099;
     delete from trades where approved_by = 'conc-test';
     delete from contracts where player_id between 910001 and 910099;
     delete from cuts where player_id between 910001 and 910099;
@@ -201,6 +203,24 @@ grep -q 'traded:' "$TMP/s1" && grep -q "CONFLICT: il talento è passato" "$TMP/s
   && [ "$(psqlq -c "select team_id from talents where id = 910021")" = "$TB" ] \
   && ok "firma contro scambio di un talento: nessun deadlock, la firma dà CONFLICT" \
   || fail "5: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
+
+# ---------- 6. Cambio titolari/riserve approvato contro taglio (R-04) ----------
+# L'approvazione blocca stagione, squadra, richiesta e contratti; il taglio dello stesso giocatore arriva dopo e trova la squadra
+# (o il contratto) cambiati.
+reset
+psqlq -c "insert into contracts (id, season_id, team_id, player_id, slot, years_left, salary) values (910013, $SEASON, '$TA', 910004, 'starter', 1, 2);" >/dev/null
+RA=$(rev "$TA"); VA=$(version 910011); VC=$(version 910013)
+psqlq -c "insert into slot_swap_requests (id, season_id, team_id, items, roster_rev)
+  values (910001, $SEASON, '$TA', '[{\"id\":910011,\"version\":$VA,\"slot\":\"starter\"},{\"id\":910013,\"version\":$VC,\"slot\":\"reserve\"}]'::jsonb, $RA);" >/dev/null
+session "$TMP/s1" "select 'swapped:' || public.admin_approve_slot_swap(910001, 1, $RA);" "select pg_sleep(2);" &
+sleep 0.5
+session "$TMP/s2" "select 'cut:' || public.admin_cut_player(910011, $VA, 0);" &
+wait
+grep -qi 'deadlock\|40P01' "$TMP/s1" "$TMP/s2" && fail "6: deadlock tra cambio titolari/riserve e taglio"
+grep -q 'swapped:2' "$TMP/s1" && grep -q 'CONFLICT' "$TMP/s2" \
+  && [ "$(psqlq -c "select slot from contracts where id = 910011")" = starter ] \
+  && ok "cambio titolari/riserve contro taglio: nessun deadlock, il taglio dà CONFLICT" \
+  || fail "6: esiti inattesi ($(cat "$TMP/s1") / $(cat "$TMP/s2"))"
 
 if [ "$FAILS" -gt 0 ]; then echo "CONCORRENZA: $FAILS controlli falliti" >&2; exit 1; fi
 echo "CONCORRENZA: tutti i test passati"

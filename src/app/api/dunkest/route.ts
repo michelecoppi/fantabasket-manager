@@ -2,7 +2,7 @@ import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
-import { announceRumors, announceTrades } from "@/lib/telegram";
+import { announceRumors, announceSlotSwaps, announceTrades } from "@/lib/telegram";
 
 /**
  * Cron giornaliero di Vercel (vercel.json, `0 8 * * *` UTC = 9:00 italiane in ora solare): aggiorna punteggio, partite giocate e
@@ -37,6 +37,12 @@ export async function GET(request: Request) {
   if (!announced.skipped) {
     if (announced.sent) console.log(`[telegram] ${announced.sent} scambi annunciati`);
     if (announced.errors.length) console.error(`[telegram] ${announced.errors.join("; ")}`);
+  }
+  // Cambi titolari/riserve approvati e non ancora annunciati (R-04): di solito li manda l'action, qui si riprovano quelli falliti.
+  const swaps = await announceSlotSwaps(db, secret);
+  if (!swaps.skipped) {
+    if (swaps.sent) console.log(`[telegram] ${swaps.sent} cambi titolari/riserve annunciati`);
+    if (swaps.errors.length) console.error(`[telegram] ${swaps.errors.join("; ")}`);
   }
   // Rumors di trade mancati (proposte accettate da tutte le squadre e ancora da approvare), come rete per l'action dei proprietari.
   const rumors = await announceRumors(db, secret);

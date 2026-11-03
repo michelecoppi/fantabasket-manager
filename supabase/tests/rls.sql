@@ -20,6 +20,7 @@
 --  * admin: legge e scrive tutto, ma audit_log non si modifica né si cancella nemmeno da admin.
 --  * proposte di scambio (trade_proposal*): le leggono solo le squadre coinvolte e gli admin, nessuno le scrive direttamente
 --    (solo le RPC trade_* e admin_*). Le righe di prova coinvolgono la squadra del viewer, così il giro generico le vede.
+--  * richieste di cambio titolari/riserve (slot_swap_requests): come le proposte, le leggono la squadra della richiesta e gli admin.
 --
 -- Le tabelle e le RPC si leggono dal catalogo: una tabella nuova senza riga di prova, o con RLS spenta, e una RPC nuova senza
 -- `admin_guard()` fanno fallire il test.
@@ -164,6 +165,8 @@ insert into trade_proposals (id, season_id, proposer_team_id, teams, moves, rost
   from seasons s, (select id from teams order by name limit 1) a, (select id from teams order by name offset 1 limit 1) b where s.is_current;
 insert into trade_proposal_answers (proposal_id, team_id, answer) select 900001, id, 'reject' from teams order by name limit 1;
 insert into trade_proposal_events (id, proposal_id, kind) values (900001, 900001, 'sent');
+insert into slot_swap_requests (id, season_id, team_id, items, roster_rev, status)
+  select 900001, s.id, t.id, '[]'::jsonb, 0, 'declined' from seasons s, (select id from teams order by name limit 1) t where s.is_current;
 -- Sorteggio del draft (issue #103): la riga di prova occupa la stagione corrente, il giro del sorteggio la toglie e rifà la RPC.
 insert into draft_lotteries (season_id, draft_year, ranking, entrants, weights, seed, draws, drawn_by)
   select s.id, s.year + 1, array(select id from teams order by name), array[(select id from teams order by name desc limit 1)], array[1], 'rls', '[]', 'RLS'
@@ -197,7 +200,7 @@ begin
   -- Elenco esplicito: una tabella nuova senza la policy "admin write" per dimenticanza non passa come "solo RPC".
   perform rls_t.ok('tabelle scritte solo dalle RPC diverse dall''atteso',
     (select array_agg(name order by name) from rls_t.tbl where rpc_only)
-      = array['draft_lotteries', 'draft_lottery_views', 'trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
+      = array['draft_lotteries', 'draft_lottery_views', 'slot_swap_requests', 'trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
 
   insert into rls_t.rpc
   select p.proname,
@@ -1309,6 +1312,121 @@ begin
   perform rls_t.ok('l''admin non legge chi ha visto la rivelazione', rls_t.seen('draft_lottery_views') = 2);
   perform rls_t.become('postgres');
   perform rls_t.ok('viste segnate male', (select count(*) from draft_lottery_views where season_id = v_season) = 2);
+end $$;
+
+-- ---------- Cambi titolari ↔ riserve (R-04): proprietario, finestra, versioni, approvazione, annuncio ----------
+-- Il viewer è della prima squadra (t1), l'admin della seconda, l'intruso della terza (dal blocco delle proposte).
+do $$
+declare
+  t1 uuid := (select id from teams order by name limit 1);
+  t2 uuid := (select id from teams order by name offset 1 limit 1);
+  sid int := (select id from seasons where is_current);
+  req text := 'select public.slot_swap_request(%L, %s, %L)';
+  rev int;
+  v_items jsonb;
+  r int;
+  v int;
+  a jsonb;
+begin
+  perform rls_t.ok('gli helper dei cambi sono chiamabili dai client',
+    not has_function_privilege('authenticated', 'public.slots_apply(uuid,int,jsonb)', 'execute')
+    and not has_function_privilege('authenticated', 'public.slot_swap_items_check(uuid,int,jsonb)', 'execute'));
+  perform rls_t.ok('anon chiede o ritira un cambio',
+    not has_function_privilege('anon', 'public.slot_swap_request(uuid,int,jsonb)', 'execute')
+    and not has_function_privilege('anon', 'public.slot_swap_withdraw(int,int)', 'execute'));
+
+  insert into players (id, first_name, last_name, pos, nba_team) values
+    (900061, 'RLS', 'Titolare', 'G', 'TST'), (900062, 'RLS', 'Riserva', 'G', 'TST'), (900063, 'RLS', 'Altrui', 'G', 'TST');
+  insert into contracts (id, season_id, team_id, player_id, slot, years_left, salary) values
+    (900061, sid, t1, 900061, 'starter', 1, 6), (900062, sid, t1, 900062, 'reserve', 1, 2), (900063, sid, t2, 900063, 'starter', 1, 3);
+  rev := (select roster_rev from teams where id = t1);
+  v_items := jsonb_build_array(
+    jsonb_build_object('id', 900061, 'version', (select version from contracts where id = 900061), 'slot', 'reserve', 'label', 'RLS Titolare'),
+    jsonb_build_object('id', 900062, 'version', (select version from contracts where id = 900062), 'slot', 'starter'));
+  update seasons set slot_swap_open = false where id = sid;
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('il viewer apre la finestra dei cambi', rls_t.try('select public.admin_set_slot_swap_window(true)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('cambio a finestra chiusa', rls_t.try(format(req, t1, rev, v_items)), array['error: INVALID%']);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.ok('apertura della finestra', public.admin_set_slot_swap_window(true));
+  perform rls_t.chk('cambio per un''altra squadra', rls_t.try(format(req, t1, rev, v_items)), array['error: FORBIDDEN%']);
+
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('cambio con revisione vecchia', rls_t.try(format(req, t1, rev - 1, v_items)), array['error: CONFLICT%']);
+  perform rls_t.chk('cambio senza revisione', rls_t.try(format(req, t1, 'null', v_items)), array['error: INVALID%']);
+  perform rls_t.chk('cambio con versione vecchia',
+    rls_t.try(format(req, t1, rev, jsonb_set(v_items, '{0,version}', to_jsonb((v_items -> 0 ->> 'version')::int + 1)))), array['error: CONFLICT%']);
+  perform rls_t.chk('cambio verso la squadra talenti', rls_t.try(format(req, t1, rev, jsonb_set(v_items, '{0,slot}', '"talent"'))), array['error: INVALID%']);
+  perform rls_t.chk('cambio senza spostamento', rls_t.try(format(req, t1, rev, jsonb_set(v_items, '{0,slot}', '"starter"'))), array['error: INVALID%']);
+  perform rls_t.chk('cambio con un giocatore ripetuto', rls_t.try(format(req, t1, rev, v_items || (v_items -> 0))), array['error: INVALID%']);
+  perform rls_t.chk('cambio vuoto', rls_t.try(format(req, t1, rev, '[]')), array['error: INVALID%']);
+  perform rls_t.chk('cambio con un contratto di un''altra squadra',
+    rls_t.try(format(req, t1, rev, jsonb_build_array(jsonb_build_object('id', 900063, 'version', 1, 'slot', 'reserve')))), array['error: CONFLICT%']);
+  r := public.slot_swap_request(t1, rev, v_items);
+  perform rls_t.chk('seconda richiesta in attesa', rls_t.try(format(req, t1, rev, v_items)), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('richiesta non registrata',
+    exists (select 1 from slot_swap_requests where id = r and team_id = t1 and status = 'pending' and requested_by = rls_t.viewer()
+      and season_id = sid and roster_rev = rev and items -> 0 ->> 'label' = 'RLS Titolare'));
+
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.ok('l''intruso vede le richieste altrui', rls_t.seen('slot_swap_requests') = 0);
+  perform rls_t.chk('l''intruso ritira', rls_t.try(format('select public.slot_swap_withdraw(%s, 1)', r)), array['error: FORBIDDEN%']);
+
+  -- Approvazione: versione della richiesta e revisione della rosa di adesso; i contratti cambiano tutti insieme.
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := (select version from slot_swap_requests where id = r);
+  perform rls_t.chk('approvazione con versione vecchia', rls_t.try(format('select public.admin_approve_slot_swap(%s, %s, %s)', r, v + 1, rev)), array['error: CONFLICT%']);
+  perform rls_t.chk('approvazione con revisione vecchia', rls_t.try(format('select public.admin_approve_slot_swap(%s, %s, %s)', r, v, rev - 1)), array['error: CONFLICT%']);
+  perform rls_t.chk('respinta senza motivo', rls_t.try(format('select public.admin_decline_slot_swap(%s, %s, %L)', r, v, '  ')), array['error: INVALID%']);
+  perform rls_t.ok('cambio non applicato', public.admin_approve_slot_swap(r, v, rev) = 2);
+  perform rls_t.chk('seconda approvazione', rls_t.try(format('select public.admin_approve_slot_swap(%s, %s, %s)', r, v + 1, rev + 2)), array['error: CONFLICT%']);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('slot non cambiati', (select slot from contracts where id = 900061) = 'reserve' and (select slot from contracts where id = 900062) = 'starter');
+  perform rls_t.ok('richiesta non approvata', (select status from slot_swap_requests where id = r) = 'approved');
+  perform rls_t.ok('approvazione senza audit',
+    exists (select 1 from audit_log where action = 'slot_swap' and table_name = 'slot_swap_requests' and row_id = r::text and after ->> 'status' = 'approved')
+    and exists (select 1 from audit_log where table_name = 'contracts' and row_id = '900061' and after ->> 'slot' = 'reserve'));
+
+  -- Annuncio sul canale: solo il job o un admin, una presa alla volta.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('il viewer prende i cambi da annunciare', rls_t.try('select public.slot_swap_announce_claim(null, 72)'), array['error: FORBIDDEN%']);
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon segna un cambio annunciato', rls_t.try(format('select public.slot_swap_announce_done(null, %s, true)', r)), array['error: FORBIDDEN%']);
+  a := public.slot_swap_announce_claim('rls-segreto-del-job-0123', 72);
+  perform rls_t.ok('cambio da annunciare non preso',
+    jsonb_array_length(a) = 1 and (a -> 0 ->> 'id')::int = r and (a -> 0 ->> 'team') is not null and (a -> 0 ->> 'season_swaps')::int = 1
+    and exists (select 1 from jsonb_array_elements(a -> 0 -> 'items') i
+                where i ->> 'name' = 'RLS Titolare' and i ->> 'slot' = 'reserve' and i ->> 'pos' = 'G' and (i ->> 'salary')::numeric = 6));
+  perform rls_t.ok('presa non esclusiva', public.slot_swap_announce_claim('rls-segreto-del-job-0123', 72) = '[]'::jsonb);
+  perform rls_t.ok('cambio annunciato non segnato', public.slot_swap_announce_done('rls-segreto-del-job-0123', r, true));
+
+  -- Ritiro, respinta e chiusura della finestra (che ritira le richieste in attesa).
+  perform rls_t.become('postgres');
+  rev := (select roster_rev from teams where id = t1);
+  v_items := jsonb_build_array(
+    jsonb_build_object('id', 900061, 'version', (select version from contracts where id = 900061), 'slot', 'starter'),
+    jsonb_build_object('id', 900062, 'version', (select version from contracts where id = 900062), 'slot', 'reserve'));
+  perform rls_t.become('authenticated', rls_t.viewer());
+  r := public.slot_swap_request(t1, rev, v_items);
+  perform rls_t.chk('ritiro con versione vecchia', rls_t.try(format('select public.slot_swap_withdraw(%s, 99)', r)), array['error: CONFLICT%']);
+  perform rls_t.ok('ritiro non riuscito', public.slot_swap_withdraw(r, 1) = 2);
+  perform rls_t.chk('ritiro di una richiesta già ritirata', rls_t.try(format('select public.slot_swap_withdraw(%s, 2)', r)), array['error: CONFLICT%']);
+  r := public.slot_swap_request(t1, rev, v_items);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.ok('respinta non riuscita', public.admin_decline_slot_swap(r, 1, '  Prima fallo su Dunkest  ') = 2);
+  perform rls_t.become('authenticated', rls_t.viewer());
+  r := public.slot_swap_request(t1, rev, v_items);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.ok('chiusura della finestra', not public.admin_set_slot_swap_window(false));
+  perform rls_t.become('postgres');
+  perform rls_t.ok('respinta senza motivo salvato',
+    exists (select 1 from slot_swap_requests where team_id = t1 and status = 'declined' and decision_note = 'Prima fallo su Dunkest' and decided_by = rls_t.admin()));
+  perform rls_t.ok('la chiusura non ritira le richieste in attesa',
+    (select status from slot_swap_requests where id = r) = 'withdrawn' and not (select slot_swap_open from seasons where id = sid)
+    and exists (select 1 from audit_log where action = 'slot_swap' and table_name = 'seasons' and after ->> 'summary' like '%1 richieste ritirate%'));
+  perform rls_t.ok('contratti toccati da ritiro o respinta', (select slot from contracts where id = 900061) = 'reserve');
 end $$;
 
 do $$ begin
