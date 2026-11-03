@@ -105,7 +105,7 @@ export function PlayerListing({
 
   return (
     <>
-      <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 shadow-[0_12px_30px_-24px_rgb(6_10_20/0.6)] backdrop-blur-md md:sticky md:top-[4.5rem] md:shadow-[0_-0.5rem_0_0_var(--background),0_12px_30px_-24px_rgb(6_10_20/0.6)]">
+      <div className="z-10 rounded-2xl border border-line bg-surface/90 p-3 backdrop-blur-md sticky top-[calc(4.5rem+env(safe-area-inset-top))] shadow-[0_-0.5rem_0_0_var(--background),0_12px_30px_-24px_rgb(6_10_20/0.6)]">
         <PlayerFiltersBar value={v} nbaTeams={nbaTeams} withPdk={withPdk} onChange={change} onReset={reset} />
       </div>
 

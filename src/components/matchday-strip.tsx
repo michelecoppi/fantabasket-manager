@@ -14,7 +14,8 @@ const STATE_LABEL: Record<MatchdayState, string> = { played: "giocata", latest: 
 
 /**
  * Calendario come striscia di giornate (stato nell'URL, `?giornata=N`): giocate piene, l'ultima con punti con l'anello oro,
- * da giocare tratteggiate. All'apertura la giornata scelta scorre al centro.
+ * da giocare tratteggiate. All'apertura la giornata scelta scorre al centro. Sotto, i salti (precedente, ultima con punti,
+ * successiva): con 100 giornate a stagione scorrere la striscia a mano per tornare all'ultima è scomodo.
  */
 export function MatchdayStrip({
   days,
@@ -40,6 +41,13 @@ export function MatchdayStrip({
     box.scrollTo({ left: left - box.clientWidth / 2 + el.clientWidth / 2, behavior: "instant" });
   }, [selected]);
 
+  const href = (n: number) => `${hrefBase}?${query ? `${query}&` : ""}giornata=${n}`;
+  const at = days.findIndex((d) => d.matchday === selected);
+  const prev = at > 0 ? days[at - 1] : null;
+  const next = at >= 0 && at < days.length - 1 ? days[at + 1] : null;
+  const latest = days.find((d) => d.state === "latest") ?? null;
+  const jump = "inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-sm font-bold text-brand-blue transition-colors hover:bg-surface-subtle dark:text-gold";
+
   return (
     <nav aria-label="Giornate" className="min-w-0">
       <div ref={ref} style={{ maskImage: mask }} className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1">
@@ -55,7 +63,7 @@ export function MatchdayStrip({
           return (
             <Link
               key={d.matchday}
-              href={`${hrefBase}?${query ? `${query}&` : ""}giornata=${d.matchday}`}
+              href={href(d.matchday)}
               scroll={false}
               aria-current={active ? "true" : undefined}
               aria-label={`Giornata ${d.matchday}, ${STATE_LABEL[d.state]}`}
@@ -65,6 +73,23 @@ export function MatchdayStrip({
             </Link>
           );
         })}
+      </div>
+      <div className="mt-1 flex items-center gap-1">
+        {prev && (
+          <Link href={href(prev.matchday)} scroll={false} className={jump} aria-label={`Giornata precedente, la ${prev.matchday}`}>
+            <span aria-hidden>‹</span> G{prev.matchday}
+          </Link>
+        )}
+        {latest && latest.matchday !== selected && (
+          <Link href={href(latest.matchday)} scroll={false} className={`${jump} mx-auto`}>
+            Ultima con punti · G{latest.matchday}
+          </Link>
+        )}
+        {next && (
+          <Link href={href(next.matchday)} scroll={false} className={`${jump} ml-auto`} aria-label={`Giornata successiva, la ${next.matchday}`}>
+            G{next.matchday} <span aria-hidden>›</span>
+          </Link>
+        )}
       </div>
     </nav>
   );

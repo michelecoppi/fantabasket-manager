@@ -144,3 +144,65 @@ export function seasonTrophies(
   });
   return { matchdays: closed.map((d) => d.matchday), withoutLineups, teams: cases };
 }
+
+// ---------- Riepilogo di uno scaffale ----------
+
+/** Premi in cui il «record» è il valore più basso: i peggiori e lo scarto più stretto. */
+const LOWER_IS_RECORD: AwardKind[] = ["captain_worst", "team_worst", "photo_finish"];
+
+export interface ShelfGroup {
+  /** chiave del gruppo: il giocatore (nome) o l'avversaria (id) */
+  key: string;
+  /** giocatore, nei premi individuali */
+  name?: string;
+  /** avversaria, nei premi di scontro */
+  vsTeamId?: string;
+  count: number;
+  /** miglior valore del gruppo (nel verso del premio) */
+  best: number;
+}
+
+export interface ShelfSummary {
+  kind: AwardKind;
+  count: number;
+  /** ultima giornata vinta */
+  last: number;
+  /** miglior valore della stagione, nel verso del premio, e la giornata */
+  record: { value: number; matchday: number };
+  /** chi ha portato il premio (giocatori o avversarie), dal più frequente; vuoto per i premi di squadra */
+  groups: ShelfGroup[];
+  /** giornate vinte, in ordine (una giornata con premio condiviso compare una volta) */
+  matchdays: number[];
+}
+
+/**
+ * Riepilogo di uno scaffale della vetrina: quante volte, l'ultima, il record e, per i premi individuali o di scontro, chi li ha
+ * portati. Così la mensola resta della stessa altezza dalla prima all'ultima giornata e il dettaglio si apre a richiesta.
+ * `null` se il premio non è mai stato vinto.
+ */
+export function shelfSummary(kind: AwardKind, wins: readonly TrophyWin[]): ShelfSummary | null {
+  const mine = wins.filter((w) => w.kind === kind);
+  if (mine.length === 0) return null;
+  const lower = LOWER_IS_RECORD.includes(kind);
+  const better = (a: number, b: number) => (lower ? cents(a) < cents(b) : cents(a) > cents(b));
+  const ordered = [...mine].sort((a, b) => a.matchday - b.matchday);
+  const record = ordered.reduce((r, w) => (better(w.value, r.value) ? { value: w.value, matchday: w.matchday } : r), { value: ordered[0].value, matchday: ordered[0].matchday });
+  const groups = new Map<string, ShelfGroup>();
+  for (const w of ordered) {
+    const key = w.name ?? w.vsTeamId;
+    if (key === undefined) continue;
+    const g = groups.get(key);
+    if (g) {
+      g.count += 1;
+      if (better(w.value, g.best)) g.best = w.value;
+    } else groups.set(key, { key, ...(w.name ? { name: w.name } : { vsTeamId: w.vsTeamId }), count: 1, best: w.value });
+  }
+  return {
+    kind,
+    count: mine.length,
+    last: ordered[ordered.length - 1].matchday,
+    record,
+    groups: [...groups.values()].sort((a, b) => b.count - a.count || (better(a.best, b.best) ? -1 : better(b.best, a.best) ? 1 : a.key.localeCompare(b.key))),
+    matchdays: [...new Set(ordered.map((w) => w.matchday))],
+  };
+}

@@ -3,61 +3,190 @@ import { AWARD_META } from "@/lib/awards-meta";
 import { TeamCrest } from "@/components/crest";
 import { fpt, type TeamIndex } from "@/components/dunkest-league";
 import { Icon } from "@/components/icons";
-import { stagger } from "@/components/ui";
-import { SHAME_KINDS, TROPHY_KINDS, type AwardKind, type SeasonTrophies, type TrophyWin } from "@/lib/awards";
+import { Scoreboard, stagger } from "@/components/ui";
+import { SHAME_KINDS, shelfSummary, TROPHY_KINDS, type AwardKind, type SeasonTrophies, type ShelfSummary, type TrophyWin } from "@/lib/awards";
 
 /*
- * Vetrina stagionale (Fase 6): i premi della giornata vinti da una squadra in tutta la stagione. Una mensola di trofei (uno
- * scaffale per tipo di premio, col numero di vittorie e le giornate) e, a parte, la mensola della vergogna coi premi al
- * contrario, che non si sommano. Accanto, la bacheca della lega: chi ha più trofei.
+ * Vetrina stagionale (Fase 6): i premi della giornata vinti da una squadra in tutta la stagione. Una mensola di trofei (una
+ * tessera per premio vinto, col numero, l'ultima giornata e il record; il dettaglio per giocatore e giornata in un foglio) e, a
+ * parte, la mensola della vergogna coi premi al contrario, che non si sommano. Accanto, la bacheca della lega: chi ha più
+ * trofei. Con 100 giornate a stagione le mensole non crescono: cresce solo il numero sulla tessera.
  */
 
 const team = (teams: TeamIndex, id: string) => teams.get(id) ?? { name: "?", owner: "", color: "var(--muted)" };
 
-/** Chi ha vinto, in breve: il giocatore, o l'avversaria per i premi di scontro, o niente per i premi di squadra. */
-function who(w: TrophyWin, teams: TeamIndex): string {
-  if (w.name) return `${w.name} ${fpt(w.value)}`;
-  if (w.kind === "blowout" || w.kind === "photo_finish") return `+${fpt(w.value)} su ${team(teams, w.vsTeamId ?? "").name}`;
-  return fpt(w.value);
+/** Valore come lo dice il premio: punti del giocatore o della squadra, scarto per gli scontri. */
+const val = (kind: AwardKind, v: number) => (kind === "blowout" || kind === "photo_finish" ? `+${fpt(v)}` : fpt(v));
+
+const sheetIdOf = (teamId: string, kind: AwardKind) => `vetrina-${teamId}-${kind}`;
+
+/**
+ * Scaffale compatto: icona, nome, «×N», ultima giornata e record. Resta della stessa altezza dalla prima all'ultima delle
+ * 100 giornate; tutta la tessera apre il dettaglio (foglio a comparsa).
+ */
+function Tile({ s, teamId, shame, i }: { s: ShelfSummary; teamId: string; shame: boolean; i: number }) {
+  const a = AWARD_META[s.kind];
+  const tone = shame ? "bg-danger/10 text-danger" : a.tone === "gold" ? "bg-gold text-nav" : "bg-brand-blue/12 text-brand-blue";
+  return (
+    <li className="rise min-w-0" style={stagger(i)}>
+      <button
+        type="button"
+        popoverTarget={sheetIdOf(teamId, s.kind)}
+        className={`group flex h-full w-full min-w-0 flex-col gap-2 rounded-2xl border bg-surface p-3 text-left transition-colors ${shame ? "border-danger/25 hover:border-danger/50" : "border-gold/50 hover:border-gold"}`}
+      >
+        <span className="flex w-full items-start gap-2">
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}>
+            <Icon name={a.icon} size={17} strokeWidth={2.2} />
+          </span>
+          <span className={`font-display tnum ml-auto text-3xl leading-none font-black ${shame ? "text-danger" : "text-highlight"}`}>
+            ×{s.count}
+            <span className="sr-only"> {s.count === 1 ? "volta" : "volte"}</span>
+          </span>
+        </span>
+        <span className="font-display line-clamp-2 text-base leading-[0.95] font-extrabold">{a.label}</span>
+        <span className="mt-auto flex w-full min-w-0 items-center gap-1 text-[0.6875rem] text-muted">
+          <span className="truncate">
+            ultima G{s.last} · record {val(s.kind, s.record.value)}
+          </span>
+          <Icon name="chevron" size={13} className="ml-auto shrink-0 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </button>
+    </li>
+  );
 }
 
-function Shelf({ kind, wins, teams, shame, i }: { kind: AwardKind; wins: TrophyWin[]; teams: TeamIndex; shame: boolean; i: number }) {
-  const a = AWARD_META[kind];
-  const has = wins.length > 0;
-  const tone = !has ? "bg-surface-subtle text-muted" : shame ? "bg-danger/10 text-danger" : a.tone === "gold" ? "bg-gold text-nav" : "bg-brand-blue/12 text-brand-blue";
+/** Dettaglio di uno scaffale: numeri, chi l'ha portato (giocatori o avversarie) e le giornate, che portano ai premi di quel giorno. */
+function ShelfSheet({ s, teamId, teams, shame }: { s: ShelfSummary; teamId: string; teams: TeamIndex; shame: boolean }) {
+  const a = AWARD_META[s.kind];
+  const id = sheetIdOf(teamId, s.kind);
+  const vs = s.kind === "blowout" || s.kind === "photo_finish";
   return (
-    <li
-      className={`rise flex min-w-0 flex-col gap-2.5 rounded-2xl border p-3.5 ${has ? (shame ? "border-danger/25 bg-surface" : "border-gold/50 bg-surface") : "border-dashed border-line"}`}
-      style={stagger(i)}
-    >
-      <div className="flex items-start gap-2.5">
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${tone}`}>
-          <Icon name={a.icon} size={18} strokeWidth={2.2} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={`font-display block text-lg leading-[0.95] font-extrabold ${has ? "" : "text-muted"}`}>{a.label}</span>
-        </span>
-        <span className={`font-display tnum shrink-0 text-3xl leading-none font-black ${!has ? "text-muted" : shame ? "text-danger" : "text-highlight"}`}>
-          {has ? `×${wins.length}` : "–"}
-          <span className="sr-only">{has ? ` ${wins.length === 1 ? "volta" : "volte"}` : " nessuno"}</span>
-        </span>
+    <div id={id} popover="auto" role="dialog" aria-labelledby={`${id}-titolo`} className="sheet">
+      <div className="arena px-5 pt-3 pb-5 sm:px-6 sm:pt-5">
+        <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-full bg-white/25 sm:hidden" />
+        <div className="relative z-[2] flex items-start gap-3">
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${shame ? "bg-danger text-white" : "bg-gold text-nav"}`}>
+            <Icon name={a.icon} size={20} strokeWidth={2.2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id={`${id}-titolo`} className="font-display text-3xl leading-none font-black">
+              {a.label}
+            </h2>
+            <p className="mt-1 text-xs text-white/65">
+              {team(teams, teamId).name} · {a.hint}
+            </p>
+          </div>
+          <button
+            type="button"
+            popoverTarget={id}
+            popoverTargetAction="hide"
+            aria-label="Chiudi"
+            className="-mt-1 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <Icon name="x" size={20} strokeWidth={2.2} />
+          </button>
+        </div>
+        <div className="relative z-[2] mt-4">
+          <Scoreboard
+            items={[
+              { label: "Vinti", value: `×${s.count}`, tone: shame ? "bad" : "gold" },
+              { label: "Record", value: val(s.kind, s.record.value) },
+              { label: "Ultima", value: `G${s.last}` },
+            ]}
+          />
+        </div>
       </div>
-      {has && (
-        <ul className="flex flex-wrap gap-1">
-          {wins.map((w) => (
-            <li key={`${w.matchday}-${w.name ?? ""}-${w.vsTeamId ?? ""}`}>
-              <Link
-                href={`/classifica?vista=premi&giornata=${w.matchday}`}
-                className="inline-flex max-w-full items-center gap-1 rounded-full border border-line bg-surface-subtle/60 py-0.5 pr-2 pl-1 text-[0.6875rem] transition-colors hover:border-brand-blue"
-              >
-                <span className="font-display tnum rounded-full bg-surface px-1.5 text-xs leading-4 font-black">G{w.matchday}</span>
-                <span className="truncate text-muted">{who(w, teams)}</span>
-              </Link>
-            </li>
+      <div className="space-y-5 px-5 py-5 sm:px-6">
+        {s.groups.length > 0 && (
+          <section>
+            <h3 className="eyebrow mb-2 text-muted">{vs ? "Contro chi" : "Chi li ha portati"}</h3>
+            <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+              {s.groups.map((g) => {
+                const other = g.vsTeamId ? team(teams, g.vsTeamId) : null;
+                return (
+                  <li key={g.key} className="flex min-h-11 items-center gap-2.5 px-3 py-2">
+                    {other && <TeamCrest name={other.name} color={other.color} size="xs" />}
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">{other ? other.name : g.name}</span>
+                    <span className="tnum shrink-0 text-xs text-muted">record {val(s.kind, g.best)}</span>
+                    <span className={`font-display tnum w-10 shrink-0 text-right text-xl leading-none font-black ${shame ? "text-danger" : "text-highlight"}`}>×{g.count}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+        <section>
+          <h3 className="eyebrow mb-2 text-muted">Giornate</h3>
+          <ul className="flex flex-wrap gap-1.5">
+            {s.matchdays.map((d) => (
+              <li key={d}>
+                <Link
+                  href={`/classifica?vista=premi&giornata=${d}`}
+                  className={`font-display tnum inline-flex min-h-9 min-w-11 items-center justify-center rounded-lg border px-2 text-base leading-none font-extrabold transition-colors hover:border-brand-blue ${
+                    d === s.record.matchday ? (shame ? "border-danger/50 text-danger" : "border-gold text-highlight") : "border-line"
+                  }`}
+                  title={d === s.record.matchday ? "Giornata del record" : undefined}
+                >
+                  G{d}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-muted">Bordo colorato: la giornata del record. Tocca una giornata per vedere tutti i premi di quel turno.</p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Una mensola: le tessere dei premi vinti e, in una riga sola, quelli mai vinti (invece di tessere vuote). I fogli del dettaglio
+ * stanno fuori dalla griglia.
+ */
+function Shelf({
+  id,
+  title,
+  aside,
+  kinds,
+  wins,
+  teamId,
+  teams,
+  shame,
+}: {
+  id: string;
+  title: string;
+  aside?: string;
+  kinds: AwardKind[];
+  wins: TrophyWin[];
+  teamId: string;
+  teams: TeamIndex;
+  shame: boolean;
+}) {
+  const summaries = kinds.map((k) => shelfSummary(k, wins)).filter((x): x is ShelfSummary => x !== null);
+  const never = kinds.filter((k) => !summaries.some((x) => x.kind === k));
+  return (
+    <section aria-labelledby={id}>
+      <h3 id={id} className="eyebrow mb-2 flex items-baseline justify-between gap-2 text-muted">
+        <span>{title}</span>
+        {aside && <span className="tracking-normal normal-case">{aside}</span>}
+      </h3>
+      {summaries.length > 0 && (
+        <ul className={`grid grid-cols-2 gap-2 ${shame ? "" : "sm:grid-cols-3"}`}>
+          {summaries.map((x, i) => (
+            <Tile key={x.kind} s={x} teamId={teamId} shame={shame} i={i} />
           ))}
         </ul>
       )}
-    </li>
+      {never.length > 0 && (
+        <p className={`text-xs text-muted ${summaries.length > 0 ? "mt-2" : "rounded-2xl border border-dashed border-line px-3.5 py-3"}`}>
+          <span className="font-semibold">{summaries.length > 0 ? "Mai vinti: " : shame ? "Nessuno, per ora: " : "Ancora nessun trofeo: "}</span>
+          {never.map((k) => AWARD_META[k].label).join(" · ")}
+        </p>
+      )}
+      {summaries.map((x) => (
+        <ShelfSheet key={x.kind} s={x} teamId={teamId} teams={teams} shame={shame} />
+      ))}
+    </section>
   );
 }
 
@@ -104,28 +233,8 @@ export function TrophyCase({ teamId, season, teams, you }: { teamId: string; sea
           </span>
         </div>
 
-        <section aria-labelledby="mensola-trofei">
-          <h3 id="mensola-trofei" className="eyebrow mb-2 text-muted">
-            Mensola dei trofei
-          </h3>
-          <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-            {TROPHY_KINDS.map((k, i) => (
-              <Shelf key={k} kind={k} wins={trophies.filter((t) => t.kind === k)} teams={teams} shame={false} i={i} />
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="mensola-vergogna">
-          <h3 id="mensola-vergogna" className="eyebrow mb-2 flex items-baseline justify-between gap-2 text-muted">
-            <span>Mensola della vergogna</span>
-            <span className="tracking-normal normal-case">non conta nei trofei</span>
-          </h3>
-          <ul className="grid gap-2.5 sm:grid-cols-2">
-            {SHAME_KINDS.map((k, i) => (
-              <Shelf key={k} kind={k} wins={shame.filter((t) => t.kind === k)} teams={teams} shame i={i} />
-            ))}
-          </ul>
-        </section>
+        <Shelf id="mensola-trofei" title="Mensola dei trofei" kinds={TROPHY_KINDS} wins={trophies} teamId={teamId} teams={teams} shame={false} />
+        <Shelf id="mensola-vergogna" title="Mensola della vergogna" aside="non conta nei trofei" kinds={SHAME_KINDS} wins={shame} teamId={teamId} teams={teams} shame />
 
         {season.withoutLineups.length > 0 && (
           <p className="text-xs text-muted">

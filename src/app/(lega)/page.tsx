@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomeTodoList } from "@/components/home-todo";
 import { MatchdayCard } from "@/components/matchday-card";
 import { CapLine } from "@/components/cap-line";
 import { ChipLinks } from "@/components/chips";
@@ -13,7 +14,8 @@ import { fmt, fmtDay, fmtEuro } from "@/lib/format";
 import { matchdayAwards } from "@/lib/awards";
 import { teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
 import { followingDay } from "@/lib/dunkest-rounds";
-import { loadDunkest, loadLatestNight, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRounds } from "@/lib/league-server";
+import { loadDunkest, loadLatestNight, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadProposals, loadRounds, loadSlotSwaps, loadSlotSwapWindow, loadTradeMarket } from "@/lib/league-server";
+import { homeTodo } from "@/lib/home-todo";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -51,7 +53,7 @@ export default async function Home(props: PageProps<"/">) {
     const award = matchdayAwards(day.matches, await loadLineups(day.matches.map((m) => m.id))).find((a) => a.kind === "mvp");
     return award ? { award, matchday: day.matchday } : null;
   };
-  const [league, profile, dunkest, view, mvp, night, rounds] = await Promise.all([
+  const [league, profile, dunkest, view, mvp, night, rounds, proposals, swaps, swapWindowOpen, marketOpen] = await Promise.all([
     loadLeague(),
     loadProfile(),
     loadDunkest(),
@@ -59,7 +61,13 @@ export default async function Home(props: PageProps<"/">) {
     loadLeagueDunkest().then(mvpOf),
     loadLatestNight(5),
     loadRounds(),
+    // «Da fare»: tolleranti, se una lettura fallisce la sua voce si salta
+    loadProposals().catch(() => null),
+    loadSlotSwaps().catch(() => null),
+    loadSlotSwapWindow().catch(() => null),
+    loadTradeMarket().catch(() => null),
   ]);
+  const todo = homeTodo({ teamId: profile?.team_id ?? null, admin: profile?.role === "admin", proposals, swaps, swapWindowOpen, marketOpen });
   // Infortunati di ogni rosa secondo Dunkest (issue #68).
   const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
   const { settings } = league;
@@ -95,8 +103,9 @@ export default async function Home(props: PageProps<"/">) {
   return (
     <>
       <section className="arena sweep -mx-4 sm:mx-0 sm:rounded-3xl lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(24rem,0.9fr)]" aria-labelledby="dashboard-title">
-        {/* su telefono la testata è più bassa: la tua franchigia (il dato che si cerca aprendo l'app) arriva prima */}
-        <div className="relative z-[2] flex flex-col px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
+        {/* su telefono la testata non c'è: la tua franchigia (il dato che si cerca aprendo l'app) apre la pagina; scambio e
+            listone sono già nella tab bar, e cap, floor e riserve sono costanti del regolamento */}
+        <div className="relative z-[2] flex flex-col px-5 py-7 max-sm:hidden sm:px-9 sm:py-10 lg:px-11 lg:py-12">
           <p className="rise eyebrow flex items-center gap-2 text-white/60">
             <span className="h-2 w-2 rounded-full bg-gold shadow-[0_0_10px_var(--gold)]" />
             Front office · Stagione {league.seasonYear}
@@ -138,7 +147,7 @@ export default async function Home(props: PageProps<"/">) {
           </div>
         </div>
 
-        <div className="relative z-[2] border-t border-white/10 bg-brand-blue/[0.04] px-5 py-8 dark:bg-black/20 backdrop-blur-[2px] sm:px-9 lg:border-t-0 lg:border-l lg:px-9 lg:py-12">
+        <div className="relative z-[2] bg-brand-blue/[0.04] px-5 py-6 dark:bg-black/20 backdrop-blur-[2px] sm:border-t sm:border-white/10 sm:px-9 sm:py-8 lg:border-t-0 lg:border-l lg:px-9 lg:py-12">
           {myTeam ? (
             <div className="flex h-full flex-col justify-center">
               <div className="flex items-center gap-4">
@@ -153,7 +162,7 @@ export default async function Home(props: PageProps<"/">) {
                   <p className="mt-1 truncate text-sm text-white/60">{myTeam.team.owner_name}</p>
                 </div>
               </div>
-              <div className="my-7 rounded-2xl border border-white/10 bg-board px-5 py-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+              <div className="my-5 rounded-2xl sm:my-7 border border-white/10 bg-board px-5 py-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
                 <p className="eyebrow text-white/60">{myTeam.finance.overCap ? "Oltre il cap" : "Spazio salariale"}</p>
                 <p className={`font-display tnum mt-1 text-[clamp(4.5rem,11vw,7rem)] leading-[0.85] font-black ${myTeam.finance.overCap ? "text-arena-bad" : "jumbo"}`}>
                   <CountUp value={myTeam.finance.capSpace} />
@@ -163,7 +172,7 @@ export default async function Home(props: PageProps<"/">) {
               </div>
               {myStanding && (
                 <Link
-                  href={`/squadre/${myTeam.team.id}#formazione`}
+                  href={`/squadre/${myTeam.team.id}?vista=dunkest#formazione`}
                   className="group mb-2 -mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm transition-colors hover:border-white/25 hover:bg-white/8"
                 >
                   <span aria-hidden className="font-display tnum grid h-[22px] min-w-[22px] place-items-center rounded-md bg-gold px-1 text-base leading-none font-black text-nav">{myStanding.position}</span>
@@ -259,28 +268,7 @@ export default async function Home(props: PageProps<"/">) {
         </div>
       </section>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Situazione della lega">
-        <PulseTile i={1} icon="flame" label="Sopra il cap" value={String(overCap)} tone={overCap > 0 ? "bad" : "good"} />
-        <PulseTile i={2} icon="alert" label="Sotto il salary floor" value={String(belowFloor)} tone={belowFloor > 0 ? "warn" : "good"} />
-        <PulseTile i={3} icon="clipboard" label="Rose incomplete" value={String(incomplete)} tone={incomplete > 0 ? "warn" : "good"} />
-        <PulseTile i={4} icon="coins" label="Luxury tax da incassare" value={`${fmtEuro(taxDue)} €`} />
-      </div>
-
-      {/* Issue #104: il playground dell'asta, da far provare alla lega prima di costruire quella vera. */}
-      <Link
-        href="/asta"
-        className="rise group arena mt-3 flex items-center gap-3 rounded-2xl border border-transparent py-3 pr-4 pl-3 transition-[filter] hover:brightness-[1.04] sm:pl-4 dark:hover:brightness-125"
-        style={stagger(5)}
-      >
-        <span className="relative z-[2] grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold text-nav">
-          <Icon name="gavel" size={20} strokeWidth={2.2} />
-        </span>
-        <span className="relative z-[2] min-w-0 flex-1">
-          <span className="eyebrow block truncate text-white/55">Novità · playground</span>
-          <span className="block truncate font-semibold">Prova la sala d&apos;asta</span>
-        </span>
-        <Icon name="arrow-right" size={18} strokeWidth={2.2} className="relative z-[2] shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
-      </Link>
+      <HomeTodoList items={todo} />
 
       {hasStandings && (
         <section className="mt-12" aria-labelledby="league-standings-title">
@@ -299,6 +287,7 @@ export default async function Home(props: PageProps<"/">) {
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <StandingsTable league={view} teams={index} myTeamId={myTeam?.team.id} compact />
             {latestDay && (
+              <div className="max-lg:order-first">
               <MatchdayCard
                 day={latestDay}
                 mvp={mvp}
@@ -307,6 +296,7 @@ export default async function Home(props: PageProps<"/">) {
                 rounds={rounds.get(latestDay.matchday)}
                 following={followingDay(rounds, latestDay.matchday)}
               />
+              </div>
             )}
           </div>
           <div className="mt-3">
@@ -335,6 +325,22 @@ export default async function Home(props: PageProps<"/">) {
         </section>
       )}
 
+      {/* Issue #104: il playground dell'asta, da far provare alla lega prima di costruire quella vera. */}
+      <Link
+        href="/asta"
+        className="rise group arena mt-12 flex items-center gap-3 rounded-2xl border border-transparent py-3 pr-4 pl-3 transition-[filter] hover:brightness-[1.04] sm:pl-4 dark:hover:brightness-125"
+        style={stagger(5)}
+      >
+        <span className="relative z-[2] grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold text-nav">
+          <Icon name="gavel" size={20} strokeWidth={2.2} />
+        </span>
+        <span className="relative z-[2] min-w-0 flex-1">
+          <span className="eyebrow block truncate text-white/55">Novità · playground</span>
+          <span className="block truncate font-semibold">Prova la sala d&apos;asta</span>
+        </span>
+        <Icon name="arrow-right" size={18} strokeWidth={2.2} className="relative z-[2] shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
+      </Link>
+
       <section className="mt-12" aria-labelledby="league-board-title">
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div>
@@ -347,6 +353,13 @@ export default async function Home(props: PageProps<"/">) {
             {teams.length} di {league.teams.length} franchigie · non è una classifica
           </p>
         </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Situazione della lega">
+        <PulseTile i={1} icon="flame" label="Sopra il cap" value={String(overCap)} tone={overCap > 0 ? "bad" : "good"} />
+        <PulseTile i={2} icon="alert" label="Sotto il salary floor" value={String(belowFloor)} tone={belowFloor > 0 ? "warn" : "good"} />
+        <PulseTile i={3} icon="clipboard" label="Rose incomplete" value={String(incomplete)} tone={incomplete > 0 ? "warn" : "good"} />
+        <PulseTile i={4} icon="coins" label="Luxury tax da incassare" value={`${fmtEuro(taxDue)} €`} />
+      </div>
 
         <div className="mt-5 flex flex-col gap-2 border-y border-line py-3 lg:flex-row lg:items-center lg:justify-between">
           <ChipLinks label="Ordina" options={sorts.map((s) => ({ href: boardHref({ ...options, sort: s.value }), label: s.label, active: options.sort === s.value }))} />
@@ -439,18 +452,23 @@ export default async function Home(props: PageProps<"/">) {
                                 Rosa incompleta
                               </Badge>
                             )}
-                            <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
-                              Quota {t.entryFeePaid ? "pagata" : "da pagare"}
-                            </Badge>
+                            {/* su telefono solo ciò che richiede attenzione: le quote già pagate restano nella pagina squadra */}
+                            <span className={t.entryFeePaid ? "max-sm:hidden" : undefined}>
+                              <Badge tone={t.entryFeePaid ? "good" : "neutral"} icon={t.entryFeePaid ? "check" : "coins"}>
+                                Quota {t.entryFeePaid ? "pagata" : "da pagare"}
+                              </Badge>
+                            </span>
                             {injuredOf(t).length > 0 && (
                               <Badge tone="bad" icon="medkit" title={injuredOf(t).map((p) => p.name).join(", ")}>
                                 {injuredOf(t).length} {injuredOf(t).length === 1 ? "infortunato" : "infortunati"}
                               </Badge>
                             )}
                             {f.luxuryTaxEur > 0 && (
-                              <Badge tone={t.luxuryTaxPaid ? "good" : "bad"} icon="coins">
-                                Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}
-                              </Badge>
+                              <span className={t.luxuryTaxPaid ? "max-sm:hidden" : undefined}>
+                                <Badge tone={t.luxuryTaxPaid ? "good" : "bad"} icon="coins">
+                                  Luxury tax {fmtEuro(f.luxuryTaxEur)} € {t.luxuryTaxPaid ? "pagata" : "da pagare"}
+                                </Badge>
+                              </span>
                             )}
                           </div>
                         </div>

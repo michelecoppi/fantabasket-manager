@@ -490,6 +490,8 @@ export const loadDunkestRosters = cache(async (): Promise<Map<string, DunkestRos
  * Formazioni schierate negli scontri indicati: scontro → squadra → giocatori. Vuoto se non si leggono. Paginata (PostgREST
  * taglia a 1000 righe): una stagione intera, per la vetrina dei trofei, supera le 1000 righe dalla tredicesima giornata.
  */
+const LINEUP_CHUNK = 40;
+
 export function loadLineups(matchIds: number[]): Promise<Map<number, Map<string, LineupPlayer[]>>> {
   // Chiave canonica: la stessa richiesta fatta da due componenti della pagina legge il database una volta sola.
   return loadLineupsByKey([...new Set(matchIds)].sort((a, b) => a - b).join(","));
@@ -500,16 +502,24 @@ const loadLineupsByKey = cache(async (key: string): Promise<Map<number, Map<stri
   const matchIds = key.split(",").map(Number);
   try {
     const db = await createClient();
-    const rows = await fetchAll((from, to) =>
-      db
-        .from("dunkest_lineups")
-        .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
-        .in("match_id", matchIds)
-        .order("match_id")
-        .order("team_id")
-        .order("court_position")
-        .range(from, to),
+    // A blocchi di scontri letti in parallelo: una stagione intera (400 scontri, circa 8.000 righe) è un'attesa sola invece di
+    // otto pagine da 1000 in fila. 40 scontri × 2 squadre × ~10 schierati stanno sotto le 1000 righe; fetchAll pagina comunque.
+    const chunks = Array.from({ length: Math.ceil(matchIds.length / LINEUP_CHUNK) }, (_, i) => matchIds.slice(i * LINEUP_CHUNK, (i + 1) * LINEUP_CHUNK));
+    const parts = await Promise.all(
+      chunks.map((ids) =>
+        fetchAll((from, to) =>
+          db
+            .from("dunkest_lineups")
+            .select("match_id,team_id,fantasy_player_id,player_id,name,pos,role,court_position,is_captain,is_sixth_man,pts")
+            .in("match_id", ids)
+            .order("match_id")
+            .order("team_id")
+            .order("court_position")
+            .range(from, to),
+        ),
+      ),
     );
+    const rows = parts.flat();
     const byMatch = groupBy(rows, (row) => Number(row.match_id));
     return new Map(
       [...byMatch].map(([match, matchRows]) => [

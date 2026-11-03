@@ -311,6 +311,14 @@ const paths = {
       <path d="M6 6l12 12" />
     </>
   ),
+  // Altro: menu (menu-2)
+  menu: (
+    <>
+      <path d="M4 6l16 0" />
+      <path d="M4 12l16 0" />
+      <path d="M4 18l16 0" />
+    </>
+  ),
   lock: (
     <>
       <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6" />

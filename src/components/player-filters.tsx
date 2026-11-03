@@ -1,7 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import { Icon } from "@/components/icons";
 import type { Position } from "@/lib/cap";
 import { POS_LABEL } from "@/lib/format";
-import { naturalDir, type OwnerFilter, type PlayerFilters, type SortDir, type SortKey } from "@/lib/players";
+import { DEFAULT_OWNER, DEFAULT_SORT, naturalDir, type OwnerFilter, type PlayerFilters, type SortDir, type SortKey } from "@/lib/players";
 
 const control = "min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-base outline-none transition-[border-color,box-shadow] focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15";
 const label = "eyebrow mb-1 block text-muted";
@@ -9,7 +12,11 @@ const ROLES = ["G", "A", "C"] as const;
 
 const dirText = (sort: SortKey, dir: SortDir) => (sort === "name" ? (dir === "asc" ? "A-Z" : "Z-A") : dir === "desc" ? "Maggiore" : "Minore");
 
-/** Barra dei filtri del listone, senza stato proprio: i valori e il filtro vero stanno in `PlayerListing`. */
+/**
+ * Barra dei filtri del listone, senza stato proprio: i valori e il filtro vero stanno in `PlayerListing`.
+ * Sotto lg resta in due righe (ricerca; ruoli e «Filtri»): squadra NBA, stato e ordinamento si aprono col pulsante, che conta
+ * quanti ne sono cambiati.
+ */
 export function PlayerFiltersBar({
   value,
   nbaTeams,
@@ -23,12 +30,15 @@ export function PlayerFiltersBar({
   onChange: (next: PlayerFilters) => void;
   onReset: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const defaultSort = withPdk ? DEFAULT_SORT : "credits";
+  const changed = [value.nbaTeam !== "", value.owner !== DEFAULT_OWNER, value.sort !== defaultSort || value.dir !== naturalDir(defaultSort)].filter(Boolean).length;
   const toggle = (r: Position) => onChange({ ...value, pos: ROLES.filter((x) => (x === r ? !value.pos.includes(r) : value.pos.includes(x))) });
 
   return (
     <form role="search" onSubmit={(e) => e.preventDefault()} className="grid grid-cols-2 items-end gap-x-2 gap-y-3 lg:grid-cols-[minmax(12rem,1.5fr)_minmax(8rem,1fr)_minmax(9rem,1.1fr)_minmax(9rem,1.1fr)_minmax(12rem,1.4fr)_auto]">
       <label className="col-span-2 lg:col-span-1">
-        <span className={label}>Cerca</span>
+        <span className={`${label} max-lg:sr-only`}>Cerca</span>
         <span className="relative block">
           <Icon name="search" size={18} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
           <input
@@ -45,7 +55,7 @@ export function PlayerFiltersBar({
       </label>
       {/* nessuna casella = tutti i ruoli; più caselle = uno qualsiasi dei ruoli scelti */}
       <fieldset className="col-span-2 lg:col-span-1">
-        <legend className={label}>Ruolo</legend>
+        <legend className={`${label} max-lg:sr-only`}>Ruolo</legend>
         <div className="flex min-h-11 gap-1.5">
           {ROLES.map((p) => (
             <label key={p} title={POS_LABEL[p]} className="flex-1">
@@ -56,8 +66,20 @@ export function PlayerFiltersBar({
               </span>
             </label>
           ))}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-controls="altri-filtri"
+            className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-bold transition-colors lg:hidden ${open || changed > 0 ? "border-brand-blue text-brand-blue dark:border-gold dark:text-gold" : "border-line"}`}
+          >
+            <Icon name="sliders" size={16} strokeWidth={2.2} />
+            Filtri
+            {changed > 0 && <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-brand-blue px-1 text-[0.6875rem] text-white dark:bg-gold dark:text-nav">{changed}</span>}
+          </button>
         </div>
       </fieldset>
+      <div id="altri-filtri" className={`col-span-2 grid grid-cols-2 items-end gap-x-2 gap-y-3 lg:contents ${open ? "" : "max-lg:hidden"}`}>
       <label>
         <span className={label}>Squadra NBA</span>
         <select value={value.nbaTeam} onChange={(e) => onChange({ ...value, nbaTeam: e.target.value })} className={control}>
@@ -115,6 +137,7 @@ export function PlayerFiltersBar({
       >
         Azzera
       </button>
+      </div>
     </form>
   );
 }

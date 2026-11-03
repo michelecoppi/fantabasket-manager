@@ -262,7 +262,7 @@ async function LineupIssues({ league, view, teams }: { league: LeagueView; view:
           <li key={t.team.id} className="rise flex items-start gap-3 px-3 py-3 sm:px-4" style={stagger(i)}>
             <TeamCrest name={t.team.name} color={teams.get(t.team.id)?.color ?? "var(--muted)"} size="sm" />
             <div className="min-w-0 flex-1">
-              <a href={`/squadre/${t.team.id}#formazione`} className="font-semibold hover:underline">
+              <a href={`/squadre/${t.team.id}?vista=dunkest#formazione`} className="font-semibold hover:underline">
                 {t.team.name}
               </a>
               {!read ? (

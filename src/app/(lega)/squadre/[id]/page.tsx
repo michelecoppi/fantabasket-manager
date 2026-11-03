@@ -345,13 +345,37 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
   const rivals = view.available && view.standings.length > 0 ? headToHead(view, id) : [];
   const moves = dunkestData?.moves ?? null;
   const career = history?.careers.find((c) => c.teamId === id) ?? null;
+  const alpha = [...league.teams].sort((a, b) => a.team.name.localeCompare(b.team.name));
+  const at = alpha.findIndex((x) => x.team.id === id);
+  const neighbours = { prev: alpha[(at - 1 + alpha.length) % alpha.length], next: alpha[(at + 1) % alpha.length] };
 
   return (
     <>
-      <Link href="/" className="mt-4 mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue hover:underline sm:mt-0">
-        <Icon name="arrow-left" size={16} strokeWidth={2.2} />
-        Lega
-      </Link>
+      <div className="mt-2 mb-2 flex items-center gap-2 sm:mt-0 sm:mb-3">
+        <Link href="/" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-brand-blue hover:underline">
+          <Icon name="arrow-left" size={16} strokeWidth={2.2} />
+          Lega
+        </Link>
+        {/* scorrere le squadre senza tornare al board, nell'ordine del ticker (alfabetico) e restando sulla stessa scheda */}
+        <nav aria-label="Altre squadre" className="ml-auto flex items-center gap-1">
+          {[
+            { team: neighbours.prev, label: "Squadra precedente", icon: "arrow-left" as const },
+            { team: neighbours.next, label: "Squadra successiva", icon: "arrow-right" as const },
+          ].map(({ team, label, icon }) => (
+            <Link
+              key={label}
+              href={`/squadre/${team.team.id}${tab === "rosa" ? "" : `?vista=${tab}`}`}
+              aria-label={`${label}: ${team.team.name}`}
+              title={team.team.name}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-sm font-semibold transition-colors hover:border-foreground/30 ${icon === "arrow-right" ? "flex-row-reverse" : ""}`}
+            >
+              <Icon name={icon} size={15} strokeWidth={2.2} className="text-muted" />
+              <TeamCrest name={team.team.name} color={colors.get(team.team.id) ?? "#555"} size="xs" />
+              <span className="hidden max-w-28 truncate sm:inline">{team.team.name}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
 
       <section className="arena sweep -mx-4 sm:mx-0 sm:rounded-3xl" aria-labelledby="team-title">
         {/* luce nel colore della squadra: piena al buio, velata sulla carta del tema chiaro (il testo lì è scuro) */}

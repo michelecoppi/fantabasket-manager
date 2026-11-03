@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#060a14" />
+    <title>Sei offline · Fantabasket Manager</title>
+    <style>
+      /* Pagina statica servita dal service worker senza rete: colori copiati dai token di globals.css (tema notte). */
+      :root {
+        --bg: #070b14;
+        --fg: #eef2fb;
+        --muted: #97a3bd;
+        --gold: #f8c24a;
+        --nav: #060a14;
+        --line: #26314f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+        background:
+          radial-gradient(40rem 24rem at 100% 0%, rgb(29 71 181 / 0.35), transparent 60%),
+          radial-gradient(36rem 22rem at 0% 100%, rgb(207 35 56 / 0.25), transparent 60%),
+          var(--bg);
+        color: var(--fg);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 22rem;
+      }
+      img {
+        height: 88px;
+        width: auto;
+      }
+      h1 {
+        margin: 20px 0 8px;
+        font-family: Impact, "Arial Narrow Bold", sans-serif;
+        font-size: 2.5rem;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9375rem;
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 24px;
+        min-height: 48px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--gold);
+        color: var(--nav);
+        font: 800 1.125rem Impact, "Arial Narrow Bold", sans-serif;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/logo.png" alt="" width="66" height="88" />
+      <h1>Sei offline</h1>
+      <p>Rose, classifica e contratti arrivano dal server della lega: torna online e riprova.</p>
+      <button type="button" onclick="location.reload()">Riprova</button>
+    </main>
+    <script>
+      // Appena torna la rete si ricarica da sola.
+      window.addEventListener("online", () => location.reload());
+    </script>
+  </body>
+</html>
