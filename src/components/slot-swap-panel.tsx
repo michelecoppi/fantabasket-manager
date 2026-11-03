@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { requestSlotSwap, withdrawSlotSwap } from "@/app/(lega)/squadre/[id]/actions";
 import { CapLine } from "@/components/cap-line";
-import { Button, Callout } from "@/components/controls";
+import { Button, Callout, Segmented } from "@/components/controls";
+import { Icon } from "@/components/icons";
 import { Badge, PosChip, StatChange } from "@/components/ui";
 import { evaluateSlotSwap, type LeagueSettings, type Position, type TradeSide } from "@/lib/cap";
 import { fmt, fmtDateTime, POS_LABEL } from "@/lib/format";
@@ -54,6 +55,8 @@ export function SlotSwapPanel({
   last: OwnSwap | null;
 }) {
   const [moves, setMoves] = useState<Map<number, SwapSlot>>(new Map());
+  const [editing, setEditing] = useState(false);
+  const [role, setRole] = useState<Position>("G");
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, start] = useTransition();
   const ev = useMemo(() => evaluateSlotSwap(side, moves, settings), [side, moves, settings]);
@@ -70,7 +73,10 @@ export function SlotSwapPanel({
     start(async () => {
       const r = await requestSlotSwap({ teamId, moves: [...moves].map(([id, slot]) => ({ id, slot })) });
       setNotice(r.ok ? { ok: true, text: [r.message, ...r.warnings].join(" ") } : { ok: false, text: r.error });
-      if (r.ok) setMoves(new Map());
+      if (r.ok) {
+        setMoves(new Map());
+        setEditing(false);
+      }
     });
   const withdraw = (s: OwnSwap) =>
     start(async () => {
@@ -113,13 +119,41 @@ export function SlotSwapPanel({
 
   if (open !== true) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {noticeBar}
-        <Callout tone="info" title={open === null ? "Stato dei cambi non disponibile" : "Cambi chiusi"}>
-          {open === null
-            ? "Non riesco a leggere se i cambi sono aperti: aggiorna la pagina."
-            : "Il regolamento (R-04) li prevede in date stabilite: quando un admin apre la finestra, da qui chiedi chi sale titolare e chi passa alla squadra riserve."}
-        </Callout>
+        <p className="flex items-start gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+          <Icon name="lock" size={16} strokeWidth={2.2} className="mt-0.5 shrink-0" />
+          <span>
+            {open === null ? (
+              "Stato dei cambi non disponibile: aggiorna la pagina."
+            ) : (
+              <>
+                <strong className="font-semibold text-foreground">Cambi chiusi.</strong> Si aprono nelle date stabilite (R-04): allora da qui chiedi chi sale titolare e chi passa alle riserve.
+              </>
+            )}
+          </span>
+        </p>
+        {lastLine}
+      </div>
+    );
+  }
+
+  // Chiuso di default: la pagina della squadra resta corta, l'editor si apre quando serve.
+  if (!editing) {
+    return (
+      <div className="space-y-2">
+        {noticeBar}
+        <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <Badge tone="good" icon="check">
+              cambi aperti
+            </Badge>
+            <p className="mt-1.5 text-sm text-muted">Scegli chi sale titolare e chi passa alle riserve, ruolo per ruolo (R-04). Un admin lo fa su Dunkest e lo approva.</p>
+          </div>
+          <Button icon="swap" className="shrink-0" onClick={() => setEditing(true)}>
+            Prepara un cambio
+          </Button>
+        </div>
         {lastLine}
       </div>
     );
@@ -128,19 +162,37 @@ export function SlotSwapPanel({
   const positions = ["G", "A", "C"] as const;
   const { before, after } = ev.impact;
   const chosen = moves.size > 0;
+  const picked = (pos: Position) => players.filter((p) => p.pos === pos && moves.has(p.id)).length;
   return (
     <div>
       {noticeBar}
-      <p className="mb-4 text-sm text-muted">
-        Tocca chi passa alle riserve e chi sale titolare, <strong className="font-semibold text-foreground">ruolo per ruolo</strong> (R-04). Le riserve devono stare nel
-        budget di {fmt(settings.reserveBudget)}; sopra il cap si paga la luxury tax, fino a {fmt(ev.payrollLimit)}.
-      </p>
+      <div className="mb-4 flex items-start gap-3">
+        <p className="min-w-0 flex-1 text-sm text-muted">
+          Tocca chi passa alle riserve e chi sale titolare, <strong className="font-semibold text-foreground">ruolo per ruolo</strong> (R-04). Riserve entro{" "}
+          {fmt(settings.reserveBudget)}; sopra il cap si paga la luxury tax, fino a {fmt(ev.payrollLimit)}.
+        </p>
+        <Button variant="ghost" className="shrink-0 px-3" onClick={() => {
+            setMoves(new Map());
+            setEditing(false);
+          }} disabled={busy}>
+          Chiudi
+        </Button>
+      </div>
+      {/* Su telefono un ruolo alla volta, col numero di giocatori scelti; da md le tre colonne. */}
+      <div className="mb-3 md:hidden">
+        <Segmented
+          label="Ruolo"
+          value={role}
+          onChange={setRole}
+          options={positions.map((pos) => ({ value: pos, label: picked(pos) ? `${POS_LABEL[pos]} · ${picked(pos)}` : POS_LABEL[pos] }))}
+        />
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         {positions.map((pos) => {
           const group = [...players.filter((p) => p.pos === pos && p.slot === "starter"), ...players.filter((p) => p.pos === pos && p.slot === "reserve")];
           return (
-            <div key={pos} className="min-w-0">
-              <h3 className="eyebrow mb-1.5 text-muted">{POS_LABEL[pos]}</h3>
+            <div key={pos} className={`min-w-0 ${pos === role ? "" : "hidden md:block"}`}>
+              <h3 className="eyebrow mb-1.5 hidden text-muted md:block">{POS_LABEL[pos]}</h3>
               <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
                 {group.map((p, i) => {
                   const to = moves.get(p.id);

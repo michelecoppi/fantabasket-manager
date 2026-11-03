@@ -288,7 +288,7 @@ async function SlotSwapSection({ league, t }: { league: LeagueView; t: TeamView 
     r ? { id: r.id, version: r.version, status: r.status, at: r.decidedAt ?? r.createdAt, note: r.decisionNote, ...slotSwapLines(league, t.team.id, r.items) } : null;
   const pending = view(own.find((r) => r.status === "pending"));
   return (
-    <Section title="Cambio titolari/riserve" icon="swap" id="cambio" aside={pending ? "richiesta in attesa" : open ? "cambi aperti" : "R-04"}>
+    <Section title="Cambio titolari/riserve" icon="swap" id="cambio" aside={pending ? "richiesta in attesa" : "R-04"}>
       <SlotSwapPanel
         teamId={t.team.id}
         players={[...t.starters, ...t.reserves].map((p) => ({ id: p.id, name: p.name, pos: p.pos, slot: p.slot, salary: p.salary }))}
