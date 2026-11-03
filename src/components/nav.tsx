@@ -91,6 +91,8 @@ export function TabBar({ admin = false, badges = {} }: { admin?: boolean; badges
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
   // Con 7 voci (admin) su un telefono da 360 px le etichette lunghe («Giocatori») toccano i bordi: niente spaziatura in più.
+  // Le voci partono dalla larghezza della loro etichetta e si dividono lo spazio che avanza (`flex-auto`, non `flex-1`):
+  // a celle uguali «Scadenze» e «Scambio» uscivano dalla loro e si toccavano.
   const dense = items.length > 6;
   return (
     <nav
@@ -106,7 +108,7 @@ export function TabBar({ admin = false, badges = {} }: { admin?: boolean; badges
               key={l.href}
               href={l.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-[3.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[0.625rem] font-bold uppercase transition-colors ${dense ? "tracking-normal" : "tracking-wide"} ${
+              className={`relative flex min-h-[3.75rem] min-w-0 flex-auto flex-col whitespace-nowrap items-center justify-center gap-1 text-[0.625rem] font-bold uppercase transition-colors ${dense ? "tracking-normal" : "tracking-wide"} ${
                 active ? "text-brand-blue dark:text-gold" : "text-white/55 active:text-white"
               }`}
             >
