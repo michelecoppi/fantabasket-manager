@@ -129,7 +129,8 @@ export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badge
 
 /**
  * Barra in basso su telefono e tablet (sotto lg): le cinque pagine che si aprono di più, a portata di pollice, più «Altro».
- * «Squadra» porta alla propria squadra (se il profilo ne ha una). Le voci partono dalla larghezza della loro etichetta e si
+ * «Squadra» porta alla propria squadra (se il profilo ne ha una). La voce attiva ha l'icona disegnata a 24 px invece che
+ * ingrandita con `scale`: un SVG scalato (e in transizione) su iPhone viene rasterizzato e stirato, e sembra sfocato. Le voci partono dalla larghezza della loro etichetta e si
  * dividono lo spazio che avanza (`flex-auto`, non `flex-1`).
  */
 export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boolean; badges?: NavBadges; myTeamId?: string | null }) {
@@ -159,8 +160,8 @@ export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boole
           return (
             <Link key={`${l.href}-${i}`} href={l.href} aria-current={active ? "page" : undefined} className={cell(active)}>
               {bar(active)}
-              <span className={`relative transition-transform duration-300 ${active ? "-translate-y-0.5 scale-110" : ""}`}>
-                <PendingIcon name={l.icon} size={22} />
+              <span className={`relative grid h-6 w-6 place-items-center transition-transform duration-300 ${active ? "-translate-y-0.5" : ""}`}>
+                <PendingIcon name={l.icon} size={active ? 24 : 22} />
                 <Count n={badges[l.href]} className="absolute -top-1.5 -right-2.5" />
               </span>
               {l.label}
@@ -169,8 +170,8 @@ export function TabBar({ admin = false, badges = {}, myTeamId }: { admin?: boole
         })}
         <button type="button" popoverTarget={MORE_ID} aria-current={moreActive ? "page" : undefined} className={cell(moreActive)}>
           {bar(moreActive)}
-          <span className={`relative transition-transform duration-300 ${moreActive ? "-translate-y-0.5 scale-110" : ""}`}>
-            <Icon name="menu" size={22} />
+          <span className={`relative grid h-6 w-6 place-items-center transition-transform duration-300 ${moreActive ? "-translate-y-0.5" : ""}`}>
+            <Icon name="menu" size={moreActive ? 24 : 22} />
             <Count n={moreCount} className="absolute -top-1.5 -right-2.5" />
           </span>
           Altro
