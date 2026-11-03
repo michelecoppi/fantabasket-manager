@@ -39,8 +39,8 @@ function PendingIcon({ name, size }: { name: IconName; size: number }) {
 /** Numeri da mostrare sulle voci (per `href`): proposte di scambio che aspettano te o un admin (Fase 7.3). */
 export type NavBadges = Partial<Record<string, number>>;
 
-/** Pallino rosso col numero; il testo per i lettori di schermo lo dice per esteso. */
-function Count({ n, className = "" }: { n: number | undefined; className?: string }) {
+/** Pallino rosso col numero; il testo per i lettori di schermo lo dice per esteso. Lo usano anche tab e carte del pannello admin. */
+export function Count({ n, className = "" }: { n: number | undefined; className?: string }) {
   if (!n) return null;
   return (
     <span className={`tnum grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full bg-brand-red px-1 font-sans text-[0.6875rem] leading-none font-bold tracking-normal text-white ${className}`}>

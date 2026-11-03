@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { adminTodo, adminTodoCounts } from "@/lib/admin-todo";
 import { auditLabel, type AuditRow } from "@/lib/audit";
-import { Icon } from "@/components/icons";
-import { Empty, PageTitle, Section, stagger } from "@/components/ui";
+import { Empty, PageTitle, Section } from "@/components/ui";
+import { loadProposals, loadSlotSwaps } from "@/lib/league-server";
 import { createClient } from "@/lib/supabase/server";
-import { adminTools } from "./tools";
-
+import { TodoList, ToolGrid } from "./overview";
 
 const when = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
@@ -36,28 +36,15 @@ async function RecentOperations() {
   );
 }
 
-export default function AdminHome() {
+export default async function AdminHome() {
+  const [proposals, swaps] = await Promise.all([loadProposals().catch(() => null), loadSlotSwaps().catch(() => null)]);
+  const todo = adminTodo(proposals ?? [], swaps ?? []);
+  const counts = adminTodoCounts(todo);
   return (
     <>
       <PageTitle icon="badge" eyebrow="Area admin · ogni modifica finisce nel registro" sub="Strumenti per aggiornare la lega. Ogni operazione tocca più tabelle insieme e viene annullata per intero se qualcosa non va.">Pannello admin</PageTitle>
-      {/* Con un numero dispari di strumenti l'ultimo prende due colonne: nessun buco in fondo alla griglia. */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:[&>:last-child:nth-child(odd)]:col-span-2">
-        {adminTools.map((t, i) => (
-          <Link key={t.href} href={t.href} className="lift group rise relative overflow-hidden rounded-2xl border border-line bg-surface p-5 hover:border-foreground/25" style={stagger(i)}>
-            <span aria-hidden className="absolute -top-6 -right-6 text-foreground/[0.04] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">
-              <Icon name={t.icon} size={120} strokeWidth={1.25} />
-            </span>
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-blue/10 text-brand-blue dark:bg-nav dark:text-gold transition-transform duration-300 group-hover:scale-105">
-              <Icon name={t.icon} size={22} strokeWidth={2} />
-            </span>
-            <h2 className="font-display mt-4 flex items-center gap-1.5 text-3xl leading-none font-black">
-              {t.label}
-              <Icon name="arrow-right" size={18} strokeWidth={2.2} className="text-muted transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
-            </h2>
-            <p className="relative mt-2 text-sm text-muted">{t.text}</p>
-          </Link>
-        ))}
-      </div>
+      <TodoList todo={todo} />
+      <ToolGrid counts={counts} />
       <Section title="Ultime operazioni" icon="ledger">
         <RecentOperations />
         <p className="mt-2 text-right text-sm"><Link className="font-semibold text-brand-blue" href="/admin/registro">Tutto il registro →</Link></p>
