@@ -9,6 +9,7 @@ import { Icon } from "@/components/icons";
 import { PlayerList, PlayerRow } from "@/components/player-row";
 import { RivalryList } from "@/components/rivalries";
 import { RosterMovesList } from "@/components/roster-moves";
+import { SlotSwapPanel, type OwnSwap } from "@/components/slot-swap-panel";
 import { PositionSparkline } from "@/components/standings-chart";
 import { Aligned, Badge, ContractPips, Empty, PosChip, RestrictionBadge, Scoreboard, Section, stagger } from "@/components/ui";
 import { TeamValue } from "@/components/value-board";
@@ -18,10 +19,11 @@ import { ViewSwitch } from "@/components/chips";
 import { INJURY_ORDER, type DunkestView } from "@/lib/dunkest";
 import { checkLineup, rosterRefs, teamMatch, tribune, type DunkestLeagueView, type DunkestRosterPlayer, type LineupPlayer } from "@/lib/dunkest-league";
 import { fmt, fmtEuro, POS_LABEL } from "@/lib/format";
-import type { LeagueView, RosterPlayer, TeamView } from "@/lib/league";
-import { loadDunkest, loadDunkestRosters, loadHistory, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves } from "@/lib/league-server";
+import { teamSide, type LeagueView, type RosterPlayer, type TeamView } from "@/lib/league";
+import { loadDunkest, loadDunkestRosters, loadHistory, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRosterMoves, loadSlotSwaps, loadSlotSwapWindow } from "@/lib/league-server";
 import { seasonLabel } from "@/lib/league-history";
 import { teamRosterMoves } from "@/lib/roster-moves";
+import { slotSwapLines, type SlotSwapRequest } from "@/lib/slot-swap";
 import { seasonTrophies } from "@/lib/awards";
 import { headToHead, rivalryBadges } from "@/lib/rivalries";
 import { standingsByMatchday, teamPositions } from "@/lib/standings-history";
@@ -276,6 +278,31 @@ type TeamTab = "rosa" | "dunkest" | "vetrina" | "pick";
 const TEAM_TABS: TeamTab[] = ["rosa", "dunkest", "vetrina", "pick"];
 
 /**
+ * Cambio titolari ↔ riserve (R-04): solo nella pagina della propria squadra. La richiesta in attesa (o l'ultima decisa), la
+ * finestra aperta dall'admin e il pannello per sceglierne una nuova.
+ */
+async function SlotSwapSection({ league, t }: { league: LeagueView; t: TeamView }) {
+  const [list, open] = await Promise.all([loadSlotSwaps(), loadSlotSwapWindow()]);
+  const own = (list ?? []).filter((r) => r.teamId === t.team.id);
+  const view = (r: SlotSwapRequest | undefined): OwnSwap | null =>
+    r ? { id: r.id, version: r.version, status: r.status, at: r.decidedAt ?? r.createdAt, note: r.decisionNote, ...slotSwapLines(league, t.team.id, r.items) } : null;
+  const pending = view(own.find((r) => r.status === "pending"));
+  return (
+    <Section title="Cambio titolari/riserve" icon="swap" id="cambio" aside={pending ? "richiesta in attesa" : open ? "cambi aperti" : "R-04"}>
+      <SlotSwapPanel
+        teamId={t.team.id}
+        players={[...t.starters, ...t.reserves].map((p) => ({ id: p.id, name: p.name, pos: p.pos, slot: p.slot, salary: p.salary }))}
+        side={teamSide(t)}
+        settings={league.settings}
+        open={list === null ? null : open}
+        pending={pending}
+        last={pending ? null : view(own.find((r) => r.status !== "pending"))}
+      />
+    </Section>
+  );
+}
+
+/**
  * Pagina squadra: testata con i conti del cap, poi quattro schede (`?vista=`, di default la rosa): rosa (titolari con affare e
  * flop, infermeria, riserve), su Dunkest (formazione, andamento, rivalità), vetrina dei trofei della stagione, pick (con
  * talenti e tagli).
@@ -465,6 +492,11 @@ export default async function TeamPage(props: PageProps<"/squadre/[id]">) {
             </Section>
 
           </div>
+          {you && (
+            <div className="lg:col-span-2">
+              <SlotSwapSection league={league} t={t} />
+            </div>
+          )}
         </div>
       )}
 

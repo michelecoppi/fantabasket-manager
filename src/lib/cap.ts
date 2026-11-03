@@ -457,6 +457,63 @@ export function evaluateContractEdit(
   return { errors: [...contractTermsErrors(terms, s), ...rosterLimitErrors(side.roster, after, s)], warnings, impact };
 }
 
+export interface SlotSwapEvaluation {
+  impact: TradeImpact;
+  /** impediscono di inviare (e di approvare) la richiesta */
+  errors: string[];
+  /** da mostrare ma non bloccanti: la luxury tax */
+  warnings: string[];
+  /** monte ingaggi massimo dopo il cambio: cap effettivo + massimo tassabile (R-12) */
+  payrollLimit: number;
+  /** ruoli in cui salgono e scendono numeri diversi (cambio ancora da completare, R-04); anche questi sono in `errors` */
+  unbalanced: { pos: Position; up: number; down: number }[];
+}
+
+/**
+ * Cambio titolari ↔ riserve di una squadra (R-04), chiesto dal proprietario e approvato da un admin. `moves`: id del contratto →
+ * slot in cui va. Bloccano: ruolo per ruolo (per ogni ruolo salgono quanti scendono), giocatori senza ruolo, massimi di rosa
+ * (R-01..R-03), budget riserve superato (R-04 «solo se fattibile in crediti») e monte ingaggi oltre cap effettivo + massimo
+ * tassabile (R-12). Sopra il cap avvisa soltanto. Decisioni dell'utente del 2026-11-03; ASSUNZIONE (docs/OPEN-QUESTIONS.md): una
+ * rosa già oltre un limite può fare un cambio che migliora la situazione.
+ */
+export function evaluateSlotSwap(side: TradeSide, moves: ReadonlyMap<number, "starter" | "reserve">, s: LeagueSettings): SlotSwapEvaluation {
+  const errors: string[] = [];
+  const byId = new Map(side.roster.map((r) => [r.id, r]));
+  const up: Record<Position, number> = { G: 0, A: 0, C: 0 };
+  const down: Record<Position, number> = { G: 0, A: 0, C: 0 };
+  if (moves.size === 0) errors.push("Scegli chi sale tra i titolari e chi scende tra le riserve.");
+  for (const [id, slot] of moves) {
+    const r = byId.get(id);
+    if (!r) errors.push("Un giocatore del cambio non è più nella rosa.");
+    else if (r.slot === "talent" || (slot as Slot) === "talent") errors.push("La squadra talenti non entra nei cambi tra titolari e riserve.");
+    else if (r.slot === slot) errors.push(`Un giocatore è già ${slot === "starter" ? "titolare" : "riserva"}.`);
+    else if (!r.position) errors.push("Un giocatore senza ruolo non si può spostare: un admin deve prima indicarne il ruolo.");
+    else (slot === "starter" ? up : down)[r.position]++;
+  }
+  const unbalanced = (["G", "A", "C"] as const).filter((pos) => up[pos] !== down[pos]).map((pos) => ({ pos, up: up[pos], down: down[pos] }));
+  for (const u of unbalanced) errors.push(`Il cambio è ruolo per ruolo (R-04): ${u.pos}, salgono ${u.up} e scendono ${u.down}.`);
+
+  const outgoing = new Set([...moves.keys()].filter((id) => byId.has(id)));
+  const incoming = side.roster.filter((r) => outgoing.has(r.id)).map((r) => ({ position: r.position, slot: moves.get(r.id)!, salary: r.salary }));
+  const impact = tradeImpact(side, outgoing, incoming, s);
+  const after = [...side.roster.filter((r) => !outgoing.has(r.id)), ...incoming];
+  // Con un ruolo sbilanciato i massimi di rosa sforano per forza: l'errore vero è quello sopra.
+  if (unbalanced.length === 0) errors.push(...rosterLimitErrors(side.roster, after, s));
+
+  const { before, after: fin } = impact;
+  if (fin.reserveSpace < 0 && fin.reserveSpace < before.reserveSpace) {
+    errors.push(`Le riserve superano il budget di ${s.reserveBudget} di ${round1(-fin.reserveSpace)} crediti (R-03, R-04).`);
+  }
+  const payrollLimit = round1(fin.effectiveCap + s.taxMaxOver);
+  const warnings: string[] = [];
+  if (fin.payroll > payrollLimit && fin.payroll > before.payroll) {
+    errors.push(`Il monte ingaggi arriva a ${fin.payroll}, oltre il massimo di ${payrollLimit} (cap ${fin.effectiveCap} + ${s.taxMaxOver} tassabili, R-12).`);
+  } else if (fin.overCap) {
+    warnings.push(`Dopo il cambio il monte ingaggi supera il cap di ${round1(-fin.capSpace)}: luxury tax di ${fin.luxuryTaxEur} € (R-10, R-12).`);
+  }
+  return { impact, errors: [...new Set(errors)], warnings, payrollLimit, unbalanced };
+}
+
 /** Controlli di composizione (R-01..R-03). Restituisce avvisi, non blocca: in estate la rosa può essere incompleta. */
 export function rosterWarnings(roster: RosterEntry[], s: LeagueSettings): string[] {
   const out: string[] = [];

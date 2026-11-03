@@ -15,6 +15,7 @@ export const AUDIT_ACTIONS: Record<string, string> = {
   market: "Mercato",
   trade_proposal: "Proposta",
   talent_link: "Talento",
+  slot_swap: "Titolari/riserve",
 };
 
 export const auditLabel = (action: string) => AUDIT_ACTIONS[action] ?? action;
@@ -45,4 +46,5 @@ export const TABLE_LABELS: Record<string, string> = {
   talents: "Talento",
   trades: "Scambio",
   seasons: "Stagione",
+  slot_swap_requests: "Cambio titolari/riserve",
 };

@@ -11,6 +11,7 @@ import { resolveProfile } from "./profile";
 import type { CloseInput } from "./season-close";
 import type { LotteryRecord } from "./draft-lottery";
 import type { RosterMove } from "./roster-moves";
+import { toSlotSwap, type SlotSwapRequest, type SlotSwapRow } from "./slot-swap";
 import { toProposal, type Proposal, type ProposalRow } from "./trade-proposals";
 
 const playerCols = "players(first_name,last_name,pos,nba_team)";
@@ -67,6 +68,30 @@ export const loadTradeMarket = cache(async (): Promise<boolean | null> => {
   const db = await createClient();
   const r = await db.from("seasons").select("trade_market_open").eq("is_current", true).maybeSingle<{ trade_market_open: boolean }>();
   return r.error || !r.data ? null : r.data.trade_market_open;
+});
+
+/** Finestra dei cambi titolari ↔ riserve (R-04, `seasons.slot_swap_open`, la apre un admin). Tollerante come il mercato. */
+export const loadSlotSwapWindow = cache(async (): Promise<boolean | null> => {
+  const db = await createClient();
+  const r = await db.from("seasons").select("slot_swap_open").eq("is_current", true).maybeSingle<{ slot_swap_open: boolean }>();
+  return r.error || !r.data ? null : r.data.slot_swap_open;
+});
+
+/**
+ * Richieste di cambio titolari ↔ riserve della stagione corrente (R-04), lette con RLS: un utente vede quelle della sua squadra,
+ * un admin tutte. Dalla più recente; null = non disponibili (pagine e badge restano su).
+ */
+export const loadSlotSwaps = cache(async (): Promise<SlotSwapRequest[] | null> => {
+  const db = await createClient();
+  const [season, profile] = await Promise.all([loadSeason(), loadProfile()]);
+  if (!profile || (!profile.team_id && profile.role !== "admin")) return [];
+  const r = await db
+    .from("slot_swap_requests")
+    .select("id,version,team_id,status,items,created_at,decided_at,decision_note")
+    .eq("season_id", season.id)
+    .order("id", { ascending: false });
+  if (r.error) return null;
+  return ((r.data ?? []) as SlotSwapRow[]).map(toSlotSwap);
 });
 
 /**

@@ -19,10 +19,11 @@ import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { lotteryEntrants } from "@/lib/draft-lottery";
-import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadLottery, loadProfile, loadProposals, loadVersions } from "@/lib/league-server";
+import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadLottery, loadProfile, loadProposals, loadSlotSwaps, loadVersions } from "@/lib/league-server";
 import { lotteryChoices, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
-import { announceTradesQuietly } from "@/lib/telegram";
+import { evaluateSlotSwapItems } from "@/lib/slot-swap";
+import { announceSlotSwapsQuietly, announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
@@ -518,6 +519,55 @@ export async function setTradeMarket(input: { open: boolean }): Promise<ActionRe
   if (error) return rpcError(error.message);
   refresh();
   return done(input.open ? "Mercato degli scambi aperto." : "Mercato degli scambi chiuso.");
+}
+
+// ---------- Cambi titolari ↔ riserve chiesti dai proprietari (R-04) ----------
+export async function setSlotSwapWindow(input: { open: boolean }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (typeof input.open !== "boolean") return fail("Dati non validi.");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_set_slot_swap_window", { p_open: input.open });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done(input.open ? "Cambi titolari/riserve aperti: le squadre possono mandare le richieste." : "Cambi titolari/riserve chiusi: le richieste in attesa sono ritirate.");
+}
+
+/**
+ * Approva e applica una richiesta: l'admin l'ha già fatta su Dunkest. Le regole (R-04, budget riserve, cap con la luxury tax) si
+ * rivalutano sulla rosa di adesso con `evaluateSlotSwap`; se un giocatore è cambiato dopo l'invio la richiesta va respinta.
+ */
+export async function approveSlotSwap(input: { id: number; version: number }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id) || !isNum(input.version)) return fail("Dati non validi.");
+  const request = (await loadSlotSwaps())?.find((r) => r.id === input.id);
+  if (!request) return fail("Richiesta non disponibile.");
+  const [league, versions] = await Promise.all([loadLeague(), loadVersions()]);
+  const check = evaluateSlotSwapItems(league, request.teamId, request.items, versions);
+  if (!check) return fail("Squadra non trovata.");
+  if (check.stale.length) return fail("Un giocatore della richiesta è cambiato dopo l'invio (scambio, taglio o modifica): respingila, la squadra ne manda una nuova.");
+  if (check.ev.errors.length) return fail(`Con la rosa di adesso il cambio non è in regola: ${check.ev.errors.join(" ")}`);
+  const db = await createClient();
+  const { error } = await db.rpc("admin_approve_slot_swap", { p_id: input.id, p_version: input.version, p_roster_rev: versions.rosterRev[request.teamId] ?? null });
+  if (error) return rpcError(error.message);
+  refresh();
+  after(async () => announceSlotSwapsQuietly(await createClient()));
+  return done(`Cambio di ${league.teamNames.get(request.teamId) ?? "?"} applicato: titolari e riserve aggiornati.`, check.ev.warnings);
+}
+
+export async function declineSlotSwap(input: { id: number; version: number; note: string }): Promise<ActionResult> {
+  const denied = await requireAdmin();
+  if (denied) return fail(denied);
+  if (!isNum(input.id) || !isNum(input.version)) return fail("Dati non validi.");
+  const note = String(input.note ?? "").trim();
+  if (!note) return fail("Scrivi il motivo: lo legge la squadra.");
+  if (note.length > 1000) return fail("Motivo troppo lungo (al massimo 1000 caratteri).");
+  const db = await createClient();
+  const { error } = await db.rpc("admin_decline_slot_swap", { p_id: input.id, p_version: input.version, p_note: note });
+  if (error) return rpcError(error.message);
+  refresh();
+  return done("Richiesta respinta.");
 }
 
 // ---------- Proposte di scambio (Fase 7.3) ----------

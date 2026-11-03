@@ -9,6 +9,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { announcedTeamColor, cardFromAnnounced, type TradeCardModel } from "./trade-card";
 import { ANNOUNCE_MAX_AGE_HOURS, announcementCaption, announcementText, parseAnnouncements, type AnnouncedTrade } from "./trade-announce";
 import { RUMOR_MAX_AGE_HOURS, parseRumors, rumorText } from "./trade-rumor";
+import { SLOT_SWAP_MAX_AGE_HOURS, parseSlotSwapAnnouncements, slotSwapText } from "./slot-swap-announce";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -25,6 +26,14 @@ export function telegramConfig(): TelegramConfig | null {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
   return token && chatId ? { token, chatId } : null;
+}
+
+/**
+ * Chat private degli admin che ricevono gli avvisi (`TELEGRAM_ADMIN_ALERT`: id numerici Telegram separati da virgola). Gli id non
+ * numerici si scartano. Il bot può scrivere solo a chi gli ha già mandato /start.
+ */
+export function adminAlertChats(raw = process.env.TELEGRAM_ADMIN_ALERT): string[] {
+  return [...new Set((raw ?? "").split(",").map((s) => s.trim()).filter((s) => /^-?\d+$/.test(s)))];
 }
 
 /**
@@ -156,6 +165,66 @@ export async function announceRumorsQuietly(db: Db): Promise<void> {
     if (!res.skipped && res.errors.length) console.error(`[telegram] ${res.errors.join("; ")}`);
   } catch (e) {
     console.error(`[telegram] rumor non riuscito: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+/**
+ * Cambi titolari ↔ riserve approvati (R-04): un messaggio di testo per cambio, con chi sale e chi scende. Stessa coda degli scambi
+ * (presa di 5 minuti, esito segnato; un invio fallito si riprova al giro dopo). `secret` null: sessione di un admin.
+ */
+export async function announceSlotSwaps(db: Db, secret: string | null): Promise<AnnounceResult> {
+  const cfg = telegramConfig();
+  if (!cfg) return { skipped: true };
+  const claim = await db.rpc("slot_swap_announce_claim", { p_secret: secret, p_max_age_hours: SLOT_SWAP_MAX_AGE_HOURS });
+  if (claim.error) return { skipped: false, sent: 0, errors: [claim.error.message] };
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  let sent = 0;
+  const errors: string[] = [];
+  for (const swap of parseSlotSwapAnnouncements(claim.data)) {
+    const res = await sendTelegram(cfg, slotSwapText(swap, site));
+    if (res.ok) sent++;
+    else errors.push(`cambio n. ${swap.id}: ${res.error}`);
+    const done = await db.rpc("slot_swap_announce_done", { p_secret: secret, p_id: swap.id, p_ok: res.ok });
+    if (done.error) errors.push(`cambio n. ${swap.id}: esito non salvato (${done.error.message})`);
+  }
+  return { skipped: false, sent, errors };
+}
+
+/**
+ * Avviso privato agli admin di `TELEGRAM_ADMIN_ALERT` (per ora: una squadra ha chiesto un cambio titolari/riserve). Un messaggio per
+ * admin; senza token o senza id non fa nulla. Non si riprova: l'avviso resta anche nel badge su «Admin».
+ */
+export async function alertAdmins(html: string): Promise<AnnounceResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chats = adminAlertChats();
+  if (!token || chats.length === 0) return { skipped: true };
+  let sent = 0;
+  const errors: string[] = [];
+  for (const chatId of chats) {
+    const res = await sendTelegram({ token, chatId }, html);
+    if (res.ok) sent++;
+    else errors.push(`avviso all'admin ${chatId}: ${res.error}`);
+  }
+  return { skipped: false, sent, errors };
+}
+
+/** Per le action: avvisa gli admin senza mai far fallire chi la chiama. */
+export async function alertAdminsQuietly(html: string): Promise<void> {
+  try {
+    const res = await alertAdmins(html);
+    if (!res.skipped && res.errors.length) console.error(`[telegram] ${res.errors.join("; ")}`);
+  } catch (e) {
+    console.error(`[telegram] avviso agli admin non riuscito: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+/** Per le action admin: annuncia i cambi senza mai far fallire chi la chiama. */
+export async function announceSlotSwapsQuietly(db: Db): Promise<void> {
+  try {
+    const res = await announceSlotSwaps(db, null);
+    if (!res.skipped && res.errors.length) console.error(`[telegram] ${res.errors.join("; ")}`);
+  } catch (e) {
+    console.error(`[telegram] annuncio del cambio non riuscito: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
