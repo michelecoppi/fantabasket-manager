@@ -18,8 +18,8 @@ Logica pura e testata in `src/lib/auction.ts` (lotto, limiti di spesa, turni), `
 | Regola | Proposta | Dove |
 |---|---|---|
 | Base d'asta | metà dei crediti Dunkest, **per eccesso al mezzo credito** (7,5 → 3,75 → 4), almeno 0,5. Un ex-contratto non parte mai sotto il minimo R-25 (metà dell'ultimo stipendio, anche lui al mezzo credito) | `auctionBase` |
-| Chiamata | a turno, ordine **sorteggiato** all'inizio; chi chiama apre alla base o più su; chi non ha posto o non vuole **passa**. Se passano tutti di fila la sala è ferma e chiude l'admin | `nextCaller`, `roomReducer` |
-| Rilancio | almeno +0,5 sull'offerta in testa (R-51: il pareggio non vince); si può saltare. Le offerte restano sul mezzo credito | `bidErrors` |
+| Chiamata | a turno, ordine **sorteggiato** all'inizio (nel playground chiami per primo tu, per provarla subito); chi chiama apre alla base o più su; chi non ha posto o non vuole **passa**. Se passano tutti di fila la sala è ferma e chiude l'admin | `nextCaller`, `roomReducer` |
+| Rilancio | almeno +0,5 sull'offerta in testa (R-51: il pareggio non vince); si può saltare (+1/+2/+5) o scrivere la cifra. Le offerte restano sul mezzo credito | `bidErrors`, `openingErrors` |
 | Cronometro | **15″** dopo la chiamata, poi ogni rilancio lo riporta a **10″** (se ne restavano di più resta com'era). «E uno, e due, e tre» negli ultimi tre secondi. Nel playground si prova anche «Calmo» 20/15 e «Veloce» 10/6 | `PROPOSED_RULES`, `placeBid` |
 | Quanto si può offrire | titolare: spazio salariale **più la zona della luxury tax fino al massimo tassabile** (R-12, 270 con cap 250); riserva: budget riserve rimasto (R-03). Contano i massimi di rosa (R-01..R-03) | `bidLimit` |
 | Dove entra chi vince | titolare se ci sta nel cap, altrimenti riserva se ci sta nel budget riserve, altrimenti titolare in luxury tax. Da confermare: forse lo sceglie il vincitore insieme alla durata | `landingSlot` |

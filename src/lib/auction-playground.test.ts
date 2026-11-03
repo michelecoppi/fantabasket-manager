@@ -29,6 +29,7 @@ describe("scenari del playground", () => {
     expect(sc.pool.map((p) => [p.player.id, p.base])).toEqual([[900, 4.5], [901, 4], [902, 1.5]]);
     expect(sc.cutQueue).toEqual([]);
     expect([...sc.order].sort()).toEqual(teamIds);
+    expect(sc.order[0]).toBe("a"); // nel playground chiami per primo tu
   });
 
   it("da zero: rose vuote (resta il bonus), tutti all'asta, chi è in rosa vale il suo stipendio", () => {

@@ -13,6 +13,8 @@ import {
   minimumBid,
   nextCaller,
   openLot,
+  openingErrors,
+  parseAmount,
   pauseLot,
   placeBid,
   resumeLot,
@@ -67,6 +69,23 @@ describe("offerte", () => {
     expect(bidErrors(lot, "b", 5, 1000, 100, R)).toEqual([]);
     expect(bidErrors(lot, "b", 7.5, 1000, 100, R)).toEqual([]); // si può saltare
     expect(bidErrors(lot, "b", 7.3, 1000, 100, R)[0]).toMatch(/di 0.5 in 0.5/);
+  });
+  it("cifra scritta a mano: virgola o punto, al massimo un decimale", () => {
+    expect(parseAmount("12,5")).toBe(12.5);
+    expect(parseAmount(" 13 ")).toBe(13);
+    expect(parseAmount("7.5")).toBe(7.5);
+    expect(parseAmount("")).toBeNaN();
+    expect(parseAmount("-3")).toBeNaN();
+    expect(parseAmount("4,25")).toBeNaN();
+    expect(parseAmount("dieci")).toBeNaN();
+  });
+  it("chi chiama apre alla base o più su, sul passo, entro il suo limite", () => {
+    expect(openingErrors(4.5, 4.5, 20, R)).toEqual([]);
+    expect(openingErrors(4.5, 9, 20, R)).toEqual([]);
+    expect(openingErrors(4.5, 4, 20, R)[0]).toMatch(/base d'asta è 4,5/);
+    expect(openingErrors(4.5, 6.2, 20, R)[0]).toMatch(/di 0,5 in 0,5/);
+    expect(openingErrors(4.5, 21, 20, R)[0]).toMatch(/al massimo 20/);
+    expect(openingErrors(4.5, NaN, 20, R)).toHaveLength(1);
   });
   it("non si rilancia su sé stessi, né oltre il proprio limite, né a tempo scaduto", () => {
     const lot = open();

@@ -2,6 +2,7 @@
 // (le RPC controlleranno le stesse cose). Regole in docs/REGOLAMENTO.md (R-xx), proposte e assunzioni in docs/product/PIANO-ASTA.md.
 // I tempi sono in millisecondi e arrivano sempre da fuori (`now`), così ogni passaggio è deterministico e testabile.
 import { rosterLimitErrors, teamFinance, type AuctionFloor, type LeagueSettings, type Position, type RosterEntry, type TradeSide } from "./cap";
+import { fmt } from "./format";
 
 export interface AuctionRules {
   /** Base d'asta = crediti Dunkest × questa frazione (decisione dell'utente 2026-11-02: metà, come all'asta di inizio stagione) */
@@ -126,11 +127,26 @@ export function bidErrors(lot: Lot, teamId: string, amount: number, now: number,
   if (excluded) return [excluded];
   if (leader(lot)?.teamId === teamId) return ["Sei già in testa."];
   const min = minimumBid(lot, r);
+  return amountErrors(amount, min, limit, r, leader(lot) ? `Il pareggio non vince: serve almeno ${fmt(min)} (R-51).` : `La base d'asta è ${fmt(min)}.`);
+}
+
+/** Errori della cifra con cui chi chiama apre il lotto (vuoto = valida): almeno la base, sul passo, entro il suo limite. */
+export function openingErrors(base: number, amount: number, limit: number, r: AuctionRules): string[] {
+  return amountErrors(amount, base, limit, r, `La base d'asta è ${fmt(base)}.`);
+}
+
+function amountErrors(amount: number, min: number, limit: number, r: AuctionRules, belowMin: string): string[] {
   const out: string[] = [];
-  if (!Number.isFinite(amount) || amount + EPS < min) out.push(leader(lot) ? `Il pareggio non vince: serve almeno ${min} (R-51).` : `La base d'asta è ${min}.`);
-  else if (Math.abs(ceilToStep(amount, r.step) - amount) > EPS) out.push(`Le offerte vanno di ${r.step} in ${r.step}.`);
-  if (amount > limit + EPS) out.push(`Non hai spazio: puoi offrire al massimo ${limit}.`);
+  if (!Number.isFinite(amount) || amount + EPS < min) out.push(belowMin);
+  else if (Math.abs(ceilToStep(amount, r.step) - amount) > EPS) out.push(`Le offerte vanno di ${fmt(r.step)} in ${fmt(r.step)}.`);
+  if (amount > limit + EPS) out.push(`Non hai spazio: puoi offrire al massimo ${fmt(limit)}.`);
   return out;
+}
+
+/** Cifra scritta a mano ("12,5", "12.5", " 13 "): NaN se non è un numero positivo con al massimo un decimale. */
+export function parseAmount(text: string): number {
+  const t = text.trim().replace(",", ".");
+  return /^\d+(\.\d)?$/.test(t) ? Number(t) : NaN;
 }
 
 /** Offerta valida: entra e il cronometro riparte da `bidSeconds` (se ne restava di più, resta com'era). */
