@@ -17,6 +17,7 @@ import { teamSide } from "@/lib/league";
 import { teamAlignment } from "@/lib/dunkest-align";
 import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
+import { runDunkestRoundsSync } from "@/lib/dunkest-rounds-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { lotteryEntrants } from "@/lib/draft-lottery";
 import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadLottery, loadProfile, loadProposals, loadSlotSwaps, loadVersions } from "@/lib/league-server";
@@ -651,6 +652,7 @@ export async function syncDunkest(): Promise<ActionResult> {
   // Le due parti sono indipendenti: un token scaduto non deve fermare statistiche e infortuni, e viceversa.
   const r = await runDunkestSync(db, null);
   const l = await runDunkestLeagueSync(db, null, process.env.DUNKEST_TOKEN);
+  const rd = await runDunkestRoundsSync(db, null);
   const g = await runDunkestGamesSync(db, null);
   refresh();
   const leagueLine = l.ok
@@ -665,11 +667,12 @@ export async function syncDunkest(): Promise<ActionResult> {
   if (!r.ok) warnings.push(`Statistiche e infortuni non aggiornati: ${r.error}. Restano quelli di prima.`);
   if (!l.ok) warnings.push(leagueLine);
   // Un recupero lungo (inizio stagione) si completa in più aggiornamenti: `skipped` dice cosa resta.
+  if (!rd.ok) warnings.push(`Round delle giornate non aggiornati: ${rd.error}.`);
   if (!g.ok) warnings.push(`Partite e giornate NBA non aggiornate: ${g.error}.`);
   else warnings.push(...g.skipped);
   const unlinked = (r.ok ? r.report.ambiguous.length + r.report.rosteredWithoutStats.length : 0) + (l.ok ? l.report.unlinked.length + l.report.ambiguous.length : 0);
   if (unlinked > 0) warnings.push(`${unlinked} giocatori da controllare nel report.`);
-  const parts = [r.ok && `${r.stats} giocatori con statistiche, ${r.injuries} infortunati`, l.ok && leagueLine, g.ok && `${g.games} partite NBA in ${g.days} giorni, ${g.weeks} righe di giornata`].filter(Boolean);
+  const parts = [r.ok && `${r.stats} giocatori con statistiche, ${r.injuries} infortunati`, l.ok && leagueLine, rd.ok && rd.rounds > 0 && `${rd.rounds} round in ${rd.matchdays} giornate`, g.ok && `${g.games} partite NBA in ${g.days} giorni, ${g.weeks} righe di giornata`].filter(Boolean);
   return done(`Dati Dunkest aggiornati: ${parts.join("; ")}.`, warnings);
 }
 

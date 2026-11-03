@@ -154,6 +154,8 @@ insert into dunkest_standings (season_id, team_id, position, total_pts, wins, lo
 insert into dunkest_matches (id, season_id, matchday, dunkest_matchday_id, home_team_id, away_team_id, home_pts, away_pts)
   select 990001, s.id, 1, 1858, (select id from teams order by name limit 1), (select id from teams order by name offset 1 limit 1), 240.05, 233.15
   from seasons s where s.is_current;
+insert into dunkest_rounds (season_id, matchday, round, dunkest_matchday_id, dunkest_round_id, starts_at, ends_at, games, played)
+  select id, 1, 1, 1858, 2890, timestamptz '2026-10-20T19:00:00Z', timestamptz '2026-10-21T01:30:00Z', 3, 3 from seasons where is_current;
 insert into dunkest_lineups (match_id, team_id, fantasy_player_id, player_id, name, pos, role, court_position, pts)
   select 990001, id, 3, 900001, 'RLS Uno', 'G', 'starter', 1, 72.19 from teams order by name limit 1;
 insert into dunkest_rosters (season_id, team_id, fantasy_player_id, player_id, name, pos)
@@ -580,6 +582,27 @@ begin
     'games', '[{"dunkest_id": 990902, "game_date": "2026-10-30", "name": "RLS Due", "pos": "C", "team_code": "RLS", "pdk": 12.5, "min": 20.5, "starter": false, "pts": 8, "reb": 4}]'::jsonb,
     'weeks', '[{"week": 1, "stats": []}, {"week": 2, "stats": [{"dunkest_id": 990902, "name": "RLS Due", "pos": "C", "team_code": "RLS", "gp": 1, "pdk": 12.5, "pts": 8, "reb": 4, "ast": 0}]}]'::jsonb));
   perform rls_t.ok('games_apply conta le righe scritte', (v->>'games')::int = 1 and (v->>'weeks')::int = 1);
+  -- Round delle giornate NBA: stesse regole; una giornata nel payload sostituisce i suoi round, solo se è nel calendario della lega.
+  perform rls_t.chk('rounds_source senza segreto', rls_t.try('select public.dunkest_rounds_source(null)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon scrive round senza segreto',
+    rls_t.try(format('select public.dunkest_rounds_apply(null, %L)', jsonb_build_object('season_id', sid, 'matchdays', '[]'::jsonb))), array['error: FORBIDDEN%']);
+  v := public.dunkest_rounds_source('rls-segreto-del-job-0123');
+  perform rls_t.ok('rounds_source col segreto',
+    (v->>'season_id')::int = sid and v->'matchdays' = '[{"dunkest_matchday_id": 1858, "matchday": 1, "rounds": 1, "completed": 1}]'::jsonb);
+  perform rls_t.chk('rounds_apply senza giornate',
+    rls_t.try(format('select public.dunkest_rounds_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid))), array['error: INVALID%']);
+  perform rls_t.chk('rounds_apply con stagione sbagliata',
+    rls_t.try(format('select public.dunkest_rounds_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid + 1, 'matchdays', '[]'::jsonb))), array['error: CONFLICT%']);
+  perform rls_t.chk('rounds_apply su una giornata fuori dal calendario',
+    rls_t.try(format('select public.dunkest_rounds_apply(''rls-segreto-del-job-0123'', %L)', jsonb_build_object('season_id', sid,
+      'matchdays', '[{"dunkest_matchday_id": 1859, "matchday": 1, "rounds": []}]'::jsonb))), array['error: INVALID%']);
+  v := public.dunkest_rounds_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid, 'full', true,
+    'matchdays', '[{"dunkest_matchday_id": 1858, "matchday": 1, "rounds": [
+      {"round": 1, "dunkest_round_id": 2890, "starts_at": "2026-10-20T19:00:00Z", "ends_at": "2026-10-21T01:30:00Z", "games": 3, "played": 3},
+      {"round": 2, "dunkest_round_id": 2891, "starts_at": "2026-10-21T23:00:00Z", "ends_at": "2026-10-22T02:30:00Z", "games": 11, "played": 10}]}]'::jsonb));
+  perform rls_t.ok('rounds_apply conta le righe scritte', (v->>'matchdays')::int = 1 and (v->>'rounds')::int = 2);
+  perform rls_t.ok('rounds_source non conta round e round finiti',
+    public.dunkest_rounds_source('rls-segreto-del-job-0123')->'matchdays'->0 @> '{"rounds": 2, "completed": 1}'::jsonb);
 
   v := public.dunkest_sync_source('rls-segreto-del-job-0123');
   perform rls_t.ok('dunkest_sync_source col segreto', (v->>'season_id')::int = sid and jsonb_array_length(v->'players') > 0);

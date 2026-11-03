@@ -643,6 +643,22 @@ select {
   animation: stamp 520ms var(--ease-spring) both;
 }
 
+/* ---------- Countdown dei round (components/matchday-clock.tsx) ---------- */
+/*
+ * Tabellone che cambia cifra: ogni cifra nuova scende al suo posto (la casella taglia quello che sporge), le caselle entrano con
+ * un piccolo salto la prima volta. Una tantum per cifra, niente loop.
+ */
+@keyframes digit-roll {
+  from {
+    opacity: 0;
+    transform: translateY(-60%);
+  }
+}
+.digit-roll {
+  display: inline-block;
+  animation: digit-roll 380ms var(--ease-spring) both;
+}
+
 /* ---------- Transizioni di pagina (<ViewTransition> in template.tsx) ---------- */
 ::view-transition {
   pointer-events: none;

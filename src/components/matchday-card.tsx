@@ -2,13 +2,16 @@ import Link from "next/link";
 import { MvpStrip } from "@/components/awards";
 import { MatchScore, notStarted, type TeamIndex } from "@/components/dunkest-league";
 import { Icon, type IconName } from "@/components/icons";
+import { MatchdayClock, MatchdayStatus } from "@/components/matchday-clock";
 import { stagger } from "@/components/ui";
 import type { Award } from "@/lib/awards";
 import type { MatchdayView } from "@/lib/dunkest-league";
+import type { RoundInfo } from "@/lib/dunkest-rounds";
 
 /*
  * «La giornata» (Fase 6, riordino): in un blocco solo i risultati dell'ultima giornata con punti, l'MVP dell'ultima chiusa e i
- * collegamenti alle schede di /classifica. Lo usano la home e la scheda Classifica.
+ * collegamenti alle schede di /classifica, con i round e il countdown se il job li ha salvati. Lo usano la home e la scheda
+ * Classifica.
  */
 
 const STATE = { played: "chiusa", latest: "in corso o appena chiusa", upcoming: "da giocare" } as const;
@@ -18,11 +21,16 @@ export function MatchdayCard({
   mvp,
   teams,
   myTeamId,
+  rounds = [],
+  following = null,
 }: {
   day: MatchdayView;
   mvp: { award: Award; matchday: number } | null;
   teams: TeamIndex;
   myTeamId: string | null;
+  /** round di questa giornata e della successiva (per il countdown quando questa è chiusa) */
+  rounds?: RoundInfo[];
+  following?: { matchday: number; rounds: RoundInfo[] } | null;
 }) {
   const links: { href: string; label: string; icon: IconName }[] = [
     { href: `/classifica?vista=calendario&giornata=${day.matchday}`, label: "Formazioni", icon: "jersey" },
@@ -35,8 +43,11 @@ export function MatchdayCard({
         <h3 id={`giornata-${day.matchday}`} className="font-display shrink-0 text-3xl leading-none font-black">
           Giornata {day.matchday}
         </h3>
-        <span className="text-right text-xs font-semibold text-muted">{day.state === "latest" && day.matches.every(notStarted) ? "appena cominciata" : STATE[day.state]}</span>
+        <span className="text-right text-xs font-semibold text-muted">
+          <MatchdayStatus rounds={rounds} fallback={day.state === "latest" && day.matches.every(notStarted) ? "appena cominciata" : STATE[day.state]} />
+        </span>
       </div>
+      <MatchdayClock rounds={rounds} following={following} className="mb-3" />
       <ol className="grid gap-2 sm:grid-cols-2">
         {day.matches.map((m, i) => (
           <li key={m.id} className="rise" style={stagger(i)}>
