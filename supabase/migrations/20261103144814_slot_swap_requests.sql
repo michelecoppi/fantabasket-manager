@@ -5,7 +5,7 @@
 -- Decisioni dell'utente (2026-11-03):
 --  * la «data prestabilita» di R-04 è una finestra che un admin apre e chiude (`seasons.slot_swap_open`, come il mercato degli
 --    scambi); chiuderla ritira le richieste in attesa;
---  * gli admin vedono le richieste solo dal badge in app, nessun messaggio alla richiesta;
+--  * gli admin vedono le richieste dal badge in app e da un messaggio privato del bot (TELEGRAM_ADMIN_ALERT, fuori dal database);
 --  * una richiesta in attesa per squadra.
 --
 -- Nuova scrittura dei viewer (dopo `trade_*` e `draft_lottery_seen`): nessuna policy di scrittura sulla tabella, si scrive solo
