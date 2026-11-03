@@ -16,16 +16,21 @@ import {
 } from "@/components/auction";
 import { Button, Callout, Check, Field, Segmented, inputClass } from "@/components/controls";
 import { TeamCrest } from "@/components/crest";
-import { BallLoader, Icon } from "@/components/icons";
+import { BallLoader, Icon, type IconName } from "@/components/icons";
 import { Badge, PageTitle, PosChip, Scoreboard, stagger } from "@/components/ui";
 import {
   PROPOSED_RULES,
+  bidErrors,
   bidLimit,
+  ceilToStep,
   excludedReason,
+  floorToStep,
   isLive,
   leader,
   matchPrice,
   minimumBid,
+  openingErrors,
+  parseAmount,
   secondsLeft,
   type AuctionRules,
   type LotPlayer,
@@ -80,6 +85,7 @@ export function AuctionPlayground(props: Props) {
   };
   // Con le rose di oggi, chi ha ancora un posto e spazio per comprare (gli esempi di tagliati ne liberano qualcuno).
   const buyers = props.teams.filter((t) => canCall({ teams: props.teams, settings: props.settings, rules }, t.id)).length;
+  const meCanBuy = canCall({ teams: props.teams, settings: props.settings, rules }, me);
 
   function start() {
     const day = today();
@@ -172,6 +178,11 @@ export function AuctionPlayground(props: Props) {
                 ]}
               />
             </Field>
+            {mode === "today" && !meCanBuy && (
+              <Callout tone="warn" title="Oggi la tua squadra non ha posti liberi">
+                In sala potresti solo guardare: niente chiamate né rilanci. Per provare tutto scegli «Da zero».
+              </Callout>
+            )}
             <Field
               label="Ritmo"
               hint={`${rules.openSeconds}″ per la prima offerta dopo la chiamata, poi ogni rilancio riporta il cronometro a ${rules.bidSeconds}″.`}
@@ -210,19 +221,19 @@ export function AuctionPlayground(props: Props) {
 /** Le regole in cinque righe, con gli ID del regolamento. */
 function HowItWorks({ rules }: { rules: AuctionRules }) {
   const steps: {
-    icon: Parameters<typeof Icon>[0]["name"];
+    icon: IconName;
     title: string;
     text: ReactNode;
   }[] = [
     {
       icon: "gavel",
       title: "Si chiama a turno",
-      text: "L'ordine è sorteggiato. Chi chiama apre alla base, metà del valore Dunkest (R-51), o più su. Chi non ha posto passa.",
+      text: "L'ordine è sorteggiato (nel playground parti tu, dopo i tagliati). Chi chiama apre alla base, metà del valore Dunkest (R-51), o più su. Chi non ha posto passa.",
     },
     {
       icon: "plus",
       title: `Si rilancia di ${fmt(rules.step)}`,
-      text: "Vince solo chi supera: il pareggio non conta (R-51). Si può saltare di più per farsi sentire.",
+      text: "Vince solo chi supera: il pareggio non conta (R-51). Si può saltare di più, o scrivere la cifra che vuoi.",
     },
     {
       icon: "stopwatch",
@@ -437,7 +448,18 @@ function AuctionRoom({ initial, seed, me, onExit, onRestart }: { initial: Room; 
     return () => window.clearInterval(id);
   }, [seed, me, initial.teams]);
 
-  const act: Act = (a) => dispatch({ ...a, now: Date.now() } as RoomAction);
+  // Cosa hai già provato: la lista «Da provare» si spunta da sola.
+  const [tried, setTried] = useState<ReadonlySet<Try>>(() => new Set());
+  const act: Act = (a, custom = false) => {
+    const t = triedBy(a, me, custom);
+    // Una cifra tua è anche un rilancio.
+    const ts = t === "custom" ? (["custom", "bid"] as const) : t ? [t] : [];
+    if (ts.some((x) => !tried.has(x))) setTried(new Set([...tried, ...ts]));
+    dispatch({ ...a, now: Date.now() } as RoomAction);
+  };
+  const won = room.sales.some((x) => x.teamId === me);
+  const done = won ? new Set(tried).add("won") : tried;
+  const steps = useMemo(() => tryList(initial, me), [initial, me]);
   const info = useMemo(() => new Map<string, TeamInfo>(room.teams.map((t) => [t.id, { id: t.id, name: t.name, color: t.color }])), [room.teams]);
   const team = (id: string) => info.get(id);
 
@@ -490,7 +512,7 @@ function AuctionRoom({ initial, seed, me, onExit, onRestart }: { initial: Room; 
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
       <div className="min-w-0">
-        <StatusBar room={room} now={now} team={team} me={me} onExit={onExit} act={act} />
+        <StatusBar room={room} now={now} team={team} me={me} onExit={onExit} act={act} steps={steps} done={done} />
 
         {lot ? (
           <Stage room={room} now={now} me={me} team={team} outbidKey={outbidKey} />
@@ -524,6 +546,15 @@ function AuctionRoom({ initial, seed, me, onExit, onRestart }: { initial: Room; 
           </div>
           <TeamBoard rows={rows} me={me} />
         </section>
+        <section className="hidden rounded-2xl border border-line bg-surface p-4 lg:block" aria-labelledby="prova-title">
+          <h2 id="prova-title" className="font-display mb-3 flex items-baseline justify-between gap-3 text-2xl leading-none font-extrabold">
+            Da provare
+            <span className="tnum text-sm text-muted">
+              {steps.filter((x) => done.has(x.id)).length}/{steps.length}
+            </span>
+          </h2>
+          <TryChecklist steps={steps} done={done} />
+        </section>
         {room.sales.length > 0 && (
           <section aria-labelledby="presi-title">
             <h2 id="presi-title" className="font-display mb-2 text-2xl leading-none font-extrabold">
@@ -544,9 +575,82 @@ function AuctionRoom({ initial, seed, me, onExit, onRestart }: { initial: Room; 
   );
 }
 
-/** Azione della sala senza l'ora: la mette `act` al momento del tocco. */
+/** Azione della sala senza l'ora: la mette `act` al momento del tocco. `custom`: offerta con una cifra scritta da te. */
 type WithoutNow<T> = T extends unknown ? Omit<T, "now"> : never;
-type Act = (a: WithoutNow<RoomAction>) => void;
+type Act = (a: WithoutNow<RoomAction>, custom?: boolean) => void;
+
+/** Le cose da provare nel playground, anche quelle che arrivano solo a un certo punto (la tua chiamata, il pareggio). */
+type Try = "call" | "bid" | "custom" | "won" | "match" | "admin";
+interface TryStep {
+  id: Try;
+  title: string;
+  hint: string;
+}
+
+function triedBy(a: WithoutNow<RoomAction>, me: string, custom: boolean): Try | null {
+  switch (a.type) {
+    case "call":
+      return a.teamId === me ? "call" : null;
+    case "bid":
+      return a.teamId !== me ? null : custom ? "custom" : "bid";
+    case "match":
+    case "decline":
+      return a.teamId === me ? "match" : null;
+    case "pause":
+    case "undo":
+    case "close":
+      return "admin";
+    default:
+      return null;
+  }
+}
+
+function tryList(room: Room, me: string): TryStep[] {
+  const mine = room.pool.find((e) => e.kind === "restricted" && e.formerTeamId === me);
+  const canBuy = canCall(room, me);
+  const steps: (TryStep | null | undefined)[] = [
+    {
+      id: "call",
+      title: "Chiama un giocatore",
+      hint: canBuy
+        ? `${room.cutQueue.length || room.lot ? "Dopo i tagliati" : "Subito"} tocca a te per primo: cerca nel listone, toccane uno e scegli a quanto aprire.`
+        : "Oggi la tua squadra non ha posti liberi e non chiama: con «Da zero» lo provi.",
+    },
+    { id: "bid", title: "Rilancia", hint: `Un tocco offre il minimo (+${fmt(room.rules.step)}); +1, +2 e +5 saltano.` },
+    { id: "custom", title: "Offri una cifra tua", hint: "Tocca «Cifra» e scrivi quanto vuoi, o usa − e +. Se non è valida te lo dice prima." },
+    { id: "won", title: "Vinci un lotto", hint: "Resta in testa fino allo scadere: e uno, e due, e tre." },
+    mine && {
+      id: "match",
+      title: "Pareggia un restricted",
+      hint: `${mine.player.name} è tuo (esempio). Quando lo chiamano non rilanci: allo scadere scegli se pareggiare (R-23). Puoi chiamarlo anche tu.`,
+    },
+    { id: "admin", title: "Fai l'admin", hint: "Tocca «Admin»: pausa, annulla l'ultima offerta, aggiudica adesso. Da lì chiudi anche l'asta." },
+  ];
+  return steps.filter((x): x is TryStep => !!x);
+}
+
+function TryChecklist({ steps, done }: { steps: TryStep[]; done: ReadonlySet<Try> }) {
+  return (
+    <ol className="grid gap-3">
+      {steps.map((x, i) => {
+        const ok = done.has(x.id);
+        return (
+          <li key={x.id} className="flex gap-3">
+            <span
+              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors ${ok ? "bg-success text-white" : "border border-line text-muted"}`}
+            >
+              {ok ? <Icon name="check" size={15} strokeWidth={2.6} /> : <span className="tnum text-xs font-bold">{i + 1}</span>}
+            </span>
+            <span className="min-w-0 text-sm leading-5">
+              <span className={`block font-semibold ${ok ? "text-muted line-through" : ""}`}>{x.title}</span>
+              {!ok && <span className="text-muted">{x.hint}</span>}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 /** Riga di stato: blocco (tagliati o free agent), lotto, tempo, ordine di chiamata e comandi dell'admin. */
 function StatusBar({
@@ -556,6 +660,8 @@ function StatusBar({
   me,
   onExit,
   act,
+  steps,
+  done,
 }: {
   room: Room;
   now: number;
@@ -563,8 +669,11 @@ function StatusBar({
   me: string;
   onExit: () => void;
   act: Act;
+  steps: TryStep[];
+  done: ReadonlySet<Try>;
 }) {
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const doneCount = steps.filter((x) => done.has(x.id)).length;
   const lot = room.lot;
   const cut = lot?.kind === "cut" || room.cutQueue.length > 0;
   const paused = lot?.pausedLeft !== null && lot?.pausedLeft !== undefined;
@@ -597,6 +706,37 @@ function StatusBar({
           );
         })}
       </span>
+      <button
+        type="button"
+        popoverTarget="asta-prova"
+        aria-label={`Da provare: ${doneCount} su ${steps.length}`}
+        className={`font-display tnum inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-base font-extrabold transition-colors lg:hidden ${doneCount < steps.length ? "border-gold bg-gold/12" : "border-line bg-surface"}`}
+      >
+        <Icon name="target" size={17} />
+        {doneCount}/{steps.length}
+      </button>
+      <div id="asta-prova" popover="auto" className="sheet">
+        <div className="arena px-5 pt-5 pb-4">
+          <div className="relative z-[2] flex items-start justify-between gap-3">
+            <div>
+              <p className="eyebrow text-white/60">Playground</p>
+              <h2 className="font-display mt-1 text-4xl leading-none font-black">Da provare</h2>
+            </div>
+            <button
+              type="button"
+              popoverTarget="asta-prova"
+              popoverTargetAction="hide"
+              aria-label="Chiudi"
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/10"
+            >
+              <Icon name="x" size={18} />
+            </button>
+          </div>
+        </div>
+        <div className="p-5">
+          <TryChecklist steps={steps} done={done} />
+        </div>
+      </div>
       <button
         type="button"
         popoverTarget="asta-admin"
@@ -762,11 +902,14 @@ function BidDock({ room, me, now, act }: { room: Room; me: string; now: number; 
     key: -1,
     by: 0,
   });
+  // Cifra scritta da te (null = salti): resta finché non torni ai salti, anche se nel frattempo ti superano.
+  const [custom, setCustom] = useState<string | null>(null);
   const lot = room.lot!;
   const min = minimumBid(lot, room.rules);
   const by = jump.key === lot.bids.length ? jump.by : 0;
-  const amount = Math.round((min + by) * 10) / 10;
   const lim = bidLimit(room.teams.find((t) => t.id === me)!.side, lot.player.pos, room.settings, room.rules);
+  const amount = custom !== null ? parseAmount(custom) : Math.round((min + by) * 10) / 10;
+  const customError = custom !== null ? (bidErrors(lot, me, amount, now, lim.max, room.rules)[0] ?? null) : null;
   const top = leader(lot);
   const holder = lot.kind === "restricted" && lot.formerTeamId === me;
   const paused = lot.pausedLeft !== null;
@@ -809,36 +952,64 @@ function BidDock({ room, me, now, act }: { room: Room; me: string; now: number; 
   } else {
     const jumps = [1, 2, 5].filter((j) => min + j <= lim.max);
     body = (
-      <div className="grid gap-2">
+      <form
+        className="grid gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!customError) act({ type: "bid", teamId: me, amount }, custom !== null);
+        }}
+      >
         <div className="flex items-center gap-2">
-          <span className="eyebrow shrink-0 text-white/55">Salta</span>
-          <div className="flex flex-1 gap-1.5">
-            {jumps.map((j) => {
-              const on = by === j;
-              return (
-                <button
-                  key={j}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setJump({ key: lot.bids.length, by: on ? 0 : j })}
-                  className={`font-display tnum min-h-10 flex-1 rounded-lg text-lg font-extrabold transition-[background-color,color] ${on ? "bg-gold text-nav" : "bg-white/10 hover:bg-white/15"}`}
-                >
-                  +{j}
-                </button>
-              );
-            })}
-          </div>
+          <span className="eyebrow shrink-0 text-white/55">{custom === null ? "Salta" : "Cifra"}</span>
+          {custom === null ? (
+            <div className="flex flex-1 gap-1.5">
+              {jumps.map((j) => {
+                const on = by === j;
+                return (
+                  <button
+                    key={j}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setJump({ key: lot.bids.length, by: on ? 0 : j })}
+                    className={`font-display tnum min-h-10 flex-1 rounded-lg text-lg font-extrabold transition-[background-color,color] ${on ? "bg-gold text-nav" : "bg-white/10 hover:bg-white/15"}`}
+                  >
+                    +{j}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-1 justify-center">
+              <AmountInput value={custom} onChange={setCustom} min={min} max={lim.max} step={room.rules.step} label="La tua offerta" autoFocus />
+            </div>
+          )}
+          <button
+            type="button"
+            aria-pressed={custom !== null}
+            onClick={() => {
+              setCustom(custom === null ? fmt(min + by) : null);
+              setJump({ key: -1, by: 0 });
+            }}
+            className="font-display inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-3 text-base font-extrabold transition-colors hover:bg-white/15"
+          >
+            <Icon name={custom === null ? "pen" : "x"} size={16} />
+            {custom === null ? "Cifra" : "Salti"}
+          </button>
         </div>
-        <Button className="min-h-14 w-full text-2xl" icon="gavel" onClick={() => act({ type: "bid", teamId: me, amount })}>
-          Offri <span className="tnum">{fmt(amount)}</span>
+        <Button type="submit" className="min-h-14 w-full text-2xl" icon="gavel" disabled={!!customError}>
+          Offri <span className="tnum">{Number.isNaN(amount) ? "…" : fmt(amount)}</span>
         </Button>
-        <p className="tnum text-center text-xs text-white/60">
-          Arrivi a {fmt(lim.max)}
-          {lim.starter !== null && amount > lim.capSpace && lim.capSpace >= 0 ? (
-            <span className="text-arena-warn"> · oltre {fmt(lim.capSpace)} sfori il cap: luxury tax</span>
-          ) : null}
+        <p className={`tnum text-center text-xs ${customError ? "font-semibold text-arena-bad" : "text-white/60"}`}>
+          {customError ?? (
+            <>
+              Arrivi a {fmt(lim.max)}
+              {lim.starter !== null && amount > lim.capSpace && lim.capSpace >= 0 ? (
+                <span className="text-arena-warn"> · oltre {fmt(lim.capSpace)} sfori il cap: luxury tax</span>
+              ) : null}
+            </>
+          )}
         </p>
-      </div>
+      </form>
     );
   }
 
@@ -857,7 +1028,7 @@ function BidDock({ room, me, now, act }: { room: Room; me: string; now: number; 
   );
 }
 
-function DockLine({ icon, text, tone }: { icon: Parameters<typeof Icon>[0]["name"]; text: string; tone?: "gold" | "accent" }) {
+function DockLine({ icon, text, tone }: { icon: IconName; text: string; tone?: "gold" | "accent" }) {
   return (
     <p className="flex min-h-12 items-center gap-3 px-1.5 text-sm">
       <span
@@ -875,13 +1046,14 @@ function CallPicker({ room, me, team, act }: { room: Room; me: string; team: (id
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<Position | "all">("all");
   const [picked, setPicked] = useState<PoolEntry | null>(null);
-  const [extra, setExtra] = useState(0);
+  const [open, setOpen] = useState("");
   const [more, setMore] = useState(40);
   const norm = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const list = room.pool.filter((e) => (pos === "all" || e.player.pos === pos) && (!q || norm(e.player.name).includes(norm(q))));
   const limit = (e: PoolEntry) => limitFor(room, me, e.player.pos);
   const holder = picked?.kind === "restricted" && picked.formerTeamId === me;
-  const opening = picked ? picked.base + extra : 0;
+  const opening = parseAmount(open);
+  const openError = picked && !holder ? (openingErrors(picked.base, opening, limit(picked), room.rules)[0] ?? null) : null;
 
   return (
     <>
@@ -931,7 +1103,7 @@ function CallPicker({ room, me, team, act }: { room: Room; me: string; team: (id
                     aria-pressed={on}
                     onClick={() => {
                       setPicked(on ? null : e);
-                      setExtra(0);
+                      setOpen(fmt(e.base));
                     }}
                     className={`flex min-h-14 w-full items-center gap-3 px-3 py-2 text-left transition-colors disabled:opacity-40 ${on ? "bg-gold/15" : "hover:bg-white/6"}`}
                   >
@@ -971,62 +1143,93 @@ function CallPicker({ room, me, team, act }: { room: Room; me: string; team: (id
       </section>
 
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-3 lg:bottom-4">
-        <div className="pop chrome rounded-2xl border border-white/10 p-2.5 shadow-[0_10px_30px_rgb(6_10_20/0.2)] backdrop-blur-md dark:shadow-[0_10px_30px_rgb(6_10_20/0.35)]">
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            if (picked && !openError) act({ type: "call", teamId: me, playerId: picked.player.id, amount: holder ? picked.base : opening });
+          }}
+          className="pop chrome rounded-2xl border border-white/10 p-2.5 shadow-[0_10px_30px_rgb(6_10_20/0.2)] backdrop-blur-md dark:shadow-[0_10px_30px_rgb(6_10_20/0.35)]"
+        >
           {picked && (
             <div className="mb-2 flex min-h-12 items-center gap-3 pl-1">
               <PosChip pos={picked.player.pos} />
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">{picked.player.name}</span>
               {!holder && (
-                <div className="flex shrink-0 items-center rounded-lg bg-white/10" role="group" aria-label="Offerta di apertura">
-                  <button
-                    type="button"
-                    aria-label="Meno"
-                    disabled={extra <= 0}
-                    onClick={() => setExtra((x) => Math.max(0, x - room.rules.step))}
-                    className="grid h-11 w-11 place-items-center text-xl disabled:opacity-30"
-                  >
-                    −
-                  </button>
-                  <span className="font-display tnum min-w-12 text-center text-2xl font-extrabold">{fmt(opening)}</span>
-                  <button
-                    type="button"
-                    aria-label="Più"
-                    disabled={opening + room.rules.step > limit(picked)}
-                    onClick={() => setExtra((x) => x + room.rules.step)}
-                    className="grid h-11 w-11 place-items-center text-xl disabled:opacity-30"
-                  >
-                    +
-                  </button>
-                </div>
+                <AmountInput value={open} onChange={setOpen} min={picked.base} max={limit(picked)} step={room.rules.step} label="Offerta di apertura" />
               )}
             </div>
           )}
+          {openError && <p className="mb-2 px-1 text-xs font-semibold text-arena-bad">{openError}</p>}
           <div className="grid grid-cols-[auto_1fr] gap-2">
             <Button variant="ghost" className="border border-white/15" onClick={() => act({ type: "pass", teamId: me })}>
               Passo
             </Button>
             {picked ? (
-              <Button
-                className="min-h-12"
-                icon="gavel"
-                onClick={() =>
-                  act({
-                    type: "call",
-                    teamId: me,
-                    playerId: picked.player.id,
-                    amount: opening,
-                  })
-                }
-              >
-                {holder ? "Chiama (hai il pareggio)" : `Chiama a ${fmt(opening)}`}
+              <Button type="submit" className="min-h-12" icon="gavel" disabled={!!openError}>
+                {holder ? "Chiama (hai il pareggio)" : `Chiama a ${Number.isNaN(opening) ? "…" : fmt(opening)}`}
               </Button>
             ) : (
               <p className="flex min-h-12 items-center justify-center text-sm text-white/60">Tocca un giocatore per chiamarlo</p>
             )}
           </div>
-        </div>
+        </form>
       </div>
     </>
+  );
+}
+
+/** Cifra da scrivere (virgola o punto) con − e + che vanno di un passo, dentro [min, max]. */
+function AmountInput({
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  label,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  min: number;
+  max: number;
+  step: number;
+  label: string;
+  autoFocus?: boolean;
+}) {
+  const n = parseAmount(value);
+  const set = (x: number) => onChange(fmt(Math.min(max, Math.max(min, x))));
+  return (
+    <div className="flex shrink-0 items-center rounded-lg bg-white/10 focus-within:ring-2 focus-within:ring-gold/70" role="group" aria-label={label}>
+      <button
+        type="button"
+        aria-label="Meno"
+        disabled={!Number.isNaN(n) && n <= min}
+        onClick={() => set(Number.isNaN(n) ? min : ceilToStep(n, step) - step)}
+        className="grid h-11 w-11 place-items-center text-xl disabled:opacity-30"
+      >
+        −
+      </button>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={(e) => e.target.select()}
+        inputMode="decimal"
+        enterKeyHint="send"
+        autoComplete="off"
+        autoFocus={autoFocus}
+        aria-label={label}
+        className="font-display tnum w-16 bg-transparent text-center text-2xl font-extrabold outline-none"
+      />
+      <button
+        type="button"
+        aria-label="Più"
+        disabled={!Number.isNaN(n) && n + step > max}
+        onClick={() => set(Number.isNaN(n) ? min : floorToStep(n, step) + step)}
+        className="grid h-11 w-11 place-items-center text-xl disabled:opacity-30"
+      >
+        +
+      </button>
+    </div>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   matchRight,
   nextCaller,
   openLot,
+  openingErrors,
   pauseLot,
   placeBid,
   resumeLot,
@@ -142,7 +143,8 @@ export function roomReducer(room: Room, a: RoomAction): Room {
       if (!entry) return room;
       const limit = limitFor(room, a.teamId, entry.player.pos);
       const holder = entry.kind === "restricted" && entry.formerTeamId === a.teamId;
-      if (!holder && (limit < entry.base || a.amount > limit)) return { ...room, error: { teamId: a.teamId, text: "Non hai spazio per aprire a questa cifra.", at: a.now } };
+      const errors = holder ? [] : openingErrors(entry.base, a.amount, limit, room.rules);
+      if (errors.length) return { ...room, error: { teamId: a.teamId, text: errors[0], at: a.now } };
       const opened = openLot(
         { player: entry.player, kind: entry.kind, formerTeamId: entry.formerTeamId, base: entry.base, calledBy: a.teamId, openingAmount: holder ? null : a.amount },
         a.now,

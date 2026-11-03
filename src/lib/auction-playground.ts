@@ -55,7 +55,7 @@ export interface Scenario {
   pool: PoolEntry[];
   /** asta dei tagliati (R-41, R-50): lotti chiamati dall'app prima di tutto il resto */
   cutQueue: PoolEntry[];
-  /** ordine di chiamata, sorteggiato */
+  /** ordine di chiamata: tu per primo (nel playground serve a provare subito la chiamata), gli altri sorteggiati */
   order: string[];
 }
 
@@ -134,5 +134,5 @@ export function buildScenario(data: PlaygroundData, mode: ScenarioMode, examples
   }
 
   pool.sort((a, b) => b.player.credits - a.player.credits || a.player.name.localeCompare(b.player.name));
-  return { teams, pool, cutQueue, order: shuffle(data.teams.map((t) => t.id), rand) };
+  return { teams, pool, cutQueue, order: [me, ...shuffle(bots, rand)] };
 }
