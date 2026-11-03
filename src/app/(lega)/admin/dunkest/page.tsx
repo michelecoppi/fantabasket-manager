@@ -354,7 +354,8 @@ export default async function AdminDunkestPage() {
             {!dunkest.available && <p className="text-sm text-danger">Tabelle Dunkest non leggibili: la migrazione 20261027025827 è applicata su Supabase?</p>}
           </div>
           {dunkest.available && (
-            <div className="shrink-0">
+            // Larghezza massima: l'esito dell'aggiornamento è lungo e senza limite allargava la pagina (2026-11-03).
+            <div className="min-w-0 sm:max-w-md sm:shrink-0">
               <DunkestSyncButton />
             </div>
           )}
