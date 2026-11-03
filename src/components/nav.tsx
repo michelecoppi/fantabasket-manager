@@ -11,6 +11,8 @@ const links: { href: string; label: string; icon: IconName }[] = [
   { href: "/draft", label: "Draft", icon: "ticket" },
   { href: "/scadenze", label: "Scadenze", icon: "hourglass" },
   { href: "/scambio", label: "Scambio", icon: "swap" },
+  // Issue #104: per ora il playground, poi l'asta vera.
+  { href: "/asta", label: "Asta", icon: "gavel" },
 ];
 const adminLink = { href: "/admin", label: "Admin", icon: "badge" as const };
 
@@ -48,7 +50,10 @@ function Count({ n, className = "" }: { n: number | undefined; className?: strin
   );
 }
 
-/** Navigazione principale nell'header (da lg in su; sotto c'è la TabBar): icona + etichetta, sottolineatura oro sulla voce attiva. */
+/**
+ * Navigazione principale nell'header (da lg in su; sotto c'è la TabBar): icona + etichetta, sottolineatura oro sulla voce attiva.
+ * Fino a xl le voci sono più strette: con 7 voci (admin) e il pallino delle proposte stanno in 1024 px.
+ */
 export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badges?: NavBadges }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
@@ -61,7 +66,7 @@ export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badge
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`group font-display relative flex items-center gap-2 px-3 text-[1.0625rem] font-extrabold tracking-wide whitespace-nowrap transition-colors 2xl:px-4 ${
+            className={`group font-display relative flex items-center gap-2 px-2 text-[1.0625rem] font-extrabold tracking-wide whitespace-nowrap transition-colors xl:px-3 2xl:px-4 ${
               active ? "text-white" : "text-white/55 hover:text-white"
             }`}
           >
@@ -72,7 +77,7 @@ export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badge
             <Count n={badges[l.href]} />
             <span
               aria-hidden
-              className={`absolute inset-x-3 bottom-0 h-[3px] origin-center rounded-t-full bg-gold transition-transform duration-300 2xl:inset-x-4 ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"}`}
+              className={`absolute inset-x-2 bottom-0 h-[3px] origin-center rounded-t-full bg-gold transition-transform duration-300 xl:inset-x-3 2xl:inset-x-4 ${active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-50"}`}
             />
           </Link>
         );
@@ -85,6 +90,8 @@ export function MainNav({ admin = false, badges = {} }: { admin?: boolean; badge
 export function TabBar({ admin = false, badges = {} }: { admin?: boolean; badges?: NavBadges }) {
   const pathname = usePathname();
   const items = admin ? [...links, adminLink] : links;
+  // Con 7 voci (admin) su un telefono da 360 px le etichette lunghe («Giocatori») toccano i bordi: niente spaziatura in più.
+  const dense = items.length > 6;
   return (
     <nav
       aria-label="Navigazione principale"
@@ -99,7 +106,7 @@ export function TabBar({ admin = false, badges = {} }: { admin?: boolean; badges
               key={l.href}
               href={l.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-[3.75rem] flex-1 flex-col items-center justify-center gap-1 text-[0.625rem] font-bold tracking-wide uppercase transition-colors ${
+              className={`relative flex min-h-[3.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[0.625rem] font-bold uppercase transition-colors ${dense ? "tracking-normal" : "tracking-wide"} ${
                 active ? "text-brand-blue dark:text-gold" : "text-white/55 active:text-white"
               }`}
             >

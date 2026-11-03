@@ -264,6 +264,22 @@ export default async function Home(props: PageProps<"/">) {
         <PulseTile i={4} icon="coins" label="Luxury tax da incassare" value={`${fmtEuro(taxDue)} €`} />
       </div>
 
+      {/* Issue #104: il playground dell'asta, da far provare alla lega prima di costruire quella vera. */}
+      <Link
+        href="/asta"
+        className="rise group arena mt-3 flex items-center gap-3 rounded-2xl border border-transparent py-3 pr-4 pl-3 transition-[filter] hover:brightness-[1.04] sm:pl-4 dark:hover:brightness-125"
+        style={stagger(5)}
+      >
+        <span className="relative z-[2] grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold text-nav">
+          <Icon name="gavel" size={20} strokeWidth={2.2} />
+        </span>
+        <span className="relative z-[2] min-w-0 flex-1">
+          <span className="eyebrow block truncate text-white/55">Novità · playground</span>
+          <span className="block truncate font-semibold">Prova la sala d&apos;asta</span>
+        </span>
+        <Icon name="arrow-right" size={18} strokeWidth={2.2} className="relative z-[2] shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5" />
+      </Link>
+
       {hasStandings && (
         <section className="mt-12" aria-labelledby="league-standings-title">
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">

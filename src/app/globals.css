@@ -573,6 +573,76 @@ select {
   animation: slot-in 420ms var(--ease-spring) both;
 }
 
+/* ---------- Asta (playground /asta, components/auction.tsx, issue #104) ---------- */
+/*
+ * Una sala che risponde a ogni rilancio: la cifra salta, la riga entra nel registro, il cronometro batte negli ultimi tre secondi,
+ * il timbro «Aggiudicato» chiude il lotto. Tutte animazioni una tantum (niente loop), solo transform e opacity.
+ */
+@keyframes bid-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+.bid-in {
+  animation: bid-in 320ms var(--ease-spring) both;
+}
+@keyframes price-bump {
+  from {
+    transform: scale(1.14);
+  }
+}
+.price-bump {
+  transform-origin: left bottom;
+  animation: price-bump 420ms var(--ease-spring) both;
+}
+/* Velo che si spegne: superato (rosso), squadra che ha appena rilanciato (oro). Il genitore è `relative`. */
+@keyframes veil-out {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.flash-veil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: veil-out 800ms ease-out both;
+}
+@keyframes tick-beat {
+  from {
+    transform: scale(1.2);
+  }
+}
+.tick-beat {
+  animation: tick-beat 380ms var(--ease-out) both;
+}
+/* Barra del cronometro: si accorcia con transform, aggiornata ogni decimo di secondo. */
+.clock-bar {
+  transform-origin: left center;
+  transition: transform 120ms linear;
+}
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(1.9);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-5deg) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-6deg);
+  }
+}
+.stamp {
+  animation: stamp 520ms var(--ease-spring) both;
+}
+
 /* ---------- Transizioni di pagina (<ViewTransition> in template.tsx) ---------- */
 ::view-transition {
   pointer-events: none;
