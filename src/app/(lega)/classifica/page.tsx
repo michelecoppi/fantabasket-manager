@@ -4,6 +4,7 @@ import { ChipLinks, ViewSwitch } from "@/components/chips";
 import { Lineup, LeagueSource, MatchScore, StandingsTable, teamIndex } from "@/components/dunkest-league";
 import { Icon } from "@/components/icons";
 import { MatchdayCard } from "@/components/matchday-card";
+import { MatchdayClock, MatchdayStatus } from "@/components/matchday-clock";
 import { MatchdayStrip } from "@/components/matchday-strip";
 import { PrecedentsLine } from "@/components/rivalries";
 import { StandingsChart } from "@/components/standings-chart";
@@ -11,7 +12,8 @@ import { Badge, Empty, PageTitle, Scoreboard, Section, stagger } from "@/compone
 import { hasPlayerAwards, matchdayAwards } from "@/lib/awards";
 import { checkLineup, rosterRefs, tribune, type DunkestLeagueView, type LineupPlayer, type MatchdayView } from "@/lib/dunkest-league";
 import type { TeamView } from "@/lib/league";
-import { loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
+import { followingDay } from "@/lib/dunkest-rounds";
+import { loadDunkestRosters, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRounds } from "@/lib/league-server";
 import { precedents } from "@/lib/rivalries";
 import { checkOfficial, standingsByMatchday } from "@/lib/standings-history";
 import { teamColors } from "@/lib/team-colors";
@@ -52,12 +54,13 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
     const { lineupDay } = pickDays(v, tab, asked);
     return lineupDay ? loadLineups(lineupDay.matches.map((m) => m.id)) : new Map<number, Map<string, LineupPlayer[]>>();
   };
-  const [view, league, profile, dunkestRosters, lineups] = await Promise.all([
+  const [view, league, profile, dunkestRosters, lineups, rounds] = await Promise.all([
     loadLeagueDunkest(),
     loadLeague(),
     loadProfile(),
     loadDunkestRosters(),
     loadLeagueDunkest().then(lineupsOf),
+    loadRounds(),
   ]);
   const colors = teamColors(league.teams.map((t) => t.team.id));
   const teams = teamIndex(league.teams, colors);
@@ -105,8 +108,11 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
         <MatchdayStrip days={view.matchdays.map((d) => ({ matchday: d.matchday, state: d.state }))} selected={selected.matchday} hrefBase="/classifica" query={`vista=${vista}`} />
         <div className="mt-4 mb-3 flex items-baseline justify-between gap-3">
           <h2 className="font-display text-4xl leading-none font-black">Giornata {selected.matchday}</h2>
-          <span className="text-xs font-semibold text-muted">{STATE_TEXT[selected.state]}</span>
+          <span className="text-xs font-semibold text-muted">
+            <MatchdayStatus rounds={rounds.get(selected.matchday) ?? []} fallback={STATE_TEXT[selected.state]} />
+          </span>
         </div>
+        <MatchdayClock rounds={rounds.get(selected.matchday) ?? []} following={followingDay(rounds, selected.matchday)} className="mb-3" />
       </>
     );
 
@@ -166,7 +172,14 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
               </Section>
               {latestDay && (
                 <Section title="La giornata" icon="ball" aside="ultima con punti">
-                  <MatchdayCard day={latestDay} mvp={mvp && lastPlayed ? { award: mvp, matchday: lastPlayed.matchday } : null} teams={teams} myTeamId={myTeamId} />
+                  <MatchdayCard
+                    day={latestDay}
+                    mvp={mvp && lastPlayed ? { award: mvp, matchday: lastPlayed.matchday } : null}
+                    teams={teams}
+                    myTeamId={myTeamId}
+                    rounds={rounds.get(latestDay.matchday)}
+                    following={followingDay(rounds, latestDay.matchday)}
+                  />
                 </Section>
               )}
             </div>

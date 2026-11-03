@@ -12,7 +12,8 @@ import { Badge, Empty, Scoreboard, stagger } from "@/components/ui";
 import { fmt, fmtDay, fmtEuro } from "@/lib/format";
 import { matchdayAwards } from "@/lib/awards";
 import { teamMatch, type DunkestLeagueView } from "@/lib/dunkest-league";
-import { loadDunkest, loadLatestNight, loadLeague, loadLeagueDunkest, loadLineups, loadProfile } from "@/lib/league-server";
+import { followingDay } from "@/lib/dunkest-rounds";
+import { loadDunkest, loadLatestNight, loadLeague, loadLeagueDunkest, loadLineups, loadProfile, loadRounds } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { listTeams, parseTeamListOptions, type TeamFilter, type TeamListOptions, type TeamSort } from "@/lib/teams-list";
 
@@ -50,13 +51,14 @@ export default async function Home(props: PageProps<"/">) {
     const award = matchdayAwards(day.matches, await loadLineups(day.matches.map((m) => m.id))).find((a) => a.kind === "mvp");
     return award ? { award, matchday: day.matchday } : null;
   };
-  const [league, profile, dunkest, view, mvp, night] = await Promise.all([
+  const [league, profile, dunkest, view, mvp, night, rounds] = await Promise.all([
     loadLeague(),
     loadProfile(),
     loadDunkest(),
     loadLeagueDunkest(),
     loadLeagueDunkest().then(mvpOf),
     loadLatestNight(5),
+    loadRounds(),
   ]);
   // Infortunati di ogni rosa secondo Dunkest (issue #68).
   const injuredOf = (t: (typeof league.teams)[number]) => [...t.starters, ...t.reserves].filter((p) => dunkest.injuries.has(p.playerId));
@@ -297,7 +299,14 @@ export default async function Home(props: PageProps<"/">) {
           <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <StandingsTable league={view} teams={index} myTeamId={myTeam?.team.id} compact />
             {latestDay && (
-              <MatchdayCard day={latestDay} mvp={mvp} teams={index} myTeamId={myTeam?.team.id ?? null} />
+              <MatchdayCard
+                day={latestDay}
+                mvp={mvp}
+                teams={index}
+                myTeamId={myTeam?.team.id ?? null}
+                rounds={rounds.get(latestDay.matchday)}
+                following={followingDay(rounds, latestDay.matchday)}
+              />
             )}
           </div>
           <div className="mt-3">

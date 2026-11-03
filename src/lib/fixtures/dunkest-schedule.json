@@ -1,0 +1,821 @@
+{
+ "config": {
+  "data": {
+   "current_schedule_id": 57,
+   "current_matchday": {
+    "id": 1863,
+    "number": 6,
+    "num_rounds": 2
+   },
+   "current_round": {
+    "id": 2904,
+    "number": 1,
+    "started_at": "2026-11-04T23:59:00.000000Z"
+   },
+   "previous_matchday": {
+    "id": 1862,
+    "number": 5
+   },
+   "matchdays": [
+    {
+     "id": 1858,
+     "number": 1,
+     "display_name": null
+    },
+    {
+     "id": 1859,
+     "number": 2,
+     "display_name": null
+    },
+    {
+     "id": 1860,
+     "number": 3,
+     "display_name": null
+    },
+    {
+     "id": 1861,
+     "number": 4,
+     "display_name": null
+    },
+    {
+     "id": 1862,
+     "number": 5,
+     "display_name": null
+    },
+    {
+     "id": 1863,
+     "number": 6,
+     "display_name": null
+    },
+    {
+     "id": 1864,
+     "number": 7,
+     "display_name": null
+    },
+    {
+     "id": 1865,
+     "number": 8,
+     "display_name": null
+    }
+   ]
+  }
+ },
+ "matchdays": {
+  "1862": {
+   "data": {
+    "id": 1862,
+    "number": 5,
+    "rounds": [
+     {
+      "id": 2901,
+      "number": 1,
+      "matches": [
+       {
+        "id": 14133,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-10-31T19:00:00.000000Z",
+        "home_team": {
+         "id": 29,
+         "name": "Utah Jazz",
+         "abbreviation": "UTA",
+         "score": 90,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 25,
+         "name": "Portland Trail Blazers",
+         "abbreviation": "POR",
+         "score": 112,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14134,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-10-31T22:00:00.000000Z",
+        "home_team": {
+         "id": 4,
+         "name": "Charlotte Hornets",
+         "abbreviation": "CHA",
+         "score": 104,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 23,
+         "name": "Philadelphia 76ers",
+         "abbreviation": "PHI",
+         "score": 109,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14135,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-10-31T23:00:00.000000Z",
+        "home_team": {
+         "id": 19,
+         "name": "New Orleans Pelicans",
+         "abbreviation": "NOP",
+         "score": 121,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 1,
+         "name": "Atlanta Hawks",
+         "abbreviation": "ATL",
+         "score": 99,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14136,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T00:00:00.000000Z",
+        "home_team": {
+         "id": 17,
+         "name": "Milwaukee Bucks",
+         "abbreviation": "MIL",
+         "score": 111,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 6,
+         "name": "Cleveland Cavaliers",
+         "abbreviation": "CLE",
+         "score": 136,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14137,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T00:00:00.000000Z",
+        "home_team": {
+         "id": 27,
+         "name": "San Antonio Spurs",
+         "abbreviation": "SAS",
+         "score": 121,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 18,
+         "name": "Minnesota Timberwolves",
+         "abbreviation": "MIN",
+         "score": 111,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14138,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T00:00:00.000000Z",
+        "home_team": {
+         "id": 15,
+         "name": "Memphis Grizzlies",
+         "abbreviation": "MEM",
+         "score": 136,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 26,
+         "name": "Sacramento Kings",
+         "abbreviation": "SAC",
+         "score": 105,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14139,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T00:30:00.000000Z",
+        "home_team": {
+         "id": 11,
+         "name": "Houston Rockets",
+         "abbreviation": "HOU",
+         "score": 119,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 21,
+         "name": "Oklahoma City Thunder",
+         "abbreviation": "OKC",
+         "score": 98,
+         "is_valid": true
+        }
+       }
+      ]
+     },
+     {
+      "id": 2902,
+      "number": 2,
+      "matches": [
+       {
+        "id": 14140,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T20:30:00.000000Z",
+        "home_team": {
+         "id": 22,
+         "name": "Orlando Magic",
+         "abbreviation": "ORL",
+         "score": 97,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 2,
+         "name": "Boston Celtics",
+         "abbreviation": "BOS",
+         "score": 108,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14141,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-01T22:00:00.000000Z",
+        "home_team": {
+         "id": 12,
+         "name": "Indiana Pacers",
+         "abbreviation": "IND",
+         "score": 90,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 3,
+         "name": "Brooklyn Nets",
+         "abbreviation": "BKN",
+         "score": 98,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14142,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-02T01:30:00.000000Z",
+        "home_team": {
+         "id": 10,
+         "name": "Golden State Warriors",
+         "abbreviation": "GSW",
+         "score": 124,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 13,
+         "name": "Los Angeles Clippers",
+         "abbreviation": "LAC",
+         "score": 112,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14143,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-02T02:10:00.000000Z",
+        "home_team": {
+         "id": 14,
+         "name": "Los Angeles Lakers",
+         "abbreviation": "LAL",
+         "score": 131,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 28,
+         "name": "Toronto Raptors",
+         "abbreviation": "TOR",
+         "score": 125,
+         "is_valid": true
+        }
+       }
+      ]
+     },
+     {
+      "id": 2903,
+      "number": 3,
+      "matches": [
+       {
+        "id": 14144,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T00:30:00.000000Z",
+        "home_team": {
+         "id": 23,
+         "name": "Philadelphia 76ers",
+         "abbreviation": "PHI",
+         "score": 126,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 5,
+         "name": "Chicago Bulls",
+         "abbreviation": "CHI",
+         "score": 107,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14145,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T00:30:00.000000Z",
+        "home_team": {
+         "id": 20,
+         "name": "New York Knicks",
+         "abbreviation": "NYK",
+         "score": 103,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 3,
+         "name": "Brooklyn Nets",
+         "abbreviation": "BKN",
+         "score": 90,
+         "is_valid": false
+        }
+       },
+       {
+        "id": 14146,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T00:30:00.000000Z",
+        "home_team": {
+         "id": 22,
+         "name": "Orlando Magic",
+         "abbreviation": "ORL",
+         "score": 94,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 30,
+         "name": "Washington Wizards",
+         "abbreviation": "WAS",
+         "score": 103,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14147,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T00:30:00.000000Z",
+        "home_team": {
+         "id": 4,
+         "name": "Charlotte Hornets",
+         "abbreviation": "CHA",
+         "score": 91,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 9,
+         "name": "Detroit Pistons",
+         "abbreviation": "DET",
+         "score": 124,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14148,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T01:00:00.000000Z",
+        "home_team": {
+         "id": 7,
+         "name": "Dallas Mavericks",
+         "abbreviation": "DAL",
+         "score": 100,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 26,
+         "name": "Sacramento Kings",
+         "abbreviation": "SAC",
+         "score": 115,
+         "is_valid": false
+        }
+       },
+       {
+        "id": 14149,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T02:00:00.000000Z",
+        "home_team": {
+         "id": 8,
+         "name": "Denver Nuggets",
+         "abbreviation": "DEN",
+         "score": 110,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 25,
+         "name": "Portland Trail Blazers",
+         "abbreviation": "POR",
+         "score": 118,
+         "is_valid": false
+        }
+       },
+       {
+        "id": 14150,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T03:00:00.000000Z",
+        "home_team": {
+         "id": 10,
+         "name": "Golden State Warriors",
+         "abbreviation": "GSW",
+         "score": 116,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 24,
+         "name": "Phoenix Suns",
+         "abbreviation": "PHX",
+         "score": 113,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14151,
+        "status": "played",
+        "ot": false,
+        "started_at": "2026-11-03T03:00:00.000000Z",
+        "home_team": {
+         "id": 14,
+         "name": "Los Angeles Lakers",
+         "abbreviation": "LAL",
+         "score": 138,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 16,
+         "name": "Miami Heat",
+         "abbreviation": "MIA",
+         "score": 117,
+         "is_valid": true
+        }
+       }
+      ]
+     }
+    ],
+    "resting_teams": []
+   }
+  },
+  "1863": {
+   "data": {
+    "id": 1863,
+    "number": 6,
+    "rounds": [
+     {
+      "id": 2904,
+      "number": 1,
+      "matches": [
+       {
+        "id": 14152,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T00:00:00.000000Z",
+        "home_team": {
+         "id": 30,
+         "name": "Washington Wizards",
+         "abbreviation": "WAS",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 1,
+         "name": "Atlanta Hawks",
+         "abbreviation": "ATL",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14153,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T00:00:00.000000Z",
+        "home_team": {
+         "id": 9,
+         "name": "Detroit Pistons",
+         "abbreviation": "DET",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 23,
+         "name": "Philadelphia 76ers",
+         "abbreviation": "PHI",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14154,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T00:30:00.000000Z",
+        "home_team": {
+         "id": 2,
+         "name": "Boston Celtics",
+         "abbreviation": "BOS",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 17,
+         "name": "Milwaukee Bucks",
+         "abbreviation": "MIL",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14155,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T00:30:00.000000Z",
+        "home_team": {
+         "id": 3,
+         "name": "Brooklyn Nets",
+         "abbreviation": "BKN",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 4,
+         "name": "Charlotte Hornets",
+         "abbreviation": "CHA",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14156,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T00:30:00.000000Z",
+        "home_team": {
+         "id": 20,
+         "name": "New York Knicks",
+         "abbreviation": "NYK",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 5,
+         "name": "Chicago Bulls",
+         "abbreviation": "CHI",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14157,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T01:00:00.000000Z",
+        "home_team": {
+         "id": 21,
+         "name": "Oklahoma City Thunder",
+         "abbreviation": "OKC",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 6,
+         "name": "Cleveland Cavaliers",
+         "abbreviation": "CLE",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14158,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T01:00:00.000000Z",
+        "home_team": {
+         "id": 19,
+         "name": "New Orleans Pelicans",
+         "abbreviation": "NOP",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 29,
+         "name": "Utah Jazz",
+         "abbreviation": "UTA",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14159,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T01:00:00.000000Z",
+        "home_team": {
+         "id": 15,
+         "name": "Memphis Grizzlies",
+         "abbreviation": "MEM",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 12,
+         "name": "Indiana Pacers",
+         "abbreviation": "IND",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14160,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T01:30:00.000000Z",
+        "home_team": {
+         "id": 11,
+         "name": "Houston Rockets",
+         "abbreviation": "HOU",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 18,
+         "name": "Minnesota Timberwolves",
+         "abbreviation": "MIN",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14161,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T02:00:00.000000Z",
+        "home_team": {
+         "id": 8,
+         "name": "Denver Nuggets",
+         "abbreviation": "DEN",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 28,
+         "name": "Toronto Raptors",
+         "abbreviation": "TOR",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14162,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T02:00:00.000000Z",
+        "home_team": {
+         "id": 24,
+         "name": "Phoenix Suns",
+         "abbreviation": "PHX",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 25,
+         "name": "Portland Trail Blazers",
+         "abbreviation": "POR",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14163,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T02:30:00.000000Z",
+        "home_team": {
+         "id": 27,
+         "name": "San Antonio Spurs",
+         "abbreviation": "SAS",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 7,
+         "name": "Dallas Mavericks",
+         "abbreviation": "DAL",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14164,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T03:00:00.000000Z",
+        "home_team": {
+         "id": 26,
+         "name": "Sacramento Kings",
+         "abbreviation": "SAC",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 14,
+         "name": "Los Angeles Lakers",
+         "abbreviation": "LAL",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14165,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-05T03:30:00.000000Z",
+        "home_team": {
+         "id": 13,
+         "name": "Los Angeles Clippers",
+         "abbreviation": "LAC",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 16,
+         "name": "Miami Heat",
+         "abbreviation": "MIA",
+         "score": null,
+         "is_valid": true
+        }
+       }
+      ]
+     },
+     {
+      "id": 2905,
+      "number": 2,
+      "matches": [
+       {
+        "id": 14166,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-06T02:00:00.000000Z",
+        "home_team": {
+         "id": 24,
+         "name": "Phoenix Suns",
+         "abbreviation": "PHX",
+         "score": null,
+         "is_valid": false
+        },
+        "away_team": {
+         "id": 22,
+         "name": "Orlando Magic",
+         "abbreviation": "ORL",
+         "score": null,
+         "is_valid": true
+        }
+       },
+       {
+        "id": 14167,
+        "status": "scheduled",
+        "ot": false,
+        "started_at": "2026-11-06T03:00:00.000000Z",
+        "home_team": {
+         "id": 10,
+         "name": "Golden State Warriors",
+         "abbreviation": "GSW",
+         "score": null,
+         "is_valid": true
+        },
+        "away_team": {
+         "id": 16,
+         "name": "Miami Heat",
+         "abbreviation": "MIA",
+         "score": null,
+         "is_valid": false
+        }
+       }
+      ]
+     }
+    ],
+    "resting_teams": []
+   }
+  },
+  "1876": {
+   "data": {
+    "id": 1876,
+    "number": 19,
+    "rounds": [],
+    "resting_teams": []
+   }
+  }
+ }
+}

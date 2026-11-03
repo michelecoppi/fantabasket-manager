@@ -4,6 +4,7 @@ import type { LastContract } from "./cap";
 import type { GameLine, LeaderRow } from "./dunkest-games";
 import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
 import { buildLeagueView, countedPts, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
+import type { RoundInfo } from "./dunkest-rounds";
 import type { PlayerListItem } from "./players";
 import { buildHistory, closedSeasonRows, type LeagueHistory } from "./league-history";
 import { buildLeague, playerName, type ContractRow, type CutRow, type RawLeague, type LeagueView, type Versions } from "./league";
@@ -399,6 +400,27 @@ export const loadLeagueDunkest = cache(async (): Promise<DunkestLeagueView> => {
   } catch (e) {
     console.error(`[dunkest] lega non disponibile: ${e instanceof Error ? e.message : String(e)}`);
     return EMPTY_LEAGUE;
+  }
+});
+
+/**
+ * Round delle giornate della stagione corrente (dal job giornaliero): giornata → round in ordine. Vuoto se non si leggono
+ * (migrazione non applicata, errore): le pagine non mostrano il countdown. ~200 righe a stagione.
+ */
+export const loadRounds = cache(async (): Promise<Map<number, RoundInfo[]>> => {
+  try {
+    const db = await createClient();
+    const sid = (await loadSeason()).id;
+    const r = await db.from("dunkest_rounds").select("matchday,round,starts_at,ends_at,games,played").eq("season_id", sid).order("matchday").order("round");
+    must(r);
+    const out = new Map<number, RoundInfo[]>();
+    for (const row of r.data ?? []) {
+      out.set(row.matchday, [...(out.get(row.matchday) ?? []), { round: row.round, startsAt: row.starts_at, endsAt: row.ends_at, games: row.games, played: row.played }]);
+    }
+    return out;
+  } catch (e) {
+    console.error(`[dunkest] round non disponibili: ${e instanceof Error ? e.message : String(e)}`);
+    return new Map();
   }
 });
 

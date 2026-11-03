@@ -1,5 +1,6 @@
 import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
+import { runDunkestRoundsSync } from "@/lib/dunkest-rounds-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
 import { createClient } from "@/lib/supabase/server";
 import { announceRumors, announceSlotSwaps, announceTrades } from "@/lib/telegram";
@@ -26,6 +27,10 @@ export async function GET(request: Request) {
   else console.error(`[dunkest] aggiornamento non riuscito: ${stats.error}`);
   if (league.ok) console.log(`[dunkest] lega: classifica ${league.standings}, scontri ${league.matches}, formazioni ${league.lineups}${league.report.full ? " (calendario completo)" : ""}`);
   else console.error(`[dunkest] lega non aggiornata (${league.code}): ${league.error}`);
+  // Round delle giornate (countdown e round completati): dopo la lega, che salva il calendario. Pochi secondi anche col giro completo.
+  const rounds = await runDunkestRoundsSync(db, secret);
+  if (rounds.ok) console.log(`[dunkest] round: ${rounds.rounds} in ${rounds.matchdays} giornate${rounds.full ? " (calendario completo)" : ""}`);
+  else console.error(`[dunkest] round non aggiornati: ${rounds.error}`);
   // Proposte di scambio oltre la scadenza (Fase 7.2): le RPC le trattano già come scadute, qui si marcano nel registro.
   // Non cambia l'esito del cron.
   const expired = await db.rpc("trade_proposals_expire", { p_secret: secret });
@@ -55,5 +60,5 @@ export async function GET(request: Request) {
   const games = await runDunkestGamesSync(db, secret);
   if (games.ok) console.log(`[dunkest] partite: ${games.days} giorni letti, ${games.games} partite, ${games.weeks} righe di giornata${games.skipped.length ? `; da riprovare: ${games.skipped.join("; ")}` : ""}`);
   else console.error(`[dunkest] partite non aggiornate: ${games.error}`);
-  return Response.json({ stats, league, games }, { status: stats.ok && league.ok && games.ok ? 200 : 502 });
+  return Response.json({ stats, league, rounds, games }, { status: stats.ok && league.ok && rounds.ok && games.ok ? 200 : 502 });
 }
