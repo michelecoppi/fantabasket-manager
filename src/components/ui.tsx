@@ -83,33 +83,51 @@ export function StatChange({
 /**
  * Intestazione di pagina "arena": banda scura con le linee del campo, icona, titolo grande.
  * `aside`: numeri chiave della pagina, a destra su desktop e sotto su mobile.
+ * Su telefono è compatta, perché il contenuto arrivi nel primo schermo: icona accanto a eyebrow e titolo, titolo più piccolo e
+ * niente sottotitolo (è la descrizione della pagina, utile la prima volta). `mobileSub`: il sottotitolo porta dati e resta.
  */
-export function PageTitle({ children, sub, eyebrow, icon, aside }: { children: ReactNode; sub?: ReactNode; eyebrow?: ReactNode; icon?: IconName; aside?: ReactNode }) {
+export function PageTitle({
+  children,
+  sub,
+  eyebrow,
+  icon,
+  aside,
+  mobileSub = false,
+}: {
+  children: ReactNode;
+  sub?: ReactNode;
+  eyebrow?: ReactNode;
+  icon?: IconName;
+  aside?: ReactNode;
+  mobileSub?: boolean;
+}) {
   return (
-    <div className="arena sweep -mx-4 mb-8 px-5 py-7 sm:mx-0 sm:rounded-2xl sm:px-8 sm:py-9">
-      <div className="relative z-[2] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          {(eyebrow || icon) && (
-            <div className="rise flex items-center gap-2.5 text-white/65">
-              {icon && (
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold text-nav">
-                  <Icon name={icon} size={18} strokeWidth={2} />
-                </span>
-              )}
-              {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-            </div>
+    <div className="arena sweep -mx-4 mb-5 px-4 py-5 sm:mx-0 sm:mb-8 sm:rounded-2xl sm:px-8 sm:py-9">
+      <div className="relative z-[2] flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className={`min-w-0 ${icon ? "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3" : ""} sm:flex sm:flex-wrap sm:items-center sm:gap-x-2.5`}>
+          {icon && (
+            <span className={`rise grid h-11 w-11 place-items-center rounded-xl bg-gold text-nav sm:h-8 sm:w-8 sm:rounded-lg ${eyebrow ? "row-span-2" : ""}`}>
+              <Icon name={icon} size={18} strokeWidth={2} />
+            </span>
           )}
-          <h1 className="rise font-display mt-3 text-[clamp(2.75rem,7vw,5rem)] leading-[0.86] font-black" style={stagger(1)}>
+          {eyebrow && <span className="rise eyebrow block truncate text-white/65 sm:min-w-0">{eyebrow}</span>}
+          <h1
+            className={`rise font-display text-[2.25rem] leading-[0.9] font-black sm:mt-3 sm:basis-full sm:text-[clamp(2.75rem,7vw,5rem)] sm:leading-[0.86] ${icon ? "col-start-2" : ""} ${eyebrow ? "mt-0.5" : ""}`}
+            style={stagger(1)}
+          >
             {children}
           </h1>
           {sub && (
-            <p className="rise mt-4 max-w-2xl text-sm leading-6 text-white/70 sm:text-[0.9375rem]" style={stagger(2)}>
+            <p
+              className={`rise mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:mt-4 sm:basis-full sm:text-[0.9375rem] ${mobileSub ? "col-span-2" : "hidden sm:block"}`}
+              style={stagger(2)}
+            >
               {sub}
             </p>
           )}
         </div>
         {aside && (
-          <div className="rise shrink-0" style={stagger(3)}>
+          <div className="rise min-w-0 shrink-0" style={stagger(3)}>
             {aside}
           </div>
         )}
@@ -121,18 +139,24 @@ export function PageTitle({ children, sub, eyebrow, icon, aside }: { children: R
 // Ultima cella del tabellone a griglia: occupa le colonne rimaste, così non resta un buco vuoto in fondo (7 numeri del listone).
 const SM_SPAN = ["", "sm:col-span-4", "sm:col-span-3", "sm:col-span-2"];
 
-/** Numeri chiave dentro una superficie scura (PageTitle aside, hero): stile tabellone. */
+/**
+ * Numeri chiave dentro una superficie scura (PageTitle aside, hero): stile tabellone.
+ * Su telefono sempre una riga sola: fino a 4 numeri a celle uguali, oltre la riga scorre e la cella dopo spunta dal bordo.
+ */
 export function Scoreboard({ items }: { items: { label: string; value: ReactNode; tone?: "bad" | "gold" }[] }) {
   const grid = items.length > 3;
-  const lastSpan = grid ? `${items.length % 2 ? "col-span-2" : ""} ${SM_SPAN[items.length % 4]}` : "";
+  const scroll = items.length > 4;
+  const lastSpan = grid ? SM_SPAN[items.length % 4] : "";
   return (
     <dl
-      className={`grid gap-px overflow-hidden rounded-xl border border-white/12 bg-white/12 ${grid ? "grid-cols-2 sm:grid-cols-4" : "auto-cols-fr grid-flow-col"}`}
+      className={`grid grid-flow-col gap-px rounded-xl border border-white/12 bg-white/12 ${
+        scroll ? "no-scrollbar auto-cols-[minmax(6.25rem,1fr)] overflow-x-auto overscroll-x-contain sm:overflow-hidden" : "auto-cols-fr overflow-hidden"
+      } ${grid ? "sm:grid-flow-row sm:grid-cols-4" : ""}`}
     >
       {items.map((it, i) => (
-        <div key={it.label} className={`flex min-w-0 flex-col justify-between gap-0.5 bg-board px-3.5 py-3 backdrop-blur-sm sm:px-5 ${i === items.length - 1 ? lastSpan : ""}`}>
+        <div key={it.label} className={`flex min-w-0 flex-col justify-between gap-0.5 bg-board px-3 py-2.5 backdrop-blur-sm sm:px-5 sm:py-3 ${i === items.length - 1 ? lastSpan : ""}`}>
           <dt className="eyebrow leading-tight text-white/55">{it.label}</dt>
-          <dd className={`font-display tnum text-3xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-arena-bad" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
+          <dd className={`font-display tnum text-2xl leading-none font-extrabold sm:text-4xl ${it.tone === "bad" ? "text-arena-bad" : it.tone === "gold" ? "jumbo" : "text-white"}`}>{it.value}</dd>
         </div>
       ))}
     </dl>

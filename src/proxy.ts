@@ -40,6 +40,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+// sw.js e offline.html: il service worker e la sua pagina «Sei offline», statici e senza dati (si scaricano anche a sessione scaduta).
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw\\.js|offline\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

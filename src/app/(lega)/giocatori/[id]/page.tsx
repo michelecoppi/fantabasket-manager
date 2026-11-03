@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TeamCrest } from "@/components/crest";
 import { DunkestSource, InjuryChip } from "@/components/dunkest";
+import { Icon } from "@/components/icons";
 import { GameBars } from "@/components/leaders";
 import { Empty, PageTitle, PosChip, Scoreboard } from "@/components/ui";
 import { summarizeGames } from "@/lib/dunkest-games";
@@ -10,6 +11,8 @@ import { loadDunkest, loadLeague, loadPlayerGames, loadPlayers } from "@/lib/lea
 import { teamColors } from "@/lib/team-colors";
 
 const th = "px-2 py-2 text-right font-bold";
+/** Partite in tabella prima di «Tutte le partite». */
+const GAMES_SHOWN = 10;
 const td = "tnum px-2 py-2 text-right";
 
 /** Andamento di un giocatore partita per partita (Dunkest), con la squadra della lega che lo ha in rosa. */
@@ -31,6 +34,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       <PageTitle
         icon="jersey"
         eyebrow={p.nbaTeam ?? "Squadra NBA n.d."}
+        mobileSub
         sub={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <PosChip pos={p.pos} />
@@ -76,7 +80,8 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
             <GameBars lines={lines} avg={summary.avg} />
           </section>
 
-          <section aria-label="Partite" className="mt-6 overflow-x-auto rounded-2xl border border-line bg-surface">
+          {/* le ultime GAMES_SHOWN partite; le altre (fino a una stagione intera, ~80) dietro «Tutte le partite», senza JavaScript */}
+          <section aria-label="Partite" className="group/games mt-6 overflow-x-auto rounded-2xl border border-line bg-surface">
             <table className="w-full min-w-[34rem] text-sm">
               <thead className="eyebrow border-b border-line bg-surface-subtle/60 text-muted">
                 <tr>
@@ -92,8 +97,11 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {games.map((g) => (
-                  <tr key={g.date} className={g.pdk === summary.best.pdk && g.date === summary.best.date ? "bg-gold/10" : undefined}>
+                {games.map((g, i) => (
+                  <tr
+                    key={g.date}
+                    className={`${g.pdk === summary.best.pdk && g.date === summary.best.date ? "bg-gold/10" : ""} ${i >= GAMES_SHOWN ? "hidden group-has-[details[open]]/games:table-row" : ""}`}
+                  >
                     <td className="px-3 py-2 font-semibold">
                       {fmtDay(g.date)}
                       {!g.starter && <span className="ml-1.5 text-xs font-normal text-muted">dalla panchina</span>}
@@ -110,6 +118,15 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
                 ))}
               </tbody>
             </table>
+            {games.length > GAMES_SHOWN && (
+              <details className="group border-t border-line">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-1.5 text-sm font-bold text-brand-blue [&::-webkit-details-marker]:hidden">
+                  <span className="group-open:hidden">Tutte le {games.length} partite</span>
+                  <span className="hidden group-open:inline">Solo le ultime {GAMES_SHOWN}</span>
+                  <Icon name="chevron" size={15} strokeWidth={2.4} className="rotate-90 transition-transform group-open:-rotate-90" />
+                </summary>
+              </details>
+            )}
           </section>
         </>
       )}

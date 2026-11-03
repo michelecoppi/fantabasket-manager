@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchdayAwards, hasPlayerAwards, seasonTrophies, type Award, type AwardKind } from "./awards";
+import { matchdayAwards, hasPlayerAwards, seasonTrophies, shelfSummary, type Award, type AwardKind, type TrophyWin } from "./awards";
 import type { LineupPlayer } from "./dunkest-league";
 import { MATCHES } from "./fixtures/fase6";
 
@@ -110,5 +110,34 @@ describe("seasonTrophies (vetrina)", () => {
       const better = [...counts.values()].filter((n) => n > c.trophies.length).length;
       expect(c.rank).toBe(better + 1);
     }
+  });
+});
+
+describe("shelfSummary (scaffale della vetrina)", () => {
+  const win = (matchday: number, value: number, over: Partial<TrophyWin> = {}): TrophyWin => ({ kind: "mvp", teamId: "a", matchday, value, ...over });
+
+  it("premio mai vinto: null", () => {
+    expect(shelfSummary("mvp", [win(1, 50, { kind: "bench" })])).toBeNull();
+  });
+
+  it("conta, ultima giornata, record e chi l'ha portato, dal più frequente", () => {
+    const s = shelfSummary("mvp", [win(3, 60, { name: "Jokic" }), win(1, 72.19, { name: "Doncic" }), win(7, 55, { name: "Jokic" }), win(9, 80, { name: "Jokic" })]);
+    expect(s).toMatchObject({ count: 4, last: 9, record: { value: 80, matchday: 9 }, matchdays: [1, 3, 7, 9] });
+    expect(s?.groups).toEqual([
+      { key: "Jokic", name: "Jokic", count: 3, best: 80 },
+      { key: "Doncic", name: "Doncic", count: 1, best: 72.19 },
+    ]);
+  });
+
+  it("nei premi al contrario e nel fotofinish il record è il valore più basso", () => {
+    expect(shelfSummary("captain_worst", [win(2, 12, { kind: "captain_worst", name: "Harden" }), win(5, 4.5, { kind: "captain_worst", name: "Harden" })])?.record).toEqual({ value: 4.5, matchday: 5 });
+    const p = shelfSummary("photo_finish", [win(2, 1.5, { kind: "photo_finish", vsTeamId: "b" }), win(4, 0.3, { kind: "photo_finish", vsTeamId: "c" })]);
+    expect(p?.record).toEqual({ value: 0.3, matchday: 4 });
+    expect(p?.groups.map((g) => g.vsTeamId)).toEqual(["c", "b"]);
+  });
+
+  it("premi di squadra: nessun gruppo; premio condiviso nella stessa giornata conta due volte ma la giornata una", () => {
+    const s = shelfSummary("team_best", [win(2, 300, { kind: "team_best" }), win(2, 300, { kind: "team_best" })]);
+    expect(s).toMatchObject({ count: 2, groups: [], matchdays: [2] });
   });
 });

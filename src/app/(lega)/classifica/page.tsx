@@ -23,6 +23,8 @@ const STATE_TEXT = { played: "Giocata", latest: "Ultima giornata con punti", upc
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 type Tab = "classifica" | "andamento" | "calendario" | "premi";
+/** Giornate mostrate di default nel grafico dell'andamento (`?periodo=tutta` per la stagione intera). */
+const CHART_WINDOW = 15;
 const TABS: Tab[] = ["classifica", "andamento", "calendario", "premi"];
 
 /**
@@ -76,6 +78,10 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
   const history = standingsByMatchday(view);
   const official = checkOfficial(history, view.standings);
   const mode = one(sp.andamento) === "punti" ? "points" : "position";
+  // Con 100 giornate a stagione il grafico intero è un muro di linee: di default le ultime CHART_WINDOW, tutta la stagione a richiesta.
+  const whole = one(sp.periodo) === "tutta";
+  const windowed = history.length > CHART_WINDOW;
+  const chartHistory = whole || !windowed ? history : history.slice(-CHART_WINDOW);
   const asks = one(sp.evidenzia);
   const highlight = asks && teams.has(asks) ? asks : myTeamId;
 
@@ -88,6 +94,8 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
       if (m && m !== "posizione") q.set("andamento", m);
       const h = extra.evidenzia === undefined ? asks : extra.evidenzia;
       if (h && h !== myTeamId) q.set("evidenzia", h);
+      const per = extra.periodo === undefined ? (whole ? "tutta" : null) : extra.periodo;
+      if (per === "tutta") q.set("periodo", per);
     }
     const s = q.toString();
     return `/classifica${s ? `?${s}` : ""}`;
@@ -198,7 +206,7 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
                 </Empty>
               ) : (
                 <div className="mx-auto max-w-5xl">
-                  <div className="mb-3">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <ChipLinks
                       label="Mostra"
                       options={[
@@ -206,8 +214,17 @@ export default async function StandingsPage(props: PageProps<"/classifica">) {
                         { href: tabHref("andamento", { andamento: "punti" }), label: "Punti totali", active: mode === "points" },
                       ]}
                     />
+                    {windowed && (
+                      <ChipLinks
+                        label="Periodo"
+                        options={[
+                          { href: tabHref("andamento", { periodo: "ultime" }), label: `Ultime ${CHART_WINDOW}`, active: !whole },
+                          { href: tabHref("andamento", { periodo: "tutta" }), label: "Tutta la stagione", active: whole },
+                        ]}
+                      />
+                    )}
                   </div>
-                  <StandingsChart history={history} teams={teams} highlight={highlight} mode={mode} hrefFor={(id) => tabHref("andamento", { evidenzia: id })} />
+                  <StandingsChart history={chartHistory} teams={teams} highlight={highlight} mode={mode} hrefFor={(id) => tabHref("andamento", { evidenzia: id })} />
                   <p className="mt-3 text-xs text-muted">
                     Ricostruito dagli scontri delle giornate chiuse, ordinando come Dunkest (vittorie, poi punti totali). Tocca una squadra nella legenda per
                     metterla in evidenza.

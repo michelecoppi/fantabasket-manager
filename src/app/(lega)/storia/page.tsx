@@ -14,6 +14,8 @@ const pct = (r: { wins: number; draws: number; losses: number }) => {
   const p = winPct(r);
   return p === null ? "–" : `${(p * 100).toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`;
 };
+/** Stagioni con la classifica finale aperta; le più vecchie stanno dietro «Stagioni precedenti». */
+const SEASONS_OPEN = 4;
 const span = (years: number[]) => (years.length === 1 ? seasonLabel(years[0]) : `${seasonLabel(years[0])} – ${seasonLabel(years[years.length - 1])}`);
 
 /** Muro degli anelli: una colonna per stagione, dalla più vecchia, il campione più recente in evidenza. */
@@ -282,11 +284,28 @@ export default async function HistoryPage() {
           </Section>
 
           <Section title="Stagione per stagione" icon="clipboard" aside="classifiche finali">
+            {/* le ultime SEASONS_OPEN stagioni aperte, le più vecchie dietro una riga: la pagina cresce di una carta all'anno */}
             <div className="grid items-start gap-4 lg:grid-cols-2">
-              {seasons.map((s, i) => (
+              {seasons.slice(0, SEASONS_OPEN).map((s, i) => (
                 <SeasonCard key={s.year} s={s} names={names} color={color} i={i} />
               ))}
             </div>
+            {seasons.length > SEASONS_OPEN && (
+              <details className="group mt-4">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm font-bold text-brand-blue [&::-webkit-details-marker]:hidden">
+                  <span className="flex-1">
+                    Stagioni precedenti · {seasonLabel(seasons[seasons.length - 1].year)}–{seasonLabel(seasons[SEASONS_OPEN].year)}
+                    <span className="ml-1.5 font-normal text-muted">({seasons.length - SEASONS_OPEN})</span>
+                  </span>
+                  <Icon name="chevron" size={16} strokeWidth={2.4} className="rotate-90 transition-transform group-open:-rotate-90" />
+                </summary>
+                <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
+                  {seasons.slice(SEASONS_OPEN).map((s, i) => (
+                    <SeasonCard key={s.year} s={s} names={names} color={color} i={i} />
+                  ))}
+                </div>
+              </details>
+            )}
           </Section>
 
           {history.formers.length > 0 && (

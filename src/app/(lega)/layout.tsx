@@ -5,8 +5,12 @@ import { Icon } from "@/components/icons";
 import { InstallHint } from "@/components/install";
 import { LeagueTicker, LeagueTickerFallback } from "@/components/league-ticker";
 import { LotteryGate } from "@/components/lottery-gate";
-import { MainNav, TabBar } from "@/components/nav";
+import { MainNav, MoreSheet, TabBar } from "@/components/nav";
+import { SearchButton, SearchSheet } from "@/components/search-sheet";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RefreshButton } from "@/components/refresh-button";
+import { ServiceWorker } from "@/components/service-worker";
+import { TickerGate } from "@/components/ticker-gate";
 import { adminTodo, adminTodoCounts } from "@/lib/admin-todo";
 import { loadProfile, loadProposals, loadSlotSwaps } from "@/lib/league-server";
 import { proposalBadges } from "@/lib/trade-proposals";
@@ -35,13 +39,15 @@ async function UserBadge() {
  * rifare su Dunkest, più i cambi titolari/riserve in attesa (R-04): la coda di `adminTodo`, che il pannello admin mostra voce per voce.
  * Se le proposte non si leggono, niente badge.
  */
-async function Navs({ bar }: { bar: "top" | "bottom" }) {
+async function Navs({ bar }: { bar: "top" | "bottom" | "more" }) {
   const profile = await loadProfile();
   const admin = profile?.role === "admin";
   const [proposals, swaps] = await Promise.all([loadProposals().catch(() => null), admin ? loadSlotSwaps().catch(() => null) : null]);
   const counts = proposalBadges(proposals ?? [], profile?.team_id, admin);
   const badges = { "/scambio": counts.answer, "/admin": admin ? adminTodoCounts(adminTodo(proposals ?? [], swaps ?? []))["/admin"] : 0 };
-  return bar === "top" ? <MainNav admin={admin} badges={badges} /> : <TabBar admin={admin} badges={badges} />;
+  const myTeamId = profile?.team_id ?? null;
+  if (bar === "more") return <MoreSheet admin={admin} badges={badges} myTeamId={myTeamId} />;
+  return bar === "top" ? <MainNav admin={admin} badges={badges} /> : <TabBar admin={admin} badges={badges} myTeamId={myTeamId} />;
 }
 
 // Area per-utente: legge la sessione a ogni richiesta, quindi non può essere "instant" (validazione solo in dev).
@@ -71,27 +77,29 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
             <Suspense>
               <UserBadge />
             </Suspense>
+            <SearchButton />
             <RefreshButton />
-            <Link href="/account" aria-label="Account e password" title="Account e password" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/8 hover:text-white">
-              <Icon name="key" size={19} />
-            </Link>
-            <form action="/auth/signout" method="post">
-              <button aria-label="Esci" title="Esci" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/8 hover:text-white">
-                <Icon name="logout" size={19} />
-              </button>
-            </form>
           </div>
         </div>
         {/* Filo broadcast: i tre colori del logo. */}
         <div aria-hidden className="h-[3px] bg-linear-to-r from-brand-red via-[#1d47b5] to-gold" />
       </header>
-      <Suspense fallback={<LeagueTickerFallback />}>
-        <LeagueTicker />
-      </Suspense>
+      <TickerGate>
+        <Suspense fallback={<LeagueTickerFallback />}>
+          <LeagueTicker />
+        </Suspense>
+      </TickerGate>
       <main id="contenuto" tabIndex={-1} className="outline-none mx-auto w-full max-w-[1440px] flex-1 px-4 pt-0 pb-28 sm:px-6 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"><InstallHint />{children}</main>
       <Suspense fallback={<TabBar />}>
         <Navs bar="bottom" />
       </Suspense>
+      {/* Account, uscita e pagine usate di rado (voce «Altro»); ricerca globale (lente nell'header). */}
+      <Suspense fallback={<MoreSheet />}>
+        <Navs bar="more" />
+      </Suspense>
+      <SearchSheet />
+      <PullToRefresh />
+      <ServiceWorker />
       {/* Sorteggio del draft appena estratto: rivelazione a tutto schermo, una volta per utente (issue #103). */}
       <Suspense>
         <LotteryGate />
