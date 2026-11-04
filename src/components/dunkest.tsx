@@ -89,7 +89,7 @@ export function InjuryChip({ injury, size = "sm" }: { injury: Injury; size?: "sm
 export function PdkCell({ stats, role }: { stats: PlayerStats | undefined; role: RoleStat | null | undefined }) {
   if (!stats || stats.gp === 0) {
     return (
-      <span className="flex w-12 shrink-0 flex-col items-end leading-none" title="Nessuna partita giocata">
+      <span className="flex w-12 shrink-0 flex-col items-end leading-none" title="Nessuna partita valida per Dunkest">
         <span className="font-display tnum text-xl font-extrabold text-muted/60">–</span>
         <span className="mt-1.5 text-[0.625rem] font-bold tracking-wide text-muted uppercase">0 pg</span>
       </span>
@@ -98,7 +98,7 @@ export function PdkCell({ stats, role }: { stats: PlayerStats | undefined; role:
   const pct = role && role.max > 0 ? Math.max(4, Math.min(100, (stats.pdk / role.max) * 100)) : 0;
   const avgPct = role && role.max > 0 ? Math.min(100, (role.avg / role.max) * 100) : null;
   return (
-    <span className="flex w-12 shrink-0 flex-col items-end leading-none" title={`Punteggio Dunkest medio ${fmt(stats.pdk)} in ${stats.gp} partite`}>
+    <span className="flex w-12 shrink-0 flex-col items-end leading-none" title={`Media Dunkest ${fmt(stats.pdk)} in ${stats.gp} partite valide`}>
       <span className="font-display text-xl font-extrabold text-brand-blue"><Aligned value={stats.pdk} /></span>
       <span aria-hidden className="relative mt-1 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
         <span className="meter-fill absolute inset-y-0 left-0 rounded-full bg-brand-blue" style={{ width: `${pct}%` }} />
@@ -106,7 +106,7 @@ export function PdkCell({ stats, role }: { stats: PlayerStats | undefined; role:
       </span>
       <span className="tnum mt-1 text-[0.625rem] font-bold tracking-wide text-muted uppercase">{stats.gp} pg</span>
       <span className="sr-only">
-        Punteggio Dunkest medio {fmt(stats.pdk)} in {stats.gp} partite
+        Media Dunkest {fmt(stats.pdk)} in {stats.gp} partite valide
       </span>
     </span>
   );
@@ -225,8 +225,8 @@ export function PlayerSheet({ player, dunkest }: { player: SheetPlayer; dunkest:
         <div className="relative z-[2] mt-5">
           <Scoreboard
             items={[
-              { label: "PDK medio", value: played ? fmt(stats.pdk) : "–", tone: played ? "gold" : undefined },
-              { label: "Partite", value: stats?.gp ?? 0 },
+              { label: "Media Dunkest", value: played ? fmt(stats.pdk) : "–", tone: played ? "gold" : undefined },
+              { label: "Partite valide", value: stats?.gp ?? 0 },
               { label: "Minuti", value: played ? fmt(stats.min) : "–" },
             ]}
           />
@@ -277,9 +277,11 @@ export function PlayerSheet({ player, dunkest }: { player: SheetPlayer; dunkest:
             </span>
             {!dunkest.available
               ? "Dati Dunkest non disponibili al momento."
-              : injury
-                ? "Nessuna partita giocata in questa stagione."
-                : "Nessuna partita giocata in questa stagione, oppure non ancora collegato ai dati Dunkest."}
+              : stats && stats.min > 0
+                ? "Ha giocato solo partite che Dunkest non conta: nessuna media per ora."
+                : injury
+                  ? "Nessuna partita giocata in questa stagione."
+                  : "Nessuna partita giocata in questa stagione, oppure non ancora collegato ai dati Dunkest."}
           </div>
         )}
 
@@ -290,7 +292,7 @@ export function PlayerSheet({ player, dunkest }: { player: SheetPlayer; dunkest:
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
           <DunkestSource dunkest={dunkest} />
-          <span className="text-[0.6875rem] text-muted">medie a partita · aggiornate ogni mattina</span>
+          <span className="text-[0.6875rem] text-muted">medie delle partite valide per Dunkest · aggiornate ogni mattina</span>
         </div>
       </div>
     </div>

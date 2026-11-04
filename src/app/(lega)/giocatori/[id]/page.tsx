@@ -28,6 +28,11 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   const injury = dunkest.injuries.get(id);
   const summary = summarizeGames(lines);
   const games = [...lines].reverse();
+  // Media Dunkest = solo le partite valide, la stessa di tutte le pagine (dai totali delle giornate, con i centesimi); il log
+  // partita per partita le ha tutte, ognuna con `valid` (issue #98)
+  const stats = dunkest.stats.get(id);
+  const dunkestAvg = stats && stats.gp > 0 ? stats.pdk : (summary?.avg ?? null);
+  const excluded = summary ? summary.games - summary.validGames : 0;
 
   return (
     <>
@@ -53,9 +58,10 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
           summary && (
             <Scoreboard
               items={[
-                { label: "PDK medio", value: fmt(summary.avg), tone: "gold" },
-                { label: "Partite", value: summary.games },
-                { label: "Ultime 5", value: fmt(summary.last5) },
+                { label: "Media Dunkest", value: dunkestAvg !== null ? fmt(dunkestAvg) : "–", tone: dunkestAvg !== null ? "gold" : undefined },
+                { label: "Tutte le partite", value: fmt(summary.allAvg) },
+                { label: "Partite valide", value: `${summary.validGames} su ${summary.games}` },
+                { label: "Ultime 5 valide", value: summary.last5 !== null ? fmt(summary.last5) : "–" },
               ]}
             />
           )
@@ -74,10 +80,18 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="font-display text-2xl leading-none font-black">Punteggio Dunkest partita per partita</h2>
               <p className={`tnum text-sm font-bold ${summary.trend > 0 ? "text-success" : summary.trend < 0 ? "text-danger" : "text-muted"}`}>
-                {summary.games < 6 ? "troppo presto per l'andamento" : summary.trend === 0 ? "ultime 5 nella media" : `ultime 5 ${summary.trend > 0 ? "▲ +" : "▼ −"}${fmt(Math.abs(summary.trend))} sulla media`}
+                {summary.validGames < 6 ? "troppo presto per l'andamento" : summary.trend === 0 ? "ultime 5 nella media" : `ultime 5 ${summary.trend > 0 ? "▲ +" : "▼ −"}${fmt(Math.abs(summary.trend))} sulla media`}
               </p>
             </div>
-            <GameBars lines={lines} avg={summary.avg} />
+            <p className="mb-4 max-w-3xl text-sm text-muted">
+              <strong className="font-semibold text-foreground">Media Dunkest</strong> conta solo le partite valide per Dunkest: è il numero del sito Dunkest e
+              dei punti della lega, e quello che vedi nel resto dell&apos;app. <strong className="font-semibold text-foreground">Tutte le partite</strong>{" "}
+              {excluded > 0
+                ? `conta anche ${excluded === 1 ? "la partita che Dunkest non conta" : `le ${excluded} partite che Dunkest non conta`}, in grigio nel grafico e segnate «non conta» nella tabella.`
+                : "conta le stesse partite: qui Dunkest le ha contate tutte."}{" "}
+              «Ultime 5» e andamento contano solo le partite valide.
+            </p>
+            <GameBars lines={lines} avg={dunkestAvg} />
           </section>
 
           {/* le ultime GAMES_SHOWN partite; le altre (fino a una stagione intera, ~80) dietro «Tutte le partite», senza JavaScript */}
@@ -100,13 +114,18 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
                 {games.map((g, i) => (
                   <tr
                     key={g.date}
-                    className={`${g.pdk === summary.best.pdk && g.date === summary.best.date ? "bg-gold/10" : ""} ${i >= GAMES_SHOWN ? "hidden group-has-[details[open]]/games:table-row" : ""}`}
+                    className={`${g.date === summary.best.date ? "bg-gold/10" : ""} ${g.valid ? "" : "text-muted"} ${i >= GAMES_SHOWN ? "hidden group-has-[details[open]]/games:table-row" : ""}`}
                   >
                     <td className="px-3 py-2 font-semibold">
                       {fmtDay(g.date)}
+                      {!g.valid && (
+                        <span className="ml-1.5 rounded-full border border-line px-1.5 py-0.5 text-[0.625rem] font-bold tracking-wide whitespace-nowrap uppercase" title="Dunkest non conta questa partita: non entra nella media né nei punti della lega">
+                          non conta
+                        </span>
+                      )}
                       {!g.starter && <span className="ml-1.5 text-xs font-normal text-muted">dalla panchina</span>}
                     </td>
-                    <td className={`${td} font-display text-lg font-black text-brand-blue`}>{fmt(g.pdk)}</td>
+                    <td className={`${td} font-display text-lg font-black ${g.valid ? "text-brand-blue" : "text-muted line-through decoration-1"}`}>{fmt(g.pdk)}</td>
                     <td className={td}>{fmt(g.min)}</td>
                     <td className={td}>{g.pts}</td>
                     <td className={td}>{g.reb}</td>

@@ -68,19 +68,21 @@ const W = 600;
 const H = 140;
 
 /**
- * Punteggio Dunkest di ogni partita come barre (la migliore in oro), con la media della stagione tratteggiata. Il dettaglio
- * delle partite resta nella tabella accanto: qui conta la forma.
+ * Punteggio Dunkest di ogni partita come barre (la migliore valida in oro, quelle che Dunkest non conta in grigio), con la
+ * media Dunkest tratteggiata (null = nessuna partita valida). Il dettaglio delle partite resta nella tabella: qui conta la forma.
  */
-export function GameBars({ lines, avg }: { lines: GameLine[]; avg: number }) {
+export function GameBars({ lines, avg }: { lines: GameLine[]; avg: number | null }) {
   const lo = Math.min(0, ...lines.map((g) => g.pdk));
   const hi = Math.max(10, ...lines.map((g) => g.pdk));
   const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
   const slot = W / lines.length;
   const bw = Math.max(2, Math.min(28, slot - 3));
-  const best = Math.max(...lines.map((g) => g.pdk));
+  const counted = lines.filter((g) => g.valid);
+  const best = counted.length ? Math.max(...counted.map((g) => g.pdk)) : null;
+  const excluded = lines.length - counted.length;
   return (
     <figure>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-36 w-full" role="img" aria-label={`Punteggio Dunkest in ${lines.length} partite, media ${fmt(avg)}`} preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-36 w-full" role="img" aria-label={`Punteggio Dunkest in ${lines.length} partite${excluded ? `, ${excluded} non contate da Dunkest` : ""}${avg !== null ? `, media Dunkest ${fmt(avg)}` : ""}`} preserveAspectRatio="none">
         <line x1={0} x2={W} y1={y(0)} y2={y(0)} className="stroke-line" strokeWidth={1} vectorEffect="non-scaling-stroke" />
         {lines.map((g, i) => (
           <rect
@@ -90,16 +92,20 @@ export function GameBars({ lines, avg }: { lines: GameLine[]; avg: number }) {
             width={bw}
             height={Math.max(1, Math.abs(y(g.pdk) - y(0)))}
             rx={2}
-            className={g.pdk === best ? "fill-gold" : "fill-brand-blue"}
+            className={!g.valid ? "fill-foreground/20" : g.pdk === best ? "fill-gold" : "fill-brand-blue"}
           >
-            <title>{`${fmtDay(g.date)}: ${fmt(g.pdk)}`}</title>
+            <title>{`${fmtDay(g.date)}: ${fmt(g.pdk)}${g.valid ? "" : " (Dunkest non la conta)"}`}</title>
           </rect>
         ))}
-        <line x1={0} x2={W} y1={y(avg)} y2={y(avg)} className="stroke-foreground/60" strokeWidth={1.5} strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+        {avg !== null && <line x1={0} x2={W} y1={y(avg)} y2={y(avg)} className="stroke-foreground/60" strokeWidth={1.5} strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />}
       </svg>
       <figcaption className="tnum mt-1 flex justify-between text-[0.6875rem] font-bold tracking-wide text-muted uppercase">
         <span>{fmtDay(lines[0].date)}</span>
-        <span>tratteggio = media {fmt(avg)}</span>
+        <span>
+          {avg !== null && <>tratteggio = media Dunkest {fmt(avg)}</>}
+          {avg !== null && excluded > 0 && " · "}
+          {excluded > 0 && <>grigio = non conta</>}
+        </span>
         <span>{fmtDay(lines[lines.length - 1].date)}</span>
       </figcaption>
     </figure>

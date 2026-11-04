@@ -149,10 +149,16 @@ export interface WeekRow {
   ast: number;
 }
 
+/** Chi ha giocato in un round: le sue partite di quella notte sono quelle che Dunkest conta (issue #98). */
+export interface RoundPlayers {
+  round: number;
+  ids: number[];
+}
+
 export interface GamesPayload {
   season_id: number;
   games: GameRow[];
-  weeks: { week: number; stats: WeekRow[] }[];
+  weeks: { week: number; stats: WeekRow[]; rounds: RoundPlayers[] }[];
 }
 
 const fullName = (g: Pick<SourceGame, "firstName" | "lastName">) => `${g.firstName} ${g.lastName}`.trim();
@@ -195,6 +201,11 @@ export function weekRows(rounds: SourceGame[][]): WeekRow[] {
   return [...by.values()];
 }
 
+/** `rounds[i]` = risposta del round `i + 1`; i round vuoti (non ancora giocati) non si scrivono. */
+export function roundPlayers(rounds: SourceGame[][]): RoundPlayers[] {
+  return rounds.flatMap((games, i) => (games.length ? [{ round: i + 1, ids: games.map((g) => g.dunkestId) }] : []));
+}
+
 // ---------- Vista per le pagine ----------
 
 /** Riga di una classifica NBA (notte o giornata): `playerId` null = non è (ancora) nel listone. */
@@ -217,6 +228,8 @@ export interface LeaderRow {
 /** Una partita di un giocatore, per l'andamento. */
 export interface GameLine {
   date: string;
+  /** la conta Dunkest (il giocatore era nel round di quella notte): solo queste danno punti nella lega */
+  valid: boolean;
   pdk: number;
   min: number;
   starter: boolean;
@@ -229,25 +242,35 @@ export interface GameLine {
 }
 
 export interface GameLogSummary {
+  /** partite giocate, comprese quelle che Dunkest non conta, e la loro media */
   games: number;
-  avg: number;
+  allAvg: number;
+  /** partite valide per Dunkest e la loro media; null se non ce n'è nessuna */
+  validGames: number;
+  avg: number | null;
+  /** la migliore tra le valide (tra tutte se non ce ne sono) */
   best: GameLine;
-  /** media delle ultime 5 partite e scarto dalla media della stagione, per dire se è in crescita */
-  last5: number;
+  /** media delle ultime 5 partite valide e scarto dalla media delle valide, per dire se è in crescita */
+  last5: number | null;
   trend: number;
 }
 
-/** `lines` dal più vecchio al più recente. */
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** `lines` dal più vecchio al più recente. Media, ultime 5 e andamento contano solo le partite valide (issue #98). */
 export function summarizeGames(lines: GameLine[]): GameLogSummary | null {
   if (lines.length === 0) return null;
   const mean = (l: GameLine[]) => l.reduce((s, g) => s + g.pdk, 0) / l.length;
-  const avg = mean(lines);
-  const last5 = mean(lines.slice(-5));
+  const valid = lines.filter((g) => g.valid);
+  const avg = valid.length ? mean(valid) : null;
+  const last5 = valid.length ? mean(valid.slice(-5)) : null;
   return {
     games: lines.length,
-    avg: Math.round(avg * 10) / 10,
-    best: lines.reduce((b, g) => (g.pdk > b.pdk ? g : b)),
-    last5: Math.round(last5 * 10) / 10,
-    trend: Math.round((last5 - avg) * 10) / 10,
+    allAvg: round1(mean(lines)),
+    validGames: valid.length,
+    avg: avg === null ? null : round1(avg),
+    best: (valid.length ? valid : lines).reduce((b, g) => (g.pdk > b.pdk ? g : b)),
+    last5: last5 === null ? null : round1(last5),
+    trend: avg === null || last5 === null ? 0 : round1(last5 - avg),
   };
 }

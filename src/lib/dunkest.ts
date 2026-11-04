@@ -317,6 +317,10 @@ export function buildSyncPayload(
 
 // ---------- Vista per le pagine ----------
 
+/**
+ * Medie a partita del giocatore, solo sulle partite valide per Dunkest: quelle che danno punti nella lega e che il sito usa
+ * per la sua media (issue #98).
+ */
 export interface PlayerStats {
   gp: number;
   pdk: number;
@@ -400,12 +404,36 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const roleStat = (pdks: number[]): RoleStat | null =>
   pdks.length === 0 ? null : { avg: round1(pdks.reduce((a, b) => a + b, 0) / pdks.length), max: Math.max(...pdks), count: pdks.length };
 
-export function buildDunkest(sync: SyncInfo | null, statRows: StatRow[], injuryRows: InjuryRow[]): DunkestView {
+/** Riga di `dunkest_valid_stats`: medie delle sole partite valide per Dunkest (i numeric arrivano come numeri o stringhe). */
+export interface ValidStatRow {
+  player_id: number;
+  gp: number | string;
+  pdk: number | string;
+  pts: number | string;
+  reb: number | string;
+  ast: number | string;
+  /** minuti delle partite valide; null finché il job non ha letto i round del giocatore */
+  min: number | string | null;
+}
+
+/**
+ * `statRows` (tabella `nba`, tutte le partite) dà l'elenco dei giocatori e il ruolo; `validRows` le medie delle partite valide,
+ * che sono quelle mostrate ovunque. Chi ha giocato solo partite non valide resta a 0 partite. I minuti di tutte le partite
+ * servono solo finché mancano quelli delle valide.
+ */
+export function buildDunkest(sync: SyncInfo | null, statRows: StatRow[], validRows: ValidStatRow[], injuryRows: InjuryRow[]): DunkestView {
+  const valid = new Map(validRows.map((r) => [r.player_id, r]));
+  const merged: StatRow[] = statRows.map((r) => {
+    const v = valid.get(r.player_id);
+    return v
+      ? { player_id: r.player_id, pos: r.pos, gp: Number(v.gp), pdk: Number(v.pdk), min: Number(v.min ?? r.min), pts: Number(v.pts), reb: Number(v.reb), ast: Number(v.ast) }
+      : { player_id: r.player_id, pos: r.pos, gp: 0, pdk: 0, min: Number(r.min), pts: 0, reb: 0, ast: 0 };
+  });
   const stats = new Map<number, PlayerStats>();
-  for (const r of statRows) {
-    stats.set(r.player_id, { gp: Number(r.gp), pdk: Number(r.pdk), min: Number(r.min), pts: Number(r.pts), reb: Number(r.reb), ast: Number(r.ast) });
+  for (const r of merged) {
+    stats.set(r.player_id, { gp: r.gp, pdk: r.pdk, min: r.min, pts: r.pts, reb: r.reb, ast: r.ast });
   }
-  const played = statRows.filter((r) => Number(r.gp) > 0);
+  const played = merged.filter((r) => r.gp > 0);
   const roles: DunkestView["roles"] = {};
   const ranks = new Map<number, { rank: number; of: number }>();
   for (const pos of ["G", "A", "C"] as const) {

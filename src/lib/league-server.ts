@@ -2,7 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { LastContract } from "./cap";
 import type { GameLine, LeaderRow } from "./dunkest-games";
-import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow } from "./dunkest";
+import { buildDunkest, EMPTY_DUNKEST, type DunkestView, type InjuryRow, type LinkReport, type StatRow, type ValidStatRow } from "./dunkest";
 import { buildLeagueView, countedPts, EMPTY_LEAGUE, type DunkestLeagueView, type DunkestRosterPlayer, type LeagueReport, type LeagueSyncInfo, type LineupPlayer } from "./dunkest-league";
 import type { RoundInfo } from "./dunkest-rounds";
 import type { PlayerListItem } from "./players";
@@ -320,7 +320,7 @@ export const loadDunkest = cache(async (): Promise<DunkestView> => {
     const db = await createClient();
     const sid = (await loadSeason()).id;
     type StatWithPlayer = Omit<StatRow, "pos"> & { players: { pos: StatRow["pos"] } | null };
-    const [sync, injuries, statRows] = await Promise.all([
+    const [sync, injuries, statRows, validRows] = await Promise.all([
       db.from("dunkest_sync").select("last_attempt_at,last_success_at,last_error,source_updated_at,report").eq("id", 1).maybeSingle(),
       db.from("dunkest_injuries").select("player_id,injured_on,injury,description"),
       fetchAll<StatWithPlayer>(
@@ -331,6 +331,16 @@ export const loadDunkest = cache(async (): Promise<DunkestView> => {
             .eq("season_id", sid)
             .order("player_id")
             .range(from, to) as unknown as PromiseLike<Result & { data: StatWithPlayer[] | null }>,
+      ),
+      // medie delle sole partite valide per Dunkest (issue #98): una riga per giocatore
+      fetchAll<ValidStatRow>(
+        (from, to) =>
+          db
+            .from("dunkest_valid_stats")
+            .select("player_id,gp,pdk,pts,reb,ast,min")
+            .eq("season_id", sid)
+            .order("player_id")
+            .range(from, to) as unknown as PromiseLike<Result & { data: ValidStatRow[] | null }>,
       ),
     ]);
     must(sync, injuries);
@@ -345,6 +355,7 @@ export const loadDunkest = cache(async (): Promise<DunkestView> => {
         report: s.report as LinkReport | null,
       },
       stats,
+      validRows,
       (injuries.data ?? []) as InjuryRow[],
     );
   } catch (e) {
@@ -668,14 +679,15 @@ export async function loadPlayerGames(playerId: number): Promise<GameLine[]> {
     const db = await createClient();
     const sid = (await loadSeason()).id;
     const r = await db
-      .from("dunkest_games")
-      .select("game_date,pdk,min,starter,pts,reb,ast,stl,blk,tov")
+      .from("dunkest_game_log")
+      .select("game_date,valid,pdk,min,starter,pts,reb,ast,stl,blk,tov")
       .eq("season_id", sid)
       .eq("player_id", playerId)
       .order("game_date");
     must(r);
     return (r.data ?? []).map((g) => ({
       date: g.game_date as string,
+      valid: g.valid === true,
       pdk: Number(g.pdk),
       min: Number(g.min),
       starter: g.starter as boolean,

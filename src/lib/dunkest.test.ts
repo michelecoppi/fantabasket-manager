@@ -215,6 +215,16 @@ describe("buildDunkest", () => {
       { player_id: 3, pos: "G", gp: 4, pdk: 20, min: 28, pts: 14, reb: 2, ast: 3 },
       { player_id: 4, pos: "C", gp: 3, pdk: 10.5, min: 20, pts: 8, reb: 9, ast: 1 },
       { player_id: 5, pos: null, gp: 0, pdk: 0, min: 0, pts: 0, reb: 0, ast: 0 },
+      // 2 partite in tutto, nessuna valida per Dunkest
+      { player_id: 6, pos: "C", gp: 2, pdk: 40, min: 25, pts: 20, reb: 10, ast: 2 },
+    ],
+    // medie delle partite valide: sono queste a valere (il 1 ne ha 4 su 5, con una media diversa)
+    [
+      { player_id: 1, gp: 4, pdk: "30", pts: 25, reb: 5, ast: 8, min: "33.5" },
+      { player_id: 2, gp: 4, pdk: 20, pts: 15, reb: 3, ast: 4, min: 30 },
+      { player_id: 3, gp: 4, pdk: 20, pts: 14, reb: 2, ast: 3, min: 28 },
+      // round non ancora letti: i minuti restano quelli di tutte le partite
+      { player_id: 4, gp: 3, pdk: 10.5, pts: 8, reb: 9, ast: 1, min: null },
     ],
     [{ player_id: 4, injured_on: "2026-10-19", injury: "Caviglia", description: "GTD: da valutare prima della partita" }],
   );
@@ -226,6 +236,15 @@ describe("buildDunkest", () => {
     expect(view.ranks.get(1)).toEqual({ rank: 1, of: 3 });
     expect(view.ranks.get(3)).toEqual({ rank: 2, of: 3 });
     expect(view.ranks.has(5)).toBe(false);
+  });
+
+  it("partite, medie e minuti solo delle partite valide per Dunkest (issue #98)", () => {
+    expect(view.stats.get(1)).toEqual({ gp: 4, pdk: 30, min: 33.5, pts: 25, reb: 5, ast: 8 });
+    expect(view.stats.get(4)?.min).toBe(20);
+    // solo partite non valide: come chi non ha giocato, fuori da medie e posizioni del ruolo
+    expect(view.stats.get(6)).toEqual({ gp: 0, pdk: 0, min: 25, pts: 0, reb: 0, ast: 0 });
+    expect(view.roles.C).toEqual({ avg: 10.5, max: 10.5, count: 1 });
+    expect(view.ranks.has(6)).toBe(false);
   });
 
   it("infortuni con stato calcolato dalla descrizione", () => {
