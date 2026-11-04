@@ -144,6 +144,7 @@ insert into dunkest_games (season_id, dunkest_id, game_date, player_id, name, po
   select id, 990901, date '2026-10-29', 900001, 'RLS Uno', 'G', 'RLS', 28.4, 25 from seasons where is_current;
 insert into dunkest_week_stats (season_id, week, dunkest_id, player_id, name, pos, team_code, gp, pdk, pts)
   select id, 1, 990901, 900001, 'RLS Uno', 'G', 'RLS', 2, 52.75, 40 from seasons where is_current;
+insert into dunkest_round_players (season_id, week, round, dunkest_id) select id, 1, 1, 990901 from seasons where is_current;
 insert into dunkest_sync_runs (id, trigger, ok, stats_count, injuries_count, links_count) values (900001, 'cron', true, 1, 1, 0);
 -- dunkest_sync ha già la sua riga unica (migrazione 20261027025827).
 -- league_history ha già le sue righe (lo storico, migrazione 20261029192344).
@@ -580,8 +581,9 @@ begin
   -- Un giorno presente sostituisce le righe che c'erano, un giorno assente o una giornata vuota non toccano niente;
   v := public.dunkest_games_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid,
     'games', '[{"dunkest_id": 990902, "game_date": "2026-10-30", "name": "RLS Due", "pos": "C", "team_code": "RLS", "pdk": 12.5, "min": 20.5, "starter": false, "pts": 8, "reb": 4}]'::jsonb,
-    'weeks', '[{"week": 1, "stats": []}, {"week": 2, "stats": [{"dunkest_id": 990902, "name": "RLS Due", "pos": "C", "team_code": "RLS", "gp": 1, "pdk": 12.5, "pts": 8, "reb": 4, "ast": 0}]}]'::jsonb));
+    'weeks', '[{"week": 1, "stats": [], "rounds": [{"round": 1, "ids": [990999]}]}, {"week": 2, "stats": [{"dunkest_id": 990902, "name": "RLS Due", "pos": "C", "team_code": "RLS", "gp": 1, "pdk": 12.5, "pts": 8, "reb": 4, "ast": 0}], "rounds": [{"round": 1, "ids": [990902, 990902]}]}]'::jsonb));
   perform rls_t.ok('games_apply conta le righe scritte', (v->>'games')::int = 1 and (v->>'weeks')::int = 1);
+  perform rls_t.ok('games_source non conta le giornate coi round', public.dunkest_games_source('rls-segreto-del-job-0123')->'weeks' = '[1, 2]'::jsonb);
   -- Round delle giornate NBA: stesse regole; una giornata nel payload sostituisce i suoi round, solo se è nel calendario della lega.
   perform rls_t.chk('rounds_source senza segreto', rls_t.try('select public.dunkest_rounds_source(null)'), array['error: FORBIDDEN%']);
   perform rls_t.chk('anon scrive round senza segreto',
@@ -645,6 +647,18 @@ begin
     and exists (select 1 from dunkest_games where game_date = date '2026-10-29' and dunkest_id = 990901 and pdk = 28.4)
     and exists (select 1 from dunkest_week_stats where week = 1 and dunkest_id = 990901 and gp = 2)
     and (select count(*) from dunkest_week_stats where season_id = sid and week = 2) = 1);
+  perform rls_t.ok('games_apply ha sbagliato i round (giornata vuota toccata o doppioni)',
+    (select array_agg(dunkest_id order by dunkest_id) from dunkest_round_players where season_id = sid and week = 1) = array[990901]
+    and (select array_agg(dunkest_id order by dunkest_id) from dunkest_round_players where season_id = sid and week = 2) = array[990902]);
+  -- Partita valida = il giocatore è nel round di quella notte (data americana del round 1/2: 2026-10-21).
+  insert into dunkest_games (season_id, dunkest_id, game_date, name, team_code, pdk)
+    values (sid, 990903, date '2026-10-21', 'RLS Tre', 'RLS', 10), (sid, 990903, date '2026-10-22', 'RLS Tre', 'RLS', 20);
+  insert into dunkest_round_players (season_id, week, round, dunkest_id) values (sid, 1, 2, 990903);
+  perform rls_t.ok('dunkest_game_log sbaglia le partite valide',
+    (select array_agg(game_date::text || ':' || valid::text order by game_date) from dunkest_game_log where dunkest_id = 990903)
+      = array['2026-10-21:true', '2026-10-22:false']);
+  delete from dunkest_round_players where dunkest_id = 990903;
+  delete from dunkest_games where dunkest_id = 990903;
   -- Il collegamento al listone passa dall'id Dunkest, salvato dall'apply delle statistiche qui sopra.
   perform public.dunkest_games_apply('rls-segreto-del-job-0123', jsonb_build_object('season_id', sid,
     'games', '[{"dunkest_id": 990001, "game_date": "2026-10-31", "name": "RLS Uno", "pos": "G", "team_code": "RLS", "pdk": 9}]'::jsonb, 'weeks', '[]'::jsonb));

@@ -10,6 +10,7 @@ import {
   gameRows,
   nbaToday,
   parseGames,
+  roundPlayers,
   ROUNDS_PER_WEEK,
   seasonStartDay,
   weekRows,
@@ -102,7 +103,7 @@ export async function runDunkestGamesSync(db: Db, secret: string | null, now = n
         skipped.push(`${failed.message}: giornata ${week} non aggiornata`);
         continue;
       }
-      weeks.push({ week, stats: weekRows(results as SourceGame[][]) });
+      weeks.push({ week, stats: weekRows(results as SourceGame[][]), rounds: roundPlayers(results as SourceGame[][]) });
     }
 
     if (games.length === 0 && weeks.every((w) => w.stats.length === 0)) return { ok: true, games: 0, weeks: 0, days: read, skipped };

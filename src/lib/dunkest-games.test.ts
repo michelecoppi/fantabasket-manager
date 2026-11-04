@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SourceFormatError } from "./dunkest";
-import { addDays, dunkestDayUrl, dunkestRoundUrl, gameDaysToRead, gameRows, nbaToday, parseGames, seasonStartDay, summarizeGames, weekRows, weeksToRead, type GameLine } from "./dunkest-games";
+import { addDays, dunkestDayUrl, dunkestRoundUrl, gameDaysToRead, gameRows, nbaToday, parseGames, roundPlayers, seasonStartDay, summarizeGames, weekRows, weeksToRead, type GameLine } from "./dunkest-games";
 
 // Riga come la dà /api/stats/table per un giorno (2026-10-29, Alexander-Walker): valori quasi tutti stringhe.
 const row = (over: Record<string, unknown> = {}) => ({
@@ -126,6 +126,17 @@ describe("weekRows", () => {
   });
 });
 
+describe("roundPlayers", () => {
+  const g = (id: number) => parseGames([row({ id: String(id) })], true)[0];
+
+  it("un elenco per round giocato, col numero del round", () => {
+    expect(roundPlayers([[g(1), g(2)], [], [g(3)]])).toEqual([
+      { round: 1, ids: [1, 2] },
+      { round: 3, ids: [3] },
+    ]);
+  });
+});
+
 describe("gameRows", () => {
   it("mette il nome intero e la data", () => {
     const [r] = gameRows("2026-10-29", parseGames([row()], true));
@@ -134,19 +145,31 @@ describe("gameRows", () => {
 });
 
 describe("summarizeGames", () => {
-  const line = (pdk: number, i = 0): GameLine => ({ date: `2026-10-${20 + i}`, pdk, min: 30, starter: true, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0 });
+  const line = (pdk: number, i = 0, valid = true): GameLine => ({ date: `2026-10-${20 + i}`, valid, pdk, min: 30, starter: true, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0 });
 
   it("nessuna partita", () => {
     expect(summarizeGames([])).toBeNull();
   });
 
   it("media, migliore e andamento sulle ultime 5", () => {
-    const s = summarizeGames([10, 10, 10, 10, 10, 20, 20, 20, 20, 20].map(line))!;
-    expect(s).toMatchObject({ games: 10, avg: 15, last5: 20, trend: 5 });
+    const s = summarizeGames([10, 10, 10, 10, 10, 20, 20, 20, 20, 20].map((p, i) => line(p, i)))!;
+    expect(s).toMatchObject({ games: 10, allAvg: 15, validGames: 10, avg: 15, last5: 20, trend: 5 });
     expect(s.best.pdk).toBe(20);
   });
 
   it("con meno di 5 partite l'andamento è zero", () => {
-    expect(summarizeGames([12, 18].map(line))).toMatchObject({ avg: 15, last5: 15, trend: 0 });
+    expect(summarizeGames([12, 18].map((p, i) => line(p, i)))).toMatchObject({ avg: 15, last5: 15, trend: 0 });
+  });
+
+  it("media, ultime 5 e migliore solo sulle partite valide; la media di tutte a parte (issue #98)", () => {
+    const s = summarizeGames([line(20, 0), line(60, 1, false), line(30, 2), line(10, 3, false)])!;
+    expect(s).toMatchObject({ games: 4, allAvg: 30, validGames: 2, avg: 25, last5: 25, trend: 0 });
+    expect(s.best.pdk).toBe(30);
+  });
+
+  it("solo partite non valide: nessuna media Dunkest", () => {
+    const s = summarizeGames([line(40, 0, false)])!;
+    expect(s).toMatchObject({ games: 1, allAvg: 40, validGames: 0, avg: null, last5: null, trend: 0 });
+    expect(s.best.pdk).toBe(40);
   });
 });
