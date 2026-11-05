@@ -15,6 +15,11 @@ const variants = {
   ghost: "text-muted hover:bg-foreground/5 hover:text-foreground disabled:opacity-50",
 } as const;
 
+/** Le classi di un pulsante, per i link che devono averne l'aspetto (es. «Attiva le notifiche» nella finestra delle novità). */
+export function buttonClass(variant: keyof typeof variants = "primary", className = ""): string {
+  return `font-display inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-lg font-extrabold tracking-wide transition-[transform,filter,background-color,border-color,color,box-shadow] duration-150 active:scale-[0.97] disabled:cursor-not-allowed ${variants[variant]} ${className}`;
+}
+
 export function Button({
   variant = "primary",
   pending = false,
@@ -29,7 +34,7 @@ export function Button({
       {...rest}
       disabled={rest.disabled || pending}
       aria-busy={pending || undefined}
-      className={`font-display inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-lg font-extrabold tracking-wide transition-[transform,filter,background-color,border-color,color,box-shadow] duration-150 active:scale-[0.97] disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={buttonClass(variant, className)}
     >
       {pending ? <Icon name="ball" size={18} strokeWidth={2} className="ball-spin" /> : icon && <Icon name={icon} size={18} strokeWidth={2.1} />}
       {children}

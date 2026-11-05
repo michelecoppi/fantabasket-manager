@@ -59,6 +59,19 @@ L'annuncio parte subito dopo l'esecuzione dello scambio. Se Telegram non rispond
 
 Un id sbagliato o di chi non ha premuto Avvia finisce nei log di Vercel («avviso all'admin …»), gli altri ricevono comunque il messaggio. L'avviso non si riprova: la richiesta resta comunque nel badge su «Admin».
 
+## 3d. Notifiche push sul telefono
+Chi lo attiva dalla pagina **Account** riceve un avviso sul telefono quando una squadra gli propone uno scambio, risponde alla sua proposta, la ritira, o un admin la approva, la respinge o la rimanda; gli admin anche quando una proposta aspetta la loro approvazione. Gratis (Web Push, nessun servizio esterno da registrare). Finché mancano le chiavi la pagina Account dice che le notifiche non sono attive e il resto del sito funziona uguale. Dettagli: [docs/product/PIANO-NOTIFICHE-PUSH.md](product/PIANO-NOTIFICHE-PUSH.md).
+1. Applica la migrazione `20261105120000_push_notifications` sul progetto Supabase (editor SQL o MCP).
+2. Genera le chiavi **una volta sola** (non rigenerarle: tutte le iscrizioni già fatte smetterebbero di funzionare):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+3. Su Vercel → Project → Settings → Environment Variables (Production) aggiungi `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (la chiave pubblica: finisce nel sito a build, quindi serve un nuovo deploy) e `VAPID_PRIVATE_KEY` (la privata: trattala come una password, mai nel repo né nel client). Facoltativa `VAPID_SUBJECT` (`mailto:tua@email`): se manca si usa `NEXT_PUBLIC_SITE_URL`, che deve essere https. Serve anche `CRON_SECRET` (già impostato per il cron): è il segreto con cui le action leggono le iscrizioni.
+4. Rifai il deploy. Ognuno apre il sito, va in **Account → Notifiche**, preme «Attiva le notifiche» e poi «Invia un avviso di prova».
+
+**iPhone**: le notifiche funzionano solo con l'app aggiunta alla schermata Home (iOS 16.4 o più recente): va aperta da lì e le notifiche si attivano da lì. Su Android e computer basta il browser.
+Gli avvisi non si riprovano se il servizio di notifica non risponde (un avviso in ritardo di ore non serve; lo stato vero resta nel badge su «Scambio»). Le iscrizioni scadute (telefono cambiato, app disinstallata) si tolgono da sole al primo invio. Nei log di Vercel le righe sono quelle con `[push]`, senza mai indirizzi né chiavi.
+
 ## 4. Aggiornamenti
 Ogni push su `main` ripubblica il sito da solo. Le variabili si cambiano da Vercel → Project → Settings → Environment Variables (poi serve un nuovo deploy).
 

@@ -2,6 +2,7 @@ import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
 import { runDunkestRoundsSync } from "@/lib/dunkest-rounds-sync";
 import { runDunkestSync } from "@/lib/dunkest-sync";
+import { announcePush } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 import { announceRumors, announceSlotSwaps, announceTrades } from "@/lib/telegram";
 
@@ -54,6 +55,13 @@ export async function GET(request: Request) {
   if (!rumors.skipped) {
     if (rumors.sent) console.log(`[telegram] ${rumors.sent} rumors`);
     if (rumors.errors.length) console.error(`[telegram] ${rumors.errors.join("; ")}`);
+  }
+  // Avvisi push sulle proposte di scambio mancati (di solito li manda l'action subito dopo ogni novità), come rete. Non cambia l'esito del cron.
+  const pushed = await announcePush(db, secret);
+  if (!pushed.skipped) {
+    if (pushed.sent) console.log(`[push] ${pushed.sent} avvisi in ${pushed.events} eventi`);
+    if (pushed.pruned) console.log(`[push] ${pushed.pruned} iscrizioni scadute tolte`);
+    if (pushed.errors.length) console.error(`[push] ${pushed.errors.join("; ")}`);
   }
   // Partite NBA per giorno e giornate fantasy: per ultime, perché il primo recupero è il giro più lungo e, se sfora i 60 secondi, deve
   // saltare solo questo passo (scadenze e Telegram sono già fatte). Dopo statistiche (giocatori collegati) e lega (giornata in corso).
