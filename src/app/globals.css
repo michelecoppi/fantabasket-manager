@@ -381,7 +381,7 @@ select {
   background-image: repeating-linear-gradient(-45deg, color-mix(in oklab, currentColor 30%, transparent) 0 2px, transparent 2px 6px);
 }
 
-/* ---------- Scheda a comparsa (popover nativo, components/dunkest.tsx) ---------- */
+/* ---------- Scheda a comparsa (popover nativo, components/dunkest.tsx; anche <dialog class="sheet">, components/whats-new.tsx) ---------- */
 /* Telefono: foglio che sale dal basso. Da 640 px: finestra centrata. Uscita animata grazie a overlay/display discreti. */
 .sheet {
   position: fixed;
@@ -405,13 +405,19 @@ select {
     overlay 340ms allow-discrete,
     display 340ms allow-discrete;
 }
-.sheet:popover-open {
+.sheet:popover-open,
+dialog.sheet[open] {
   transform: none;
 }
 @starting-style {
-  .sheet:popover-open {
+  .sheet:popover-open,
+  dialog.sheet[open] {
     transform: translateY(100%);
   }
+}
+/* <dialog class="sheet"> riceve il focus lui stesso all'apertura (tabindex -1): non è un controllo, niente anello. */
+dialog.sheet:focus {
+  outline: none;
 }
 .sheet::backdrop {
   background: rgb(3 6 13 / 0);
@@ -420,11 +426,13 @@ select {
     overlay 340ms allow-discrete,
     display 340ms allow-discrete;
 }
-.sheet:popover-open::backdrop {
+.sheet:popover-open::backdrop,
+dialog.sheet[open]::backdrop {
   background: rgb(3 6 13 / 0.6);
 }
 @starting-style {
-  .sheet:popover-open::backdrop {
+  .sheet:popover-open::backdrop,
+  dialog.sheet[open]::backdrop {
     background: rgb(3 6 13 / 0);
   }
 }
@@ -459,12 +467,14 @@ select {
     opacity: 0;
     transform: translateY(14px) scale(0.98);
   }
-  .sheet:popover-open {
+  .sheet:popover-open,
+  dialog.sheet[open] {
     opacity: 1;
     transform: none;
   }
   @starting-style {
-    .sheet:popover-open {
+    .sheet:popover-open,
+    dialog.sheet[open] {
       opacity: 0;
       transform: translateY(14px) scale(0.98);
     }

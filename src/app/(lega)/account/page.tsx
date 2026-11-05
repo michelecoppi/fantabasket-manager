@@ -1,6 +1,7 @@
 import { TeamCrest } from "@/components/crest";
 import { InstallSteps } from "@/components/install";
 import { Card, PageTitle, Section } from "@/components/ui";
+import { WhatsNewButton } from "@/components/whats-new";
 import { loadLeague, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { PasswordForm } from "./password-form";
@@ -48,6 +49,17 @@ export default async function AccountPage() {
       <Section title="Notifiche" icon="bell" id="notifiche">
         <Card className="max-w-xl p-5 sm:p-6">
           <PushToggle admin={profile?.role === "admin"} />
+        </Card>
+      </Section>
+
+      <Section title="Novità" icon="star" id="novita">
+        <Card className="max-w-xl p-5 sm:p-6">
+          <div className="flex flex-col gap-4 text-sm">
+            <p>Le funzioni nuove dell’app compaiono in una finestra al primo accesso dopo ogni aggiornamento. Se l’hai chiusa di fretta, la rivedi qui.</p>
+            <div>
+              <WhatsNewButton />
+            </div>
+          </div>
         </Card>
       </Section>
 

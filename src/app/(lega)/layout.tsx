@@ -11,6 +11,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh";
 import { RefreshButton } from "@/components/refresh-button";
 import { ServiceWorker } from "@/components/service-worker";
 import { TickerGate } from "@/components/ticker-gate";
+import { WhatsNew } from "@/components/whats-new";
 import { adminTodo, adminTodoCounts } from "@/lib/admin-todo";
 import { loadProfile, loadProposals, loadSlotSwaps } from "@/lib/league-server";
 import { proposalBadges } from "@/lib/trade-proposals";
@@ -100,6 +101,8 @@ export default function LegaLayout({ children }: LayoutProps<"/">) {
       <SearchSheet />
       <PullToRefresh />
       <ServiceWorker />
+      {/* Novità dell'app (lib/changelog.ts): si apre da sola una volta per browser dopo ogni novità. */}
+      <WhatsNew />
       {/* Sorteggio del draft appena estratto: rivelazione a tutto schermo, una volta per utente (issue #103). */}
       <Suspense>
         <LotteryGate />

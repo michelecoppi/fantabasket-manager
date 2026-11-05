@@ -63,6 +63,7 @@ Attenzione: il file ha encoding sporco (`1°` appare come `1�`, `Traoré` come
 - Valori numerici dei crediti: `numeric(5,1)` nel DB (ci sono mezzi crediti, es. 3.5).
 - Stagione corrente come entità (`seasons`, `is_current`), mai come costante.
 - UI mobile-first: gli utenti la useranno da telefono.
+- Novità visibili agli utenti: una funzione nuova o un cambio di come si usa qualcosa è una voce **in cima** a `src/lib/changelog.ts` (id `AAAA-MM-GG-argomento`, mai modificato dopo la pubblicazione). La finestra «Novità» (`components/whats-new.tsx`) la mostra una volta a testa, per browser (`localStorage`, nessuna scrittura sul database). Niente voci per correzioni, grafica minuta o lavori interni.
 - Commit piccoli, messaggi in italiano o inglese ma coerenti. Non committare `.env*` né chiavi Supabase `service_role`.
 
 ## Flusso di lavoro (persone e agenti, tutti uguali)
