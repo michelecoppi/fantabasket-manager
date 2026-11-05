@@ -4,6 +4,7 @@ import { Card, PageTitle, Section } from "@/components/ui";
 import { loadLeague, loadProfile } from "@/lib/league-server";
 import { teamColors } from "@/lib/team-colors";
 import { PasswordForm } from "./password-form";
+import { PushToggle } from "./push-toggle";
 
 export default async function AccountPage() {
   const [profile, league] = await Promise.all([loadProfile(), loadLeague()]);
@@ -43,6 +44,12 @@ export default async function AccountPage() {
           </Card>
         </Section>
       </div>
+
+      <Section title="Notifiche" icon="bell" id="notifiche">
+        <Card className="max-w-xl p-5 sm:p-6">
+          <PushToggle admin={profile?.role === "admin"} />
+        </Card>
+      </Section>
 
       <Section title="Installa l’app" icon="download" id="installa">
         <Card className="max-w-xl p-5 sm:p-6">

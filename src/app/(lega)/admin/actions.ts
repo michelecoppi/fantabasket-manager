@@ -24,6 +24,7 @@ import { loadCloseInput, loadDunkestRosters, loadLastContract, loadLeague, loadL
 import { lotteryChoices, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoices } from "@/lib/season-close";
 import { createClient } from "@/lib/supabase/server";
 import { evaluateSlotSwapItems } from "@/lib/slot-swap";
+import { announcePushQuietly } from "@/lib/push";
 import { announceSlotSwapsQuietly, announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
@@ -42,6 +43,8 @@ async function requireAdmin(): Promise<string | null> {
 const refresh = () => revalidatePath("/", "layout");
 /** Dopo uno scambio eseguito: annuncio sul canale Telegram della lega (Fase 7.5), a risposta già inviata. */
 const announce = () => after(async () => announceTradesQuietly(await createClient()));
+/** Dopo una novità sulle proposte di scambio (approvata, respinta, rimandata, scambio che le supera, mercato chiuso): avviso push alle squadre. */
+const pushNow = () => after(async () => announcePushQuietly(await createClient()));
 
 // ---------- Firma ----------
 export interface SignInput {
@@ -269,6 +272,7 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   if (error) return rpcError(error.message);
   refresh();
   announce();
+  pushNow();
   // Su Dunkest ci sono solo i titolari: uno scambio di soli talenti e pick non va rifatto lì (decisione dell'utente 2026-10-30).
   const dunkest = input.moves.some((m) => m.kind === "contract") ? " Ricordati di farlo anche su Dunkest." : "";
   return done(`Scambio registrato tra ${joinNames(names)}.${dunkest}`, ev.warnings);
@@ -519,6 +523,8 @@ export async function setTradeMarket(input: { open: boolean }): Promise<ActionRe
   const { error } = await db.rpc("admin_set_trade_market", { p_open: input.open });
   if (error) return rpcError(error.message);
   refresh();
+  // Chiudere il mercato ritira le proposte aperte: le squadre coinvolte lo sanno subito.
+  if (!input.open) pushNow();
   return done(input.open ? "Mercato degli scambi aperto." : "Mercato degli scambi chiuso.");
 }
 
@@ -603,6 +609,7 @@ export async function approveProposal(input: { id: number; version: number; appr
   if (error) return rpcError(error.message);
   refresh();
   announce();
+  pushNow();
   // Senza contratti la RPC segna già la proposta come fatta su Dunkest (migrazione 20261030160000).
   const dunkest = proposal.moves.some((m) => m.kind === "contract") ? " Ora va fatto anche su Dunkest." : " Niente da fare su Dunkest: muove solo talenti o pick.";
   return done(`Scambio eseguito tra ${joinNames(names)}.${dunkest}`, ev.warnings);
@@ -617,6 +624,7 @@ export async function declineProposal(input: { id: number; version: number; note
   const { error } = await db.rpc("admin_decline_trade_proposal", { p_id: input.id, p_version: input.version, p_note: input.note });
   if (error) return rpcError(error.message);
   refresh();
+  pushNow();
   return done("Proposta respinta.");
 }
 
@@ -629,6 +637,7 @@ export async function returnProposal(input: { id: number; version: number; note:
   const { error } = await db.rpc("admin_return_trade_proposal", { p_id: input.id, p_version: input.version, p_note: String(input.note ?? "") });
   if (error) return rpcError(error.message);
   refresh();
+  pushNow();
   return done("Proposta rimandata alle squadre.");
 }
 

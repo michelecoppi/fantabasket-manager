@@ -6,6 +6,7 @@ import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-res
 import { loadLeague, loadProposals, loadTradeMarket, loadVersions } from "@/lib/league-server";
 import { myTeam } from "@/lib/my-team";
 import { createClient } from "@/lib/supabase/server";
+import { announcePushQuietly } from "@/lib/push";
 import { announceRumorsQuietly } from "@/lib/telegram";
 import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
@@ -17,6 +18,8 @@ import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
 
 const MAX_TEXT = 1000;
 const refresh = () => revalidatePath("/", "layout");
+/** Dopo una novità su una proposta: avviso push alle altre squadre (e agli admin, quando c'è da approvare), a risposta già inviata. */
+const pushNow = () => after(async () => announcePushQuietly(await createClient()));
 
 export interface ProposeInput {
   teams: string[];
@@ -61,6 +64,7 @@ export async function proposeTrade(input: ProposeInput): Promise<ActionResult> {
   });
   if (error) return rpcError(error.message);
   refresh();
+  pushNow();
   const others = names.filter((_, i) => input.teams[i] !== me.teamId);
   return done(`Proposta inviata a ${joinNames(others)}: hanno ${league.settings.tradeProposalHours} ore per rispondere.`, ev.warnings);
 }
@@ -86,6 +90,7 @@ export async function answerProposal(input: { id: number; version: number; answe
   const { error } = await db.rpc("trade_answer", { p_id: input.id, p_version: input.version, p_answer: input.answer, p_note: note });
   if (error) return rpcError(error.message);
   refresh();
+  pushNow();
   if (input.answer === "reject") return done("Proposta rifiutata.");
   const accepts = proposal.answers.filter((a) => a.answer === "accept").length + 1;
   if (accepts < proposal.teams.length - 1) return done("Hai accettato: manca la risposta delle altre squadre.");
@@ -102,5 +107,6 @@ export async function withdrawProposal(input: { id: number; version: number }): 
   const { error } = await db.rpc("trade_withdraw", { p_id: input.id, p_version: input.version });
   if (error) return rpcError(error.message);
   refresh();
+  pushNow();
   return done("Proposta ritirata.");
 }

@@ -170,6 +170,10 @@ insert into trade_proposal_answers (proposal_id, team_id, answer) select 900001,
 insert into trade_proposal_events (id, proposal_id, kind) values (900001, 900001, 'sent');
 insert into slot_swap_requests (id, season_id, team_id, items, roster_rev, status)
   select 900001, s.id, t.id, '[]'::jsonb, 0, 'declined' from seasons s, (select id from teams order by name limit 1) t where s.is_current;
+-- Notifiche push: un dispositivo del viewer e uno dell'admin (ognuno legge solo i propri).
+insert into push_subscriptions (id, user_id, endpoint, p256dh, auth) values
+  (900001, rls_t.viewer(), 'https://push.example/rls-viewer', repeat('A', 87), repeat('B', 22)),
+  (900002, rls_t.admin(), 'https://push.example/rls-admin', repeat('A', 87), repeat('B', 22));
 -- Sorteggio del draft (issue #103): la riga di prova occupa la stagione corrente, il giro del sorteggio la toglie e rifà la RPC.
 insert into draft_lotteries (season_id, draft_year, ranking, entrants, weights, seed, draws, drawn_by)
   select s.id, s.year + 1, array(select id from teams order by name), array[(select id from teams order by name desc limit 1)], array[1], 'rls', '[]', 'RLS'
@@ -203,7 +207,7 @@ begin
   -- Elenco esplicito: una tabella nuova senza la policy "admin write" per dimenticanza non passa come "solo RPC".
   perform rls_t.ok('tabelle scritte solo dalle RPC diverse dall''atteso',
     (select array_agg(name order by name) from rls_t.tbl where rpc_only)
-      = array['draft_lotteries', 'draft_lottery_views', 'slot_swap_requests', 'trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
+      = array['draft_lotteries', 'draft_lottery_views', 'push_subscriptions', 'slot_swap_requests', 'trade_proposal_answers', 'trade_proposal_events', 'trade_proposals']);
 
   insert into rls_t.rpc
   select p.proname,
@@ -995,6 +999,18 @@ begin
     and exists (select 1 from trade_proposal_answers where proposal_id = p and team_id = t2 and user_id = rls_t.admin() and answer = 'accept')
     and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'accepted' and team_id = t2 and note = 'Va bene'));
 
+  -- Notifiche push: gli eventi nuovi escono una volta sola; l'accettazione che porta la proposta all'admin è `completes`.
+  v2 := public.push_claim('rls-segreto-del-job-0123', 24);
+  perform rls_t.ok('push: evento di invio non preso',
+    exists (select 1 from jsonb_array_elements(v2 -> 'events') e
+            where (e ->> 'proposal_id')::int = p and e ->> 'kind' = 'sent' and (e ->> 'team_id')::uuid = t1 and (e ->> 'proposer')::uuid = t1
+              and (e ->> 'counter')::boolean = false and jsonb_array_length(e -> 'teams') = 2));
+  perform rls_t.ok('push: accettazione che completa non segnata',
+    exists (select 1 from jsonb_array_elements(v2 -> 'events') e
+            where (e ->> 'proposal_id')::int = p and e ->> 'kind' = 'accepted' and (e ->> 'completes')::boolean and (e ->> 'actor')::uuid = rls_t.admin()));
+  perform rls_t.ok('push: evento preso due volte', public.push_claim('rls-segreto-del-job-0123', 24) = jsonb_build_object('events', '[]'::jsonb, 'subs', '[]'::jsonb));
+  perform rls_t.ok('push: presa non segnata', not exists (select 1 from trade_proposal_events where proposal_id = p and push_at is null));
+
   -- Rumors di trade: la proposta accettata da tutti (in attesa dell'admin) esce una volta sola, con i soli nomi delle squadre.
   perform rls_t.become('anon');
   perform rls_t.chk('anon prende i rumors', rls_t.try('select public.trade_rumor_claim(null, 24)'), array['error: FORBIDDEN%']);
@@ -1464,6 +1480,98 @@ begin
     (select status from slot_swap_requests where id = r) = 'withdrawn' and not (select slot_swap_open from seasons where id = sid)
     and exists (select 1 from audit_log where action = 'slot_swap' and table_name = 'seasons' and after ->> 'summary' like '%1 richieste ritirate%'));
   perform rls_t.ok('contratti toccati da ritiro o respinta', (select slot from contracts where id = 900061) = 'reserve');
+end $$;
+
+-- ---------- Notifiche push: ognuno i propri dispositivi, le iscrizioni altrui solo al job o a un admin ----------
+do $$
+declare
+  ep text := 'https://push.example/rls-nuovo';
+  k text := repeat('C', 87);
+  a text := repeat('D', 22);
+  v jsonb;
+  i int;
+begin
+  perform rls_t.ok('push_claim e push_prune non chiamabili dal cron (anon, con il segreto)',
+    has_function_privilege('anon', 'public.push_claim(text,int)', 'execute') and has_function_privilege('anon', 'public.push_prune(text,text[])', 'execute'));
+  perform rls_t.ok('push_subscribe o push_unsubscribe chiamabili da anon',
+    not has_function_privilege('anon', 'public.push_subscribe(text,text,text,text)', 'execute')
+    and not has_function_privilege('anon', 'public.push_unsubscribe(text)', 'execute'));
+
+  -- anon: niente iscrizione, niente presa senza segreto.
+  perform rls_t.become('anon');
+  perform rls_t.chk('anon si iscrive', rls_t.try(format('select public.push_subscribe(%L, %L, %L, null)', ep, k, a)), array['denied']);
+  perform rls_t.chk('anon toglie un dispositivo', rls_t.try(format('select public.push_unsubscribe(%L)', ep)), array['denied']);
+  perform rls_t.chk('anon prende gli avvisi senza segreto', rls_t.try('select public.push_claim(null, 12)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon prende gli avvisi con un segreto sbagliato', rls_t.try('select public.push_claim(''rls-segreto-sbagliato-000'', 12)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('anon toglie le iscrizioni senza segreto', rls_t.try('select public.push_prune(null, array[''https://push.example/rls-viewer''])'), array['error: FORBIDDEN%']);
+
+  -- viewer: iscrive e toglie solo i propri dispositivi.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform rls_t.chk('indirizzo non https', rls_t.try(format('select public.push_subscribe(%L, %L, %L, null)', 'http://push.example/x', k, a)), array['error: INVALID%']);
+  perform rls_t.chk('indirizzo con spazi', rls_t.try(format('select public.push_subscribe(%L, %L, %L, null)', 'https://push.example/x y', k, a)), array['error: INVALID%']);
+  perform rls_t.chk('chiave p256dh corta', rls_t.try(format('select public.push_subscribe(%L, %L, %L, null)', ep, 'abc', a)), array['error: INVALID%']);
+  perform rls_t.chk('chiave auth non valida', rls_t.try(format('select public.push_subscribe(%L, %L, %L, null)', ep, k, 'non valida!')), array['error: INVALID%']);
+  perform rls_t.chk('endpoint nullo', rls_t.try(format('select public.push_subscribe(null, %L, %L, null)', k, a)), array['error: INVALID%']);
+  perform public.push_subscribe(ep, k, a, 'RLS browser');
+  perform rls_t.ok('il viewer non vede i suoi dispositivi', rls_t.seen('push_subscriptions') = 2);
+  perform public.push_subscribe(ep, k, a, 'RLS browser');
+  perform rls_t.ok('doppia iscrizione dello stesso dispositivo', rls_t.seen('push_subscriptions') = 2);
+  perform rls_t.chk('il viewer prende gli avvisi', rls_t.try('select public.push_claim(null, 12)'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('il viewer toglie le iscrizioni altrui', rls_t.try('select public.push_prune(null, array[''https://push.example/rls-admin''])'), array['error: FORBIDDEN%']);
+  perform rls_t.chk('il viewer scrive la tabella', rls_t.try(format('insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values (%L, ''https://push.example/diretto'', %L, %L)', rls_t.viewer(), k, a)), array['denied']);
+  perform rls_t.chk('il viewer cambia il proprietario di un dispositivo', rls_t.try(format('update public.push_subscriptions set user_id = %L', rls_t.admin())), array['denied']);
+
+  -- Un altro account non vede né toglie i dispositivi del viewer.
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform rls_t.ok('l''intruso vede i dispositivi altrui', rls_t.seen('push_subscriptions') = 0);
+  perform public.push_unsubscribe(ep);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('l''intruso ha tolto il dispositivo del viewer', exists (select 1 from push_subscriptions where endpoint = ep and user_id = rls_t.viewer()));
+
+  -- Lo stesso dispositivo che entra con un altro account passa a quell'account.
+  perform rls_t.become('authenticated', rls_t.intruder());
+  perform public.push_subscribe(ep, k, a, null);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('il dispositivo non segue l''account', (select user_id from push_subscriptions where endpoint = ep) = rls_t.intruder());
+
+  -- Al massimo 10 dispositivi a testa, restano i più recenti (13 con quello di prova: se ne vanno i 3 più vecchi).
+  perform rls_t.become('authenticated', rls_t.viewer());
+  for i in 1..12 loop
+    perform public.push_subscribe('https://push.example/rls-d' || i, k, a, null);
+  end loop;
+  perform rls_t.ok('più di 10 dispositivi per utente', rls_t.seen('push_subscriptions') = 10);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('dispositivi vecchi rimasti', exists (select 1 from push_subscriptions where endpoint = 'https://push.example/rls-d12')
+    and not exists (select 1 from push_subscriptions where endpoint = 'https://push.example/rls-viewer'));
+
+  -- Il viewer toglie un proprio dispositivo.
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform public.push_unsubscribe('https://push.example/rls-d12');
+  perform rls_t.become('postgres');
+  perform rls_t.ok('dispositivo non tolto', not exists (select 1 from push_subscriptions where endpoint = 'https://push.example/rls-d12'));
+
+  -- Il job (segreto) e un admin prendono gli avvisi con le iscrizioni di tutti; età massima non valida.
+  perform rls_t.become('anon');
+  perform rls_t.chk('età massima degli avvisi non valida', rls_t.try('select public.push_claim(''rls-segreto-del-job-0123'', 0)'), array['error: INVALID%']);
+  perform rls_t.become('postgres');
+  insert into trade_proposal_events (id, proposal_id, kind) values (900002, 900001, 'sent');
+  perform rls_t.become('authenticated', rls_t.admin());
+  v := public.push_claim(null, 12);
+  perform rls_t.ok('l''admin non prende gli avvisi', exists (select 1 from jsonb_array_elements(v -> 'events') e where (e ->> 'id')::int = 900002));
+  perform rls_t.ok('le iscrizioni non arrivano all''admin', jsonb_array_length(v -> 'subs') >= 2
+    and exists (select 1 from jsonb_array_elements(v -> 'subs') s where s ->> 'endpoint' = 'https://push.example/rls-admin' and (s ->> 'admin')::boolean));
+  perform rls_t.ok('dopo la presa non resta niente', public.push_claim(null, 12) = jsonb_build_object('events', '[]'::jsonb, 'subs', '[]'::jsonb));
+
+  -- Eventi vecchi (oltre l'età massima) non si prendono.
+  perform rls_t.become('postgres');
+  insert into trade_proposal_events (id, proposal_id, at, kind) values (900003, 900001, now() - interval '30 hours', 'sent');
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform rls_t.ok('evento vecchio preso', public.push_claim(null, 12) = jsonb_build_object('events', '[]'::jsonb, 'subs', '[]'::jsonb));
+
+  -- Iscrizioni scadute: le toglie solo il job o un admin.
+  perform rls_t.ok('iscrizioni scadute non tolte', public.push_prune(null, array['https://push.example/rls-d3', 'https://push.example/rls-d4', 'https://push.example/non-esiste']) = 2);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('iscrizioni scadute rimaste', not exists (select 1 from push_subscriptions where endpoint in ('https://push.example/rls-d3', 'https://push.example/rls-d4')));
 end $$;
 
 do $$ begin
