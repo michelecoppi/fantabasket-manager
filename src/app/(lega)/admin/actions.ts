@@ -25,7 +25,7 @@ import { lotteryChoices, planSeasonClose, SEASON_CLOSE_ENABLED, type CloseChoice
 import { createClient } from "@/lib/supabase/server";
 import { evaluateSlotSwapItems } from "@/lib/slot-swap";
 import { announcePushQuietly } from "@/lib/push";
-import { announceSlotSwapsQuietly, announceTradesQuietly } from "@/lib/telegram";
+import { announceSlotSwapsQuietly, announceTalentPromotionQuietly, announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
 import { needsDunkest, tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
@@ -156,17 +156,18 @@ export async function signTalent(input: SignTalentInput): Promise<ActionResult> 
   }
 
   const db = await createClient();
-  const player = await db.from("players").select("pos,first_name,last_name").eq("id", input.playerId).maybeSingle<{ pos: "G" | "A" | "C" | null; first_name: string; last_name: string }>();
+  const player = await db.from("players").select("pos,first_name,last_name,nba_team").eq("id", input.playerId).maybeSingle<{ pos: "G" | "A" | "C" | null; first_name: string; last_name: string; nba_team: string | null }>();
   if (player.error || !player.data) return fail("Giocatore non trovato.");
+  const playerData = player.data;
 
   const terms = { slot: input.slot, years: input.years, teamOption: input.teamOption, salary: input.salary, isRookie: true };
-  const ev = evaluateSigning(teamSide(team), { ...terms, position: player.data.pos }, league.settings);
+  const ev = evaluateSigning(teamSide(team), { ...terms, position: playerData.pos }, league.settings);
   const last = await loadLastContract(input.playerId);
   const floorErrors = auctionFloorErrors(input.salary, auctionFloor(last, new Date().toISOString().slice(0, 10), league.settings));
   const restriction = signingRestriction(last, false);
   const errors = [...ev.errors, ...floorErrors];
   if (errors.length) return fail(errors.join(" "));
-  const name = [player.data.first_name, player.data.last_name].join(" ").trim();
+  const name = [playerData.first_name, playerData.last_name].join(" ").trim();
 
   const { error } = await db.rpc("admin_sign_talent", {
     p_talent_id: input.talentId,
@@ -182,6 +183,21 @@ export async function signTalent(input: SignTalentInput): Promise<ActionResult> 
   });
   if (error) return rpcError(error.message);
   refresh();
+  after(async () => {
+    announceTalentPromotionQuietly({
+      talentId: input.talentId,
+      teamId: team.team.id,
+      team: team.team.name,
+      playerName: name,
+      pos: playerData.pos,
+      nbaTeam: playerData.nba_team,
+      slot: input.slot,
+      salary: input.salary,
+      years: input.years,
+      teamOption: input.teamOption,
+      draftYear: talent.draft_year ?? null,
+    });
+  });
   return done(`${name} firmato da ${team.team.name} dalla squadra talenti.`, ev.warnings);
 }
 

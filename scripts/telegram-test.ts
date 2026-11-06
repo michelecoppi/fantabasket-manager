@@ -3,13 +3,29 @@
 //                                                                      senza: elenca le chat che il bot ha visto, per trovare l'id
 //   npx tsx --env-file=.env.local scripts/telegram-test.ts --dry-run  → stampa l'annuncio di esempio senza mandarlo
 //   npx tsx scripts/telegram-test.ts --dry-run --png=card.png         → in più disegna la card dello scambio e la salva
+//   npx tsx --env-file=.env.local scripts/telegram-test.ts --talent   → prova dell'annuncio di promozione rookie dalle promesse
 // L'invio vero è quello dello scambio: foto (la card) con didascalia; se la foto non parte, testo con l'elenco completo.
 // Configurazione in docs/DEPLOY.md («Bot Telegram»).
 import { writeFile } from "node:fs/promises";
 import { renderTradeCardPng } from "../src/lib/card-render";
-import { announceOne, telegramConfig } from "../src/lib/telegram";
+import { announceOne, sendTelegram, telegramConfig } from "../src/lib/telegram";
 import { announcedTeamColor, cardFromAnnounced } from "../src/lib/trade-card";
 import { announcementCaption, announcementText, parseAnnouncements } from "../src/lib/trade-announce";
+import { talentPromotionText, type AnnouncedTalentPromotion } from "../src/lib/talent-announce";
+
+const SAMPLE_TALENT: AnnouncedTalentPromotion = {
+  talentId: 42,
+  teamId: "a",
+  team: "Squadra di prova A",
+  playerName: "Cooper Flagg",
+  pos: "A",
+  nbaTeam: "DAL",
+  slot: "starter",
+  salary: 8.5,
+  years: 2,
+  teamOption: false,
+  draftYear: 2026,
+};
 
 const SAMPLE = parseAnnouncements([
   {
@@ -30,19 +46,24 @@ const SAMPLE = parseAnnouncements([
 ])[0];
 
 async function main() {
-  const text = `🧪 <b>Messaggio di prova</b>, ignoratelo.\n\n${announcementText(SAMPLE, process.env.NEXT_PUBLIC_SITE_URL)}`;
+  const isTalent = process.argv.includes("--talent");
+  const text = isTalent
+    ? `🧪 <b>Messaggio di prova</b>, ignoratelo.\n\n${talentPromotionText(SAMPLE_TALENT, process.env.NEXT_PUBLIC_SITE_URL)}`
+    : `🧪 <b>Messaggio di prova</b>, ignoratelo.\n\n${announcementText(SAMPLE, process.env.NEXT_PUBLIC_SITE_URL)}`;
   if (process.argv.includes("--dry-run")) {
     console.log(text);
-    const model = cardFromAnnounced(SAMPLE, (t) => announcedTeamColor(SAMPLE, t));
-    const extras = model.teams.filter((t) => t.hidden.length > 0).map((t) => ({ team: t.name, labels: t.hidden }));
-    console.log(`
+    if (!isTalent) {
+      const model = cardFromAnnounced(SAMPLE, (t) => announcedTeamColor(SAMPLE, t));
+      const extras = model.teams.filter((t) => t.hidden.length > 0).map((t) => ({ team: t.name, labels: t.hidden }));
+      console.log(`
 --- didascalia della foto ---
 ${announcementCaption(SAMPLE, extras, process.env.NEXT_PUBLIC_SITE_URL)}`);
-    const png = process.argv.find((a) => a.startsWith("--png="))?.slice("--png=".length);
-    if (png) {
-      await writeFile(png, Buffer.from(await renderTradeCardPng(model)));
-      console.log(`
+      const png = process.argv.find((a) => a.startsWith("--png="))?.slice("--png=".length);
+      if (png) {
+        await writeFile(png, Buffer.from(await renderTradeCardPng(model)));
+        console.log(`
 Card salvata in ${png}`);
+      }
     }
     return;
   }
@@ -63,9 +84,11 @@ Card salvata in ${png}`);
     console.log("Metti l'id del canale in TELEGRAM_CHAT_ID e rilancia per il messaggio di prova.");
     return;
   }
-  const res = await announceOne(cfg, SAMPLE, process.env.NEXT_PUBLIC_SITE_URL, renderTradeCardPng);
+  const res = isTalent
+    ? await sendTelegram(cfg, talentPromotionText(SAMPLE_TALENT, process.env.NEXT_PUBLIC_SITE_URL))
+    : await announceOne(cfg, SAMPLE, process.env.NEXT_PUBLIC_SITE_URL, renderTradeCardPng);
   if (!res.ok) throw new Error(res.error);
-  console.log("Annuncio di prova inviato (foto con didascalia, o testo se la foto non è partita: vedi eventuali avvisi sopra).");
+  console.log("Annuncio di prova inviato con successo!");
 }
 
 main().catch((e) => {
