@@ -16,7 +16,7 @@ Tutti i valori numerici sono **parametri di lega** (tabella `league_settings`), 
 ## Salary cap / floor / luxury tax
 - R-10 Cap X = 250 (stagione 1). Tetto agli stipendi dei titolari.
 - R-11 Cap effettivo stagione = X + bonus/malus campionato (vedi R-60). Verificato sul foglio: `SPAZIO SALARIALE = 250 + BONUS − MONTE INGAGGI`.
-- R-12 Sforare il cap → luxury tax proporzionata ai soldi reali: stagione 2 = **1 € ogni 4 crediti sopra 250, fino a max 270**. Incassi divisi tra i "virtuosi" (sotto cap), priorità ai primi in classifica. Foglio: riga `BUDGET SFORATO`.
+- R-12 Sforare il cap → luxury tax in euro a scaglioni: stagione 2 = **1 € ogni 5 crediti sopra 250, scaglione iniziato = pieno** (0,5 sopra = 1 €, 5 = 1 €, 5,5 = 2 €), **fino a max 270**. Incassi divisi tra i "virtuosi" (sotto cap), priorità ai primi in classifica. Foglio: riga `BUDGET SFORATO`.
 - R-13 Salary floor Y = X − X/5 (= 200). Se rosa completa ma sotto il floor, il proprietario ripartisce a piacere i crediti mancanti tra i suoi giocatori.
 
 ## Contratti

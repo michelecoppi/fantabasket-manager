@@ -11,7 +11,7 @@ export interface LeagueSettings {
   reserveBudget: number;
   /** R-13: il floor è cap - cap / floorDivisor (5 → 200) */
   floorDivisor: number;
-  /** R-12: crediti sforati per ogni euro di luxury tax */
+  /** R-12: crediti sforati per ogni euro di luxury tax; ogni scaglione iniziato conta (0,5 sopra = 1 €, 5,5 sopra = 2 €) */
   taxCreditsPerEuro: number;
   /** R-12: massimo di crediti sforati tassabili */
   taxMaxOver: number;
@@ -81,7 +81,7 @@ export function salaryFloor(s: LeagueSettings): number {
 /** R-12. ASSUNZIONE: la soglia è il cap effettivo (cap + bonus), vedi docs/OPEN-QUESTIONS.md. */
 export function luxuryTaxEur(payroll: number, effectiveCap: number, s: LeagueSettings): number {
   const over = Math.min(Math.max(payroll - effectiveCap, 0), s.taxMaxOver);
-  return over / s.taxCreditsPerEuro;
+  return Math.ceil(over / s.taxCreditsPerEuro);
 }
 
 export function teamFinance(
@@ -537,7 +537,7 @@ export const DEFAULT_SETTINGS: LeagueSettings = {
   cap: 250,
   reserveBudget: 80,
   floorDivisor: 5,
-  taxCreditsPerEuro: 4,
+  taxCreditsPerEuro: 5,
   taxMaxOver: 20,
   starters: { G: 5, A: 5, C: 3 },
   reserveMin: 3,

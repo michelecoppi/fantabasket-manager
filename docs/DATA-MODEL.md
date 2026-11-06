@@ -27,7 +27,7 @@ monte_ingaggi   = Σ stipendi titolari + Σ quote tagliati (già 1/3 nel foglio)
 spazio_salariale = cap(250) + bonus_campionato − monte_ingaggi
 spazio_riserve  = 80 − Σ stipendi riserve   // verificato su 8/8 squadre
 budget_sforato  = spazio_salariale < 0
-luxury_tax_eur  = min(max(monte − cap_effettivo, 0), 20) / 4       // R-12, parametri in league_settings
+luxury_tax_eur  = ceil(min(max(monte − cap_effettivo, 0), 20) / 5)  // R-12, parametri in league_settings
 ```
 Questa logica vive in un solo file (`lib/cap.ts`) con test.
 
@@ -45,7 +45,7 @@ Foglio del 21/10/2026, dopo l'asta (titolari 13 per squadra). `src/lib/cap.test.
 | CC | 246 | 0 | 246 | +4 | 8 | no | 6 | 67.5 | 12.5 |
 | ENTONY | 248 | 1.5 | 249.5 | 0 | 0.5 | no | 6 | 65 | 15 |
 
-Casi utili: AMEDEO ha le riserve al limite (spazio 0), DAMIANO è l'unico sforato (luxury tax teorica da R-12: `min(11, 20) / 4 = 2.75 €`, nel foglio non risulta incassata), ENTONY ha 0.5 di spazio. Tagli arrotondati allo 0.5 (5 → 1.5).
+Casi utili: AMEDEO ha le riserve al limite (spazio 0), DAMIANO è l'unico sforato (luxury tax teorica da R-12: `ceil(min(11, 20) / 5) = 3 €`, nel foglio non risulta incassata), ENTONY ha 0.5 di spazio. Tagli arrotondati allo 0.5 (5 → 1.5).
 
 ## Schema Postgres (Supabase)
 Fonte di verità: `supabase/migrations/` (si parte da `20261021214000_init.sql`, poi una migrazione per modifica; elenco e numerazione in [PLAN.md](../PLAN.md)). Questo file non ripete lo schema per non farlo divergere.

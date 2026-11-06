@@ -48,7 +48,7 @@ const SHEET_POST_AUCTION = [
   { team: "Assago Farmers", starters: 210.5, cuts: 3.5, reserves: 80, bonus: -2, monte: 214, spazio: 34, spazioRis: 0, tax: 0 },
   { team: "CUS Cosenza", starters: 234, cuts: 10.5, reserves: 55.5, bonus: -3, monte: 244.5, spazio: 2.5, spazioRis: 24.5, tax: 0 },
   { team: "Bol Bollerz", starters: 242, cuts: 0, reserves: 68.5, bonus: 5, monte: 242, spazio: 13, spazioRis: 11.5, tax: 0 },
-  { team: "Dame Time", starters: 256.5, cuts: 3.5, reserves: 52, bonus: -1, monte: 260, spazio: -11, spazioRis: 28, tax: 2.75 },
+  { team: "Dame Time", starters: 256.5, cuts: 3.5, reserves: 52, bonus: -1, monte: 260, spazio: -11, spazioRis: 28, tax: 3 },
   { team: "Atlanto Non Vinco", starters: 248, cuts: 1.5, reserves: 51.5, bonus: 3, monte: 249.5, spazio: 3.5, spazioRis: 28.5, tax: 0 },
   { team: "Spaccinos", starters: 240.5, cuts: 0, reserves: 64.5, bonus: 2, monte: 240.5, spazio: 11.5, spazioRis: 15.5, tax: 0 },
   { team: "OKCC", starters: 246, cuts: 0, reserves: 67.5, bonus: 4, monte: 246, spazio: 8, spazioRis: 12.5, tax: 0 },
@@ -68,7 +68,7 @@ describe("teamFinance sul foglio dopo l'asta", () => {
     expect(f.reserveSpace).toBe(t.spazioRis);
     expect(f.overCap).toBe(t.team === "Dame Time"); // "BUDGET SFORATO" = SI solo per Dame Time
     expect(f.belowFloor).toBe(false);
-    expect(f.luxuryTaxEur).toBe(t.tax); // R-12 con soglia = cap effettivo: (260 - 249) / 4 = 2.75
+    expect(f.luxuryTaxEur).toBe(t.tax); // R-12 con soglia = cap effettivo: ceil((260 - 249) / 5) = 3
   });
 });
 
@@ -79,10 +79,13 @@ describe("regole", () => {
     expect(teamFinance([entry("starter", 185.5)], [], 2, S).belowFloor).toBe(true);
   });
 
-  it("luxury tax: 1 € ogni 4 crediti sopra il cap, max 20 crediti (R-12)", () => {
+  it("luxury tax: 1 € per ogni 5 crediti sopra il cap, scaglione iniziato = pieno, max 20 crediti (R-12)", () => {
     expect(luxuryTaxEur(250, 250, S)).toBe(0);
+    expect(luxuryTaxEur(250.5, 250, S)).toBe(1);
+    expect(luxuryTaxEur(255, 250, S)).toBe(1);
+    expect(luxuryTaxEur(255.5, 250, S)).toBe(2);
     expect(luxuryTaxEur(258, 250, S)).toBe(2);
-    expect(luxuryTaxEur(300, 250, S)).toBe(5);
+    expect(luxuryTaxEur(300, 250, S)).toBe(4);
   });
 
   it("sforamento segnalato", () => {
