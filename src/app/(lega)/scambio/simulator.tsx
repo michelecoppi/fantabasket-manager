@@ -51,7 +51,8 @@ export function TradeSimulator({
         scambio. Un talento passa con il diritto di firmarlo (R-35) e resta in squadra talenti: niente stipendio, niente cap.
       </p>
       <p className="mt-2 text-xs font-semibold text-warning">
-        Ogni scambio con giocatori a contratto va fatto anche su Dunkest, titolari e riserve compresi: questa app non modifica le rose Dunkest.
+        Uno scambio con titolari (che escono o che arrivano) va fatto anche su Dunkest: questa app non modifica le rose Dunkest. Talenti, pick e riserve che
+        restano riserve si registrano solo qui.
       </p>
     </>
   );

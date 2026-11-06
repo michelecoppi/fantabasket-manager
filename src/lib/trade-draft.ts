@@ -216,6 +216,17 @@ export function tradeInputError(teams: unknown, moves: unknown): string | null {
   return ok ? null : "Dati dello scambio non validi.";
 }
 
+/**
+ * Lo scambio va rifatto anche su Dunkest? Lì ci sono solo i titolari (decisioni dell'utente del 2026-10-30 e 2026-11-06):
+ * serve solo se un giocatore a contratto è titolare prima dello scambio o ci arriva. Talenti, pick e riserve che restano
+ * riserve non toccano Dunkest. Un contratto che non si trova più nelle rose conta come titolare, per non perdere l'avviso.
+ * Stessa regola in SQL in `admin_approve_trade_proposal` (migrazione 20261106120000_trade_reserves_dunkest.sql).
+ */
+export function needsDunkest(teams: readonly { players: readonly { id: number; slot: Slot }[] }[], moves: readonly TradeMoveInput[]): boolean {
+  const slots = new Map(teams.flatMap((t) => t.players.map((p) => [p.id, p.slot] as const)));
+  return moves.some((m) => m.kind === "contract" && (m.slot === "starter" || (slots.get(m.id) ?? "starter") === "starter"));
+}
+
 /** Bozza che corrisponde a movimenti già salvati: serve a rivalutare una proposta e a ripartire da lei (controproposta). */
 export function draftFromMoves(teams: readonly string[], moves: readonly TradeMoveInput[]): TradeDraft {
   const players = new Map<number, { from: string; to: string; slot?: ArrivalSlot }>();
