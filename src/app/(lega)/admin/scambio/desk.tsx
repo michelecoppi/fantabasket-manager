@@ -6,7 +6,7 @@ import { Button, Callout, Field, inputClass } from "@/components/controls";
 import { TradeMachine, type SimTeam, type TradeContext } from "@/components/trade-parts";
 import { Card } from "@/components/ui";
 import type { LeagueSettings } from "@/lib/cap";
-import { draftKey, emptyDraft } from "@/lib/trade-draft";
+import { draftKey, emptyDraft, needsDunkest } from "@/lib/trade-draft";
 import { executeTrade } from "../actions";
 
 /** Esito dell'ultimo invio, legato alla bozza per cui vale (`draftId`): cambiando lo scambio sparisce. */
@@ -14,11 +14,11 @@ type Outcome = { ok: boolean; text: string; warnings: string[]; draftId: string 
 
 export function TradeDesk({ teams, settings }: { teams: SimTeam[]; settings: LeagueSettings }) {
   if (teams.length < 2) return <p className="text-sm text-muted">Servono almeno due squadre.</p>;
-  return <TradeMachine teams={teams} settings={settings}>{(ctx) => <Officialize ctx={ctx} />}</TradeMachine>;
+  return <TradeMachine teams={teams} settings={settings}>{(ctx) => <Officialize ctx={ctx} teams={teams} />}</TradeMachine>;
 }
 
 /** Ufficializzazione (R-55): eccezione del cap motivata (R-57), chi approva, conferma, poi una sola RPC per tutte le squadre. */
-function Officialize({ ctx }: { ctx: TradeContext }) {
+function Officialize({ ctx, teams }: { ctx: TradeContext; teams: SimTeam[] }) {
   const { draft, moves, ev, draftId, name, reset } = ctx;
   const [approvedBy, setApprovedBy] = useState("");
   const [reason, setReason] = useState("");
@@ -31,6 +31,7 @@ function Officialize({ ctx }: { ctx: TradeContext }) {
   const blocked = empty || ev.errors.length > 0 || (needsReason && !reason.trim());
   const confirming = confirmFor === draftId;
   const names = draft.teams.map(name);
+  const dunkest = needsDunkest(teams, moves);
 
   const submit = () =>
     start(async () => {
@@ -63,15 +64,15 @@ function Officialize({ ctx }: { ctx: TradeContext }) {
             Serve l&apos;eccezione del moderatore, sentito il presidente. Indica la motivazione (luxury tax, soglia di sicurezza, rientro con tagli…).
           </Callout>
         )}
-        {!empty && !moves.some((m) => m.kind === "contract") && (
+        {!empty && !dunkest && (
           <Callout tone="info" title="Niente da fare su Dunkest">
-            Lo scambio muove solo talenti o pick: su Dunkest ci sono solo i titolari, quindi basta registrarlo qui.
+            Lo scambio muove solo talenti, pick o riserve che restano riserve: su Dunkest ci sono solo i titolari, quindi basta registrarlo qui.
           </Callout>
         )}
-        {moves.some((m) => m.kind === "contract") && (
+        {dunkest && (
           <Callout tone="warn" title="Fallo anche su Dunkest">
             Questa app non modifica le rose Dunkest: dopo la registrazione {names.length > 2 ? `le ${names.length} squadre` : "le due squadre"} devono fare lo scambio
-            anche lì, titolari e riserve compresi. Finché non lo fanno,{" "}
+            anche lì per i titolari che escono o entrano. Finché non lo fanno,{" "}
             <Link href="/admin/dunkest" className="font-semibold underline">
               Allinea a Dunkest
             </Link>{" "}

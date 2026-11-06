@@ -13,7 +13,7 @@ import {
   pickYearAllowed,
   signingRestriction,
 } from "@/lib/cap";
-import { teamSide } from "@/lib/league";
+import { teamSide, type LeagueView } from "@/lib/league";
 import { teamAlignment } from "@/lib/dunkest-align";
 import { runDunkestGamesSync } from "@/lib/dunkest-games-sync";
 import { runDunkestLeagueSync } from "@/lib/dunkest-league-sync";
@@ -27,7 +27,7 @@ import { evaluateSlotSwapItems } from "@/lib/slot-swap";
 import { announcePushQuietly } from "@/lib/push";
 import { announceSlotSwapsQuietly, announceTradesQuietly } from "@/lib/telegram";
 import { done, fail, isNum, rpcError, type ActionResult } from "@/lib/action-result";
-import { tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
+import { needsDunkest, tradeInputError, type TradeMoveInput } from "@/lib/trade-draft";
 import { evaluateMoves, joinNames, moveLabel } from "@/lib/trade-proposals";
 
 /** Ogni action ricontrolla il ruolo: la UI nasconde i bottoni, ma i permessi veri sono qui e nella RPC (is_admin). */
@@ -238,6 +238,9 @@ export async function cutPlayer(input: { contractId: number; version: number }):
 }
 
 // ---------- Scambio ----------
+/** Giocatori a contratto di ogni squadra con il loro slot, per `needsDunkest`. */
+const rosterSlots = (league: LeagueView) => league.teams.map((t) => ({ players: [...t.starters, ...t.reserves] }));
+
 export interface TradeInput {
   /** squadre dello scambio, nell'ordine scelto (R-56: due o più, al massimo `tradeMaxTeams`) */
   teams: string[];
@@ -261,6 +264,9 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   }
 
   const { rosterRev } = await loadVersions();
+  // Su Dunkest ci sono solo i titolari: scambi di soli talenti, pick o riserve non vanno rifatti lì (decisioni 2026-10-30 e 2026-11-06).
+  // Si guarda prima della RPC, con gli slot di adesso.
+  const dunkest = needsDunkest(rosterSlots(league), input.moves) ? " Ricordati di farlo anche su Dunkest." : "";
   const db = await createClient();
   const { error } = await db.rpc("admin_execute_trade", {
     p_teams: input.teams,
@@ -273,8 +279,6 @@ export async function executeTrade(input: TradeInput): Promise<ActionResult> {
   refresh();
   announce();
   pushNow();
-  // Su Dunkest ci sono solo i titolari: uno scambio di soli talenti e pick non va rifatto lì (decisione dell'utente 2026-10-30).
-  const dunkest = input.moves.some((m) => m.kind === "contract") ? " Ricordati di farlo anche su Dunkest." : "";
   return done(`Scambio registrato tra ${joinNames(names)}.${dunkest}`, ev.warnings);
 }
 
@@ -598,6 +602,10 @@ export async function approveProposal(input: { id: number; version: number; appr
     return fail(`Lo scambio fa sforare il cap di ${ev.capBreakers.join(", ")} (R-57): serve la motivazione dell'eccezione del moderatore.`);
   }
 
+  // Senza titolari coinvolti la RPC segna già la proposta come fatta su Dunkest (migrazione 20261106120000), con la stessa regola.
+  const dunkest = needsDunkest(rosterSlots(league), proposal.moves)
+    ? " Ora va fatto anche su Dunkest."
+    : " Niente da fare su Dunkest: muove solo talenti, pick o riserve.";
   const db = await createClient();
   const { error } = await db.rpc("admin_approve_trade_proposal", {
     p_id: input.id,
@@ -610,8 +618,6 @@ export async function approveProposal(input: { id: number; version: number; appr
   refresh();
   announce();
   pushNow();
-  // Senza contratti la RPC segna già la proposta come fatta su Dunkest (migrazione 20261030160000).
-  const dunkest = proposal.moves.some((m) => m.kind === "contract") ? " Ora va fatto anche su Dunkest." : " Niente da fare su Dunkest: muove solo talenti o pick.";
   return done(`Scambio eseguito tra ${joinNames(names)}.${dunkest}`, ev.warnings);
 }
 

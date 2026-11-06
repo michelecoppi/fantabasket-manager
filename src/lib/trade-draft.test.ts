@@ -8,6 +8,7 @@ import {
   draftMoves,
   emptyDraft,
   encodeMoves,
+  needsDunkest,
   nextTeam,
   removeTeam,
   setArrivalSlot,
@@ -128,6 +129,25 @@ describe("movimenti salvati (proposte, Fase 7)", () => {
     expect(tradeInputError(["a", "b"], [{ ...moves[2], version: Number.NaN }])).not.toBeNull();
     expect(tradeInputError("a", [])).not.toBeNull();
     expect(tradeInputError(["a", "b"], [null])).not.toBeNull();
+  });
+});
+
+describe("scambio da rifare su Dunkest (solo titolari)", () => {
+  const withReserve = (t: SimTeam, id: number): SimTeam => ({ ...t, players: [...t.players, { id, name: `P${id}`, pos: "A", slot: "reserve", salary: 2, version: 1 }] });
+  const rosters = [withReserve(team("a", 1, 30), 11), withReserve(team("b", 2, 20), 12)];
+  const move = (id: number, from: string, to: string, slot?: "starter" | "reserve"): TradeMoveInput => ({ kind: "contract", id, version: 1, from, to, ...(slot ? { slot } : {}) });
+
+  it("riserve che restano riserve: niente Dunkest", () => {
+    expect(needsDunkest(rosters, [move(11, "a", "b"), move(12, "b", "a", "reserve")])).toBe(false);
+    expect(needsDunkest(rosters, [move(11, "a", "b"), { kind: "pick", id: 10, version: 3, from: "b", to: "a" }])).toBe(false);
+    expect(needsDunkest(rosters, [])).toBe(false);
+  });
+
+  it("un titolare ceduto, o una riserva che arriva titolare: va fatto su Dunkest", () => {
+    expect(needsDunkest(rosters, [move(1, "a", "b", "reserve"), move(12, "b", "a")])).toBe(true);
+    expect(needsDunkest(rosters, [move(11, "a", "b", "starter")])).toBe(true);
+    // contratto sparito dalle rose: meglio un avviso in più
+    expect(needsDunkest(rosters, [move(99, "a", "b", "reserve")])).toBe(true);
   });
 });
 

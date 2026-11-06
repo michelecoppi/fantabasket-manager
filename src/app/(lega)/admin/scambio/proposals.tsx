@@ -6,6 +6,7 @@ import { Button, Callout, Field, inputClass } from "@/components/controls";
 import { GroupTitle, NoticeBar, ProposalCard, useConfirm, useRun, type Notice, type ProposalContext } from "@/components/trade-proposal";
 import type { SimTeam } from "@/components/trade-parts";
 import type { LeagueSettings } from "@/lib/cap";
+import { needsDunkest } from "@/lib/trade-draft";
 import type { Proposal } from "@/lib/trade-proposals";
 import { approveProposal, declineProposal, markDunkestDone, returnProposal } from "../actions";
 
@@ -51,7 +52,7 @@ export function ProposalQueue({
       ) : (
         <div className="space-y-3">
           {toApprove.map((p) => (
-            <ProposalCard key={p.id} p={p} teams={teams} settings={settings} actions={(ctx) => <Approve p={p} ctx={ctx} notify={setNotice} />} />
+            <ProposalCard key={p.id} p={p} teams={teams} settings={settings} actions={(ctx) => <Approve p={p} ctx={ctx} teams={teams} notify={setNotice} />} />
           ))}
         </div>
       )}
@@ -74,7 +75,7 @@ export function ProposalQueue({
 }
 
 /** Approva ed esegui (R-55), con la motivazione dell'eccezione se il cap sfora (R-57); oppure respingi o rimanda alle squadre. */
-function Approve({ p, ctx, notify }: { p: Proposal; ctx: ProposalContext; notify: (n: Notice) => void }) {
+function Approve({ p, ctx, teams, notify }: { p: Proposal; ctx: ProposalContext; teams: SimTeam[]; notify: (n: Notice) => void }) {
   const { pending, run } = useRun(notify);
   const { asking, ask, cancel } = useConfirm();
   const [approvedBy, setApprovedBy] = useState("");
@@ -126,13 +127,13 @@ function Approve({ p, ctx, notify }: { p: Proposal; ctx: ProposalContext; notify
               Serve l&apos;eccezione del moderatore, sentito il presidente. La motivazione finisce nel registro dello scambio.
             </Callout>
           )}
-          {p.moves.some((m) => m.kind === "contract") ? (
+          {needsDunkest(teams, p.moves) ? (
             <Callout tone="warn" title="Fallo anche su Dunkest">
-              Approvando, rose e pick cambiano subito qui. Le squadre devono rifare lo scambio su Dunkest, titolari e riserve compresi; poi segnalo come fatto.
+              Approvando, rose e pick cambiano subito qui. Le squadre devono rifare su Dunkest lo scambio dei titolari che escono o entrano; poi segnalo come fatto.
             </Callout>
           ) : (
             <Callout tone="info" title="Niente da fare su Dunkest">
-              Lo scambio muove solo talenti o pick: su Dunkest ci sono solo i titolari, quindi approvando è già tutto fatto.
+              Lo scambio muove solo talenti, pick o riserve che restano riserve: su Dunkest ci sono solo i titolari, quindi approvando è già tutto fatto.
             </Callout>
           )}
           <div className="grid gap-4 sm:grid-cols-2">

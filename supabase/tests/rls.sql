@@ -1243,6 +1243,37 @@ begin
   perform rls_t.become('postgres');
   perform rls_t.ok('talento firmato dalla squadra che l''ha ricevuto',
     exists (select 1 from contracts where season_id = sid and player_id = 900041 and team_id = t2 and is_rookie));
+
+  -- Proposta di sole riserve che restano riserve: su Dunkest ci sono solo i titolari, niente da fare (2026-11-06).
+  insert into players (id, first_name, last_name, pos, nba_team) values (900051, 'RLS', 'Riserva A', 'A', 'TST'), (900052, 'RLS', 'Riserva B', 'A', 'TST');
+  insert into contracts (id, season_id, team_id, player_id, slot, years_left, salary) values
+    (900051, sid, t1, 900051, 'reserve', 1, 2), (900052, sid, t2, 900052, 'reserve', 1, 2);
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  mv := jsonb_build_array(
+    jsonb_build_object('kind', 'contract', 'id', 900051, 'version', (select version from contracts where id = 900051), 'from', t1, 'to', t2),
+    jsonb_build_object('kind', 'contract', 'id', 900052, 'version', (select version from contracts where id = 900052), 'from', t2, 'to', t1, 'slot', 'reserve'));
+  perform rls_t.become('authenticated', rls_t.viewer());
+  p := public.trade_propose(array[t1, t2], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  perform public.trade_answer(p, (select version from trade_proposals where id = p), 'accept', null);
+  tr := public.admin_approve_trade_proposal(p, (select version from trade_proposals where id = p), null, null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('proposta di sole riserve ancora da fare su Dunkest',
+    (select team_id from contracts where id = 900051) = t2 and (select dunkest_done_at from trade_proposals where id = p) is not null
+    and exists (select 1 from trade_proposal_events where proposal_id = p and kind = 'dunkest_done'));
+
+  -- Una riserva che arriva titolare cambia la rosa Dunkest di chi la riceve: resta da fare.
+  select jsonb_object_agg(id::text, roster_rev) into revs from teams where id in (t1, t2);
+  mv := jsonb_build_array(jsonb_build_object('kind', 'contract', 'id', 900051, 'version', (select version from contracts where id = 900051), 'from', t2, 'to', t1, 'slot', 'starter'));
+  perform rls_t.become('authenticated', rls_t.admin());
+  p := public.trade_propose(array[t2, t1], mv, revs, null, null, null);
+  perform rls_t.become('authenticated', rls_t.viewer());
+  perform public.trade_answer(p, (select version from trade_proposals where id = p), 'accept', null);
+  perform rls_t.become('authenticated', rls_t.admin());
+  tr := public.admin_approve_trade_proposal(p, (select version from trade_proposals where id = p), null, null, revs);
+  perform rls_t.become('postgres');
+  perform rls_t.ok('riserva che arriva titolare segnata come fatta su Dunkest',
+    (select slot from contracts where id = 900051) = 'starter' and (select dunkest_done_at from trade_proposals where id = p) is null);
 end $$;
 
 -- ---------- Bot Telegram (Fase 7.5): coda degli scambi da annunciare ----------
