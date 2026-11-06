@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { adminAlertChats, alertAdmins, announceOne, announceTrades, sendTelegramPhoto, type CardRenderer } from "./telegram";
+import { adminAlertChats, alertAdmins, announceOne, announceTalentPromotion, announceTrades, sendTelegramPhoto, type CardRenderer } from "./telegram";
 import { parseAnnouncements } from "./trade-announce";
 
 const CFG = { token: "123:SECRET", chatId: "-100200" };
@@ -162,5 +162,34 @@ describe("avvisi privati agli admin (TELEGRAM_ADMIN_ALERT)", () => {
     expect(res).toEqual({ skipped: false, sent: 1, errors: ["avviso all'admin 111: Telegram ha risposto HTTP 400: Forbidden: bot can't initiate conversation with a user"] });
     expect(calls.map((c) => JSON.parse(c.body as string).chat_id)).toEqual(["111", "222"]);
     expect(calls.every((c) => method(c) === "sendMessage")).toBe(true);
+  });
+});
+
+describe("announceTalentPromotion", () => {
+  it("invia il messaggio formattato HTML con i dettagli della promozione", async () => {
+    stubFetch(okResponse());
+    const promo = {
+      talentId: 99,
+      teamId: "team-spaccinos",
+      team: "Chicago Spaccinos",
+      playerName: "Cooper Flagg",
+      pos: "A",
+      nbaTeam: "DAL",
+      slot: "starter" as const,
+      salary: 8.5,
+      years: 2,
+      teamOption: false,
+      draftYear: 2026,
+    };
+    const res = await announceTalentPromotion(CFG, promo, "https://lega.example");
+    expect(res).toEqual({ ok: true });
+    expect(calls).toHaveLength(1);
+    expect(method(calls[0])).toBe("sendMessage");
+    const body = JSON.parse(calls[0].body as string);
+    expect(body.chat_id).toBe("-100200");
+    expect(body.parse_mode).toBe("HTML");
+    expect(body.text).toContain("Cooper Flagg");
+    expect(body.text).toContain("Chicago Spaccinos");
+    expect(body.text).toContain("Titolare (prima squadra)");
   });
 });

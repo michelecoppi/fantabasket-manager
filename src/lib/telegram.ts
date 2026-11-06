@@ -10,6 +10,7 @@ import { announcedTeamColor, cardFromAnnounced, type TradeCardModel } from "./tr
 import { ANNOUNCE_MAX_AGE_HOURS, announcementCaption, announcementText, parseAnnouncements, type AnnouncedTrade } from "./trade-announce";
 import { RUMOR_MAX_AGE_HOURS, parseRumors, rumorText } from "./trade-rumor";
 import { SLOT_SWAP_MAX_AGE_HOURS, parseSlotSwapAnnouncements, slotSwapText } from "./slot-swap-announce";
+import { talentPromotionText, type AnnouncedTalentPromotion } from "./talent-announce";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -235,5 +236,26 @@ export async function announceTradesQuietly(db: Db): Promise<void> {
     if (!res.skipped && res.errors.length) console.error(`[telegram] ${res.errors.join("; ")}`);
   } catch (e) {
     console.error(`[telegram] annuncio non riuscito: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+/**
+ * Annuncio della promozione di un rookie dalla squadra talenti (le promesse) alla prima squadra o riserve.
+ */
+export async function announceTalentPromotion(cfg: TelegramConfig, promo: AnnouncedTalentPromotion, siteUrl?: string | null): Promise<SendResult> {
+  const html = talentPromotionText(promo, siteUrl);
+  return sendTelegram(cfg, html);
+}
+
+/** Per le action admin: annuncia la promozione di un rookie senza mai far fallire chi la chiama. */
+export async function announceTalentPromotionQuietly(promo: AnnouncedTalentPromotion): Promise<void> {
+  try {
+    const cfg = telegramConfig();
+    if (!cfg) return;
+    const site = process.env.NEXT_PUBLIC_SITE_URL;
+    const res = await announceTalentPromotion(cfg, promo, site);
+    if (!res.ok) console.error(`[telegram] annuncio promozione talento non riuscito: ${res.error}`);
+  } catch (e) {
+    console.error(`[telegram] annuncio promozione talento non riuscito: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
